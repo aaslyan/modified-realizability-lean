@@ -82,6 +82,18 @@ soundness theorem and the collapse-demo theorem reports:
   associates) — identified, not attempted: it is precisely the
   associate-level closure layer of the parent project's deferred
   finite-types chapter.  No partial credit is claimed.
+
+  *Sharpened 2026-07-27 (design analysis of the "generic continuity"
+  follow-up):* restricting to level-≤1 conclusions does **not** make
+  the theorem smaller.  The application combinators climb ambients
+  (`impEC`/`allEC` consult the major premise one level up), and
+  derivations detour through arbitrary cut formulas, so continuity of
+  the ambient-1 extract rests on hereditary countability of extracts at
+  *every* ambient — the full countability chapter, with associate-level
+  abstraction closure as its hard core.  Until that chapter is done,
+  `RealizesCtQ` certificates remain per-derivation; they are mechanical
+  by the demo's method (compute the extracted functional's value,
+  exhibit the modulus).
 - The `→` clause of `MR` is the `Assoc`/`CtPer` clause *shape* at the
   level of pure functionals; the literal `Assoc`-instance reading enters
   through the `CtQ` packaging, not as a redundant re-proof.
