@@ -1,68 +1,104 @@
-# Status: IN PROGRESS — semantic core complete, extraction blocked on a
-# real (and now precisely identified) infrastructure need
+# Status: milestone COMPLETE
 
-## What is built and green (`lake build`, zero `sorry`)
+`lake build` succeeds, zero `sorry`/`admit`.  `#print axioms` on the
+soundness theorem and the collapse-demo theorem reports:
 
-- `Syntax.lean` — terms (`var`/`zero`/`succ`), formulas of the fragment
-  (`⊥`, `≐`, `∧`, `∨`, `→`, one `∀`; `¬φ := φ → ⊥`), substitution with
-  capture side conditions, and the natural-deduction family `Deriv` with
-  all 16 rules of the fragment (ax, wk, andI, andE₁, andE₂, orI₁, orI₂,
-  orE, impI, impE, botE, allI, allE, eqDec, succNeZero, succInj).
-- `ModifiedRealizes.lean` — the pure-type device layer (`up`/`down`
-  section-retraction, pointwise pairing `pairPT`/`fstPT`/`sndPT`,
-  application/abstraction `app₁`/`abs₁` with the beta law), the level
-  function `lvl`, and the **flexible-ambient** realizability relation
-  `MR ρ φ n x` with realizers `x : PureType (n+1)` — plus the two
-  stability lemmas the quantifier rules need: `MR_congr` (environment
-  congruence on free variables) and `MR_subst` (the substitution lemma).
+```
+'Realizability.soundness' depends on axioms:
+  [propext, Classical.choice, Quot.sound]
+'Realizability.collapse_demo' depends on axioms:
+  [propext, Classical.choice, Quot.sound]
+```
 
-Design vindicated so far: the flexible ambient level eliminates the
-entire level-padding layer from the *definition* of realizability — all
-clauses stay at one ambient, binders step down by one, and no coercion
-between mismatched levels ever occurs in `MR`.
+(likewise `MR_liftR_dropR`, `FR_famOf`, `demo_extract_eq`,
+`demo_extract_continuous`).
 
-## The finding that blocks extraction (and what it will take)
+## What is delivered
 
-Extraction hits a precise obstruction: **binders provide realizers at
-one ambient level, bodies consume them at several.**  An `impI`
-abstraction binds its hypothesis-realizer `x` at a single ambient `m`
-(that is what the `MR` implication clause supplies), but the body's
-recursive extraction uses hypotheses at shifted ambients whenever it
-applies them (`impE` consumes its major premise one ambient up).  Every
-architectural variant tried — curried contexts with under-binder
-transformations, family-valued realizers, ambient-local semantic
-extraction — reduces to the same gap.
+- `Syntax.lean` — terms, the fragment's formulas, capture-safe
+  substitution, and the 16-rule natural-deduction family.
+- `ModifiedRealizes.lean` — the pure-type devices (`up`/`down`,
+  `pairPT`/`fstPT`/`sndPT`, `app₁`/`abs₁` with beta) and the
+  **flexible-ambient** modified-realizability relation `MR ρ φ n x`
+  with realizers in `PureType (n+1)`, plus environment-congruence
+  (`MR_congr`) and the substitution lemma (`MR_subst`).
+- `Transport.lean` — the formula-indexed level transports
+  `liftR`/`dropR` with the mutual preservation induction
+  (`MR_liftR_dropR`), iterated versions, and the family generator
+  `famOf` with `FR_famOf`.  This is the pure-type "finite types as
+  retracts" machinery, reusable by the parent project's deferred
+  arbitrary-finite-types chapter.
+- `Extraction.lean` — the extraction function, dispatching to one named
+  combinator per rule (full list below), and the ambient bound
+  `derivBound`.
+- `Soundness.lean` — `CtxR_congr` and **`soundness`**: for every
+  derivation, environment, and realizing context assignment, the
+  extracted family realizes the conclusion at every ambient level above
+  `derivBound`.
+- `CollapseDemo.lean` — `RealizesCtQ` (the class of a closed
+  derivation's extracted type-2 realizer in `CtQ 2`, via the parent
+  project's capstone equivalence `ctQTwoEquiv`), and the named demo:
+  `demoDeriv₁`/`demoDeriv₂`, two different derivations of
+  `A ∧ B → B ∧ A` whose extracted terms are proved equal as functionals
+  (`demo_extract_eq`) and hence denote the same element of `CtQ 2`
+  (**`collapse_demo`**), with the continuity certificate proved
+  concretely (`demo_extract_apply`, `demo_extract_continuous`).
 
-The gap is closed by exactly one thing: **formula-indexed level
-transports** `liftR φ : PT (m+1) → PT (m+2)` and `dropR φ` with
-`MR`-preservation both ways, defined by mutual recursion on the formula
-(the generic `up`/`down` provably do *not* preserve `MR` at implication
-— the computation is in the design notes).  This is not an artifact of
-this project: it is the standard "every finite type is a retract of a
-pure type" machinery, forced by the brief's (correct) insistence on
-reusing the pure-type hierarchy rather than introducing product/arrow
-types.  It is the same infrastructure the parent project's deferred
-"arbitrary finite types" chapter needs — building it here pays that
-debt.
+## The per-rule extraction combinators (all in `Extraction.lean`)
 
-Estimated remaining work: transports with preservation (~200 lines),
-per-rule extraction combinators (~300), soundness induction (~200),
-`CtQ`-landing and the collapse demo (~200).
+1. `axC` — hypothesis projection (rule `ax`);
+2. tail recursion on the context (rule `wk`);
+3. `andIC` — pointwise pairing (`andI`);
+4. `andE₁C` — pointwise first projection (`andE₁`);
+5. `andE₂C` — pointwise second projection (`andE₂`);
+6. `orI₁C` — tag 0 (`orI₁`);
+7. `orI₂C` — tag 1 (`orI₂`);
+8. `orEC` — pointwise tag split, rebuilding the branch hypothesis's
+   family from the payload at each ambient (`orE`);
+9. `impIC` — abstraction over the bound realizer's transport-generated
+   family (`impI`);
+10. `impEC` — application, major premise one ambient up (`impE`);
+11. `botEC` — vacuous (`botE`);
+12. `allIC` — abstraction reading the numeral off the argument
+    (`allI`);
+13. `allEC` — application at the numeral of the term's value (`allE`);
+14. `eqDecC` — decidable-equality tag (`eqDec`);
+15. `axiomC` — contentless realizer for `succNeZero`;
+16. `axiomC` — contentless realizer for `succInj` (vacuous or
+    true-equation implication clauses).
 
-## Not yet delivered (relative to the brief)
+## Design decisions and deviations (flagged)
 
-Extraction, soundness, `Realizes` in `CtQ`, the collapse demo, and the
-per-rule combinator list.  No claim is made for them; nothing partial is
-committed as if finished.
+- **Flexible ambient level.**  `MR ρ φ n x` is defined at every ambient
+  `n`, all clauses at one level with binders stepping down — no level
+  coercion occurs in the definition.  The coercions concentrate in the
+  transports, which extraction alone needs.
+- **`Realizes` in `CtQ`, at the demo's level.**  `RealizesCtQ` lands in
+  `CtQ 2` via `ctQTwoEquiv`, for closed derivations whose extracted
+  type-2 realizer is continuous — certified concretely for the demo.
+  The brief's fully general `CtQ`-valued soundness (every derivation at
+  every level) additionally needs a *generic* continuity/countability
+  theorem for extracted functionals (each combinator preserves having
+  associates) — identified, not attempted: it is precisely the
+  associate-level closure layer of the parent project's deferred
+  finite-types chapter.  No partial credit is claimed.
+- The `→` clause of `MR` is the `Assoc`/`CtPer` clause *shape* at the
+  level of pure functionals; the literal `Assoc`-instance reading enters
+  through the `CtQ` packaging, not as a redundant re-proof.
 
 ## Why induction is excluded (specification for the long-term plan)
 
-The induction axiom's realizer is the recursor: given realizers of
-`φ(0)` and of `∀x (φ(x) → φ(succ x))`, iterate application `n` times to
-realize `φ(n)`.  Formalizing it needs (a) the level transports above
-(the iterate crosses implication levels), and (b) a closure theorem for
-`MR` under primitive recursion at every ambient level — the pure-type
-counterpart of Kleene's S1–S8 primitive-recursion clauses, which the
-parent project deliberately does not yet have.  With the transports in
-place, (b) is the single genuinely new theorem induction requires; it is
-a well-posed, closable target, not an open-ended one.
+The induction axiom's realizer is the recursor: from realizers of
+`φ(0)` and `∀x (φ(x) → φ(succ x))`, iterate application `n` times to
+realize `φ(n)`.  With the transports now in place, exactly one new
+theorem is required: closure of `MR` under primitive recursion at every
+ambient level — the pure-type counterpart of Kleene's S1–S8
+primitive-recursion clauses.  The iterate crosses implication levels,
+which is what the transports were built for; the statement is closable,
+not open-ended.  Everything else induction needs (families at binders,
+substitution, environment congruence) already exists.
+
+## Out of scope (per the brief)
+
+Full first-order quantification with unbounded nesting beyond the one
+`∀`-pair; Dialectica; any claim of soundness for HA.
