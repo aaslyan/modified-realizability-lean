@@ -19,11 +19,11 @@ recommendations.  Items get moved to "Resolved" when you answer them.
      finite-types/countability chapter; a large undertaking.
    - (c) Something else (the original message was garbled).
 
-## Open
+2. **Push `Realizability` to GitHub?**
+   *Answered 2026-07-27: pushed to
+   `github.com/aaslyan/modified-realizability-lean`.*
 
-2. **Push `Realizability` to GitHub?**  The repo is local-only (two
-   commits).  If yes: suggested name `realizability-lean` under your
-   account, matching `kleene-kreisel-lean` / `friedberg-muchnik-lean`.
+## Open
 
 3. **Rename the local `ContinuousFunctionals` directory to
    `kleene-kreisel-lean`?**  Cosmetic consistency with the GitHub name;
