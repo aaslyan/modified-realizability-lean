@@ -6,7 +6,7 @@
    "name": "ContinuousFunctionals",
    "manifestFile": "lake-manifest.json",
    "inherited": false,
-   "dir": "../ContinuousFunctionals",
+   "dir": "../kleene-kreisel-lean",
    "configFile": "lakefile.lean"},
   {"url": "https://github.com/leanprover-community/mathlib4.git",
    "type": "git",

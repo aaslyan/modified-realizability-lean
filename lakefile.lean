@@ -12,7 +12,7 @@ brief): the realizability interpretation reuses `PureType`, `Assoc`,
 `Ct`, `CtPer`, `ctPer_iff_assoc`, and `CtQ` rather than reimplementing
 finite types.
 -/
-require ContinuousFunctionals from "../ContinuousFunctionals"
+require ContinuousFunctionals from "../kleene-kreisel-lean"
 
 @[default_target]
 lean_lib «Realizability» where
