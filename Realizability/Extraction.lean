@@ -148,8 +148,9 @@ noncomputable def eqDecC (t : Bool) : Fam :=
     if t then pairPT (fun _ => (0 : ℕ)) (defaultPT (n + 1))
     else pairPT (fun _ => (1 : ℕ)) (defaultPT (n + 1))
 
-/-- `succNeZero` and `succInj`: contentless realizers (their implication
-clauses are vacuous or carry a true equation). -/
+/-- `succNeZero` and `succInj` — and, since Phase A, the equational-logic
+schemas and the recursion equations for `+`/`×`: contentless realizers
+(their implication clauses are vacuous or carry a true equation). -/
 noncomputable def axiomC : Fam :=
   defaultFam
 
@@ -181,6 +182,16 @@ noncomputable def extract : {Γ : List Formula} → {φ : Formula} →
   | _, _, .eqDec s t, ρ, _ => eqDecC (decide (s.eval ρ = t.eval ρ))
   | _, _, .succNeZero _, _, _ => axiomC
   | _, _, .succInj _ _, _, _ => axiomC
+  | _, _, .eqRefl _, _, _ => axiomC
+  | _, _, .eqSymm _ _, _, _ => axiomC
+  | _, _, .eqTrans _ _ _, _, _ => axiomC
+  | _, _, .eqCongSucc _ _, _, _ => axiomC
+  | _, _, .eqCongPlus _ _ _ _, _, _ => axiomC
+  | _, _, .eqCongTimes _ _ _ _, _, _ => axiomC
+  | _, _, .zeroPlus _, _, _ => axiomC
+  | _, _, .succPlus _ _, _, _ => axiomC
+  | _, _, .zeroTimes _, _, _ => axiomC
+  | _, _, .succTimes _ _, _, _ => axiomC
 
 /-- The ambient level above which a derivation's extracted family
 realizes its conclusion. -/
@@ -204,5 +215,17 @@ def derivBound : {Γ : List Formula} → {φ : Formula} → Deriv Γ φ → ℕ
   | _, _, .eqDec _ _ => 1
   | _, _, .succNeZero _ => 1
   | _, _, .succInj _ _ => 1
+  -- Phase A: bare equations are realized at every ambient (bound 0);
+  -- single implications need one binder level, nested ones two.
+  | _, _, .eqRefl _ => 0
+  | _, _, .eqSymm _ _ => 1
+  | _, _, .eqTrans _ _ _ => 2
+  | _, _, .eqCongSucc _ _ => 1
+  | _, _, .eqCongPlus _ _ _ _ => 2
+  | _, _, .eqCongTimes _ _ _ _ => 2
+  | _, _, .zeroPlus _ => 0
+  | _, _, .succPlus _ _ => 0
+  | _, _, .zeroTimes _ => 0
+  | _, _, .succTimes _ _ => 0
 
 end Realizability

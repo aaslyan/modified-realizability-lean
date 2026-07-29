@@ -260,5 +260,89 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
       show (Term.eval ρ s) = (Term.eval ρ t)
       have hx' : Term.eval ρ s + 1 = Term.eval ρ t + 1 := hx
       omega
+  -- Phase A: the equational-logic kit — atomic conclusions carry no
+  -- content, so each case is the equation's truth from its premises'.
+  | eqRefl t =>
+    intro ρ env henv n hn
+    show Term.eval ρ t = Term.eval ρ t
+    rfl
+  | eqSymm s t =>
+    intro ρ env henv n hn
+    have hb : (1 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      intro x hx
+      show Term.eval ρ t = Term.eval ρ s
+      exact (hx : Term.eval ρ s = Term.eval ρ t).symm
+  | eqTrans s t u =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show Term.eval ρ s = Term.eval ρ u
+        exact (hx : Term.eval ρ s = Term.eval ρ t).trans
+          (hy : Term.eval ρ t = Term.eval ρ u)
+  | eqCongSucc s t =>
+    intro ρ env henv n hn
+    have hb : (1 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      intro x hx
+      show Term.eval ρ s + 1 = Term.eval ρ t + 1
+      have hx' : Term.eval ρ s = Term.eval ρ t := hx
+      omega
+  | eqCongPlus s₁ t₁ s₂ t₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show Term.eval ρ s₁ + Term.eval ρ s₂
+          = Term.eval ρ t₁ + Term.eval ρ t₂
+        rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
+          (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+  | eqCongTimes s₁ t₁ s₂ t₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show Term.eval ρ s₁ * Term.eval ρ s₂
+          = Term.eval ρ t₁ * Term.eval ρ t₂
+        rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
+          (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+  -- Phase A: the first-argument recursion equations, true in `ℕ`.
+  | zeroPlus t =>
+    intro ρ env henv n hn
+    show 0 + Term.eval ρ t = Term.eval ρ t
+    omega
+  | succPlus s t =>
+    intro ρ env henv n hn
+    show Term.eval ρ s + 1 + Term.eval ρ t = Term.eval ρ s + Term.eval ρ t + 1
+    omega
+  | zeroTimes t =>
+    intro ρ env henv n hn
+    show 0 * Term.eval ρ t = 0
+    exact Nat.zero_mul _
+  | succTimes s t =>
+    intro ρ env henv n hn
+    show (Term.eval ρ s + 1) * Term.eval ρ t
+      = Term.eval ρ s * Term.eval ρ t + Term.eval ρ t
+    exact Nat.succ_mul _ _
 
 end Realizability

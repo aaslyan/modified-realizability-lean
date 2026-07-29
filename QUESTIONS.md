@@ -32,6 +32,23 @@ recommendations.  Items get moved to "Resolved" when you answer them.
    Realizability path dependency and manifest updated, both repos
    rebuilt green.*
 
+6. **Induction axiom (long-term plan).**  *Closed: delivered as Phase 2
+   (see STATUS.md), and now exercised on new content by Phase A — the
+   four `+`/`×` defining equations are `ind` theorems (five inductions,
+   `Arithmetic.lean`).*
+
+7. **Phase A: Option 1 vs Option 2 for `+`/`×`** (the brief delegated
+   the choice, to be recorded with rationale).  *Resolved 2026-07-29:
+   Option 2, in "mirror recursion" form* — the defining axioms recurse
+   on the **first** argument, so all four briefed (second-argument)
+   equations are genuine `ind` theorems; the brief's own Option-2
+   sketch (second-argument axioms) would have collapsed into Option 1
+   with `ind` never firing, and a term-level recursion binder was the
+   "deeper syntactic machinery" wall the brief itself flagged.  Full
+   rationale in STATUS.md's Phase-A section.  Also settled there: the
+   equational-logic kit as per-symbol implication schemas rather than
+   a single Leibniz replacement rule.
+
 ## Open
 
 4. **Next chapter in `kleene-kreisel-lean`.**  Per the stated pipeline:
@@ -48,7 +65,3 @@ recommendations.  Items get moved to "Resolved" when you answer them.
    the dust settles, decide whether to extend it, write a separate note,
    or leave it as the type-2/collapse snapshot.
 
-6. **Induction axiom (long-term plan).**  STATUS.md specifies the single
-   missing theorem (closure of `MR` under primitive recursion at every
-   ambient level).  Green-light it as its own brief when ready — it
-   should not be folded into smaller work.

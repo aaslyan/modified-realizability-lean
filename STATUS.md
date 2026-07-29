@@ -1,9 +1,9 @@
-# Status: milestone COMPLETE, generic continuity COMPLETE, induction (Phase 2) COMPLETE
+# Status: milestone COMPLETE, generic continuity COMPLETE, induction (Phase 2) COMPLETE, arithmetic (Phase A) COMPLETE
 
 `lake build` succeeds, zero `sorry`/`admit`.  `#print axioms` on the
-soundness theorem (now covering the `ind` rule), the recursor's
-preservation theorem, the generic-continuity theorem, and the
-collapse-demo theorem reports:
+soundness theorem (now covering the `ind` rule and the Phase-A rules),
+the recursor's preservation theorem, the generic-continuity theorem, and
+the collapse-demo theorem reports:
 
 ```
 'Realizability.soundness' depends on axioms:
@@ -16,6 +16,20 @@ collapse-demo theorem reports:
   [propext, Classical.choice, Quot.sound]
 ```
 
+and on the four Phase-A equation theorems (`#print axioms` commands are
+in `Arithmetic.lean` itself, so this is checked at every build):
+
+```
+'Realizability.plus_zero_realized'   … [propext, Classical.choice, Quot.sound]
+'Realizability.plus_succ_realized'   … [propext, Classical.choice, Quot.sound]
+'Realizability.times_zero_realized'  … [propext, Classical.choice, Quot.sound]
+'Realizability.times_succ_realized'  … [propext, Classical.choice, Quot.sound]
+'Realizability.plus_zero_extract_continuous'   … [propext, Quot.sound]
+'Realizability.plus_succ_extract_continuous'   … [propext, Quot.sound]
+'Realizability.times_zero_extract_continuous'  … [propext, Quot.sound]
+'Realizability.times_succ_extract_continuous'  … [propext, Quot.sound]
+```
+
 (likewise `MR_liftR_dropR`, `FR_famOf`, `indC_tracked` —
 `[propext, Quot.sound]` — `demo_extract_eq`, and
 `demo_extract_continuous`, the latter a one-line corollary of
@@ -23,12 +37,17 @@ collapse-demo theorem reports:
 
 ## What is delivered
 
-- `Syntax.lean` — terms, the fragment's formulas, capture-safe
-  substitution, and the 17-rule natural-deduction family — since the
+- `Syntax.lean` — terms (since Phase A over the signature
+  `{0, succ, +, ×}`), the fragment's formulas, capture-safe
+  substitution, and the 27-rule natural-deduction family — since the
   Phase-2 extension including the arithmetic induction rule `ind`
   (from `φ(0)` and `∀x (φ(x) → φ(succ x))`, conclude `∀x φ(x)`; side
   condition: no variable capture for the substituted `succ x`, same
-  shape as `∀`-elim's).
+  shape as `∀`-elim's), and since the Phase-A extension the
+  equational-logic kit (`eqRefl`, and `eqSymm`/`eqTrans`/`eqCongSucc`/
+  `eqCongPlus`/`eqCongTimes` as implication schemas, `succInj`-style)
+  plus the four first-argument recursion equations defining `+`/`×`
+  (`zeroPlus`, `succPlus`, `zeroTimes`, `succTimes`).
 - `ModifiedRealizes.lean` — the pure-type devices (`up`/`down`,
   `pairPT`/`fstPT`/`sndPT`, `app₁`/`abs₁` with beta) and the
   **flexible-ambient** modified-realizability relation `MR ρ φ n x`
@@ -56,6 +75,9 @@ collapse-demo theorem reports:
   extraction combinator (full list below) and tracking preservation for
   every pure-type device and transport (`up`/`down`, the pairing
   devices, `app₁`/`abs₁`, `liftR`/`dropR`, `famOf`).
+- `Arithmetic.lean` (Phase A) — the four defining equations of `+`/`×`
+  as closed `ind` theorems with extracted, certified realizers; see the
+  Phase-A section below.
 - `CollapseDemo.lean` — `RealizesCtQ` (the class of a closed
   derivation's extracted type-2 realizer in `CtQ 2`, via the parent
   project's capstone equivalence `ctQTwoEquiv`) — now **total on closed
@@ -100,7 +122,14 @@ collapse-demo theorem reports:
     `app₁` steps performed is the numeral being realized.  Correctness
     is `MR_indRecC` (`Soundness.lean`), closure of `MR` under primitive
     recursion at every ambient level, stated once and instantiated —
-    no level-by-level instances exist.
+    no level-by-level instances exist;
+18. –27. `axiomC` — contentless realizers for the ten Phase-A schemas
+    (`eqRefl`, `eqSymm`, `eqTrans`, `eqCongSucc`, `eqCongPlus`,
+    `eqCongTimes`, `zeroPlus`, `succPlus`, `zeroTimes`, `succTimes`):
+    atomic conclusions carry no computational content, so each
+    soundness case is just the equation's truth from its premises'
+    truths (`derivBound`: 0 for the bare-equation schemas, 1/2 for the
+    single/nested implication schemas).
 
 ## The per-combinator continuity preservation lemmas (all in `GenericContinuity.lean`)
 
@@ -137,7 +166,15 @@ combinator sends tracked inputs to tracked outputs:
     `continuous2_apply_nat`): consulting a family of tracked families
     at a continuously computed numeral preserves tracking, because near
     any oracle the numeral is locally constant — the countably-branching
-    generalization of the binary case split `ite_tracked`.
+    generalization of the binary case split `ite_tracked`;
+18. –27. `axiomC_eqRefl_tracked` … `axiomC_succTimes_tracked` — one per
+    Phase-A schema, all the tracked junk family.  The one place Phase A
+    genuinely touches the continuity module is *not* per-rule:
+    `termEval_continuous` gains the `plus`/`times` cases (a binary
+    composition of two continuous reads, `continuous2_comp₂`, already
+    in the closure kit) — the `allE` case reads term values off tracked
+    environments, so evaluation over the extended signature had to stay
+    continuous.  No case of `extract_tracked` is left silent.
 
 The capstone `extract_continuous` is the induction on `Deriv`
 (`extract_tracked`) invoking one preservation lemma per case — the same
@@ -269,3 +306,79 @@ parent project's STATUS.md.
 
 Full first-order quantification with unbounded nesting beyond the one
 `∀`-pair; Dialectica; any claim of soundness for HA.
+
+## Phase A (arithmetic): COMPLETE — Option 2, "mirror recursion" form
+
+The brief posed Option 1 (the four briefed equations as bare axiom
+rules) against Option 2 (the equations *proved* using `ind`), and asked
+for the choice and its rationale to be recorded here.
+
+**Option 2 was taken, in the following form.**  `Term` gains `plus` and
+`times`; the axiom rules *defining* them (`Syntax.lean`) are the
+primitive-recursion equations **on the first argument** —
+
+```
+0 + t = t          succ s + t = succ (s + t)
+0 × t = 0          succ s × t = (s × t) + t
+```
+
+— while the four briefed equations recurse on the *second* argument,
+and are therefore genuine theorems, each proved by `ind` on its first
+argument (`Arithmetic.lean`): even `∀x. x + 0 = x` is an induction,
+exactly as `0 + n = n` is in Lean itself (where `Nat.add` recurses on
+the second argument — the same mirror, reflected).
+
+**Why this form, stated plainly.**  The brief's own Option-2 sketch
+("`x + 0 = x` is then the base case of a recursion on the second
+argument") harbors a collapse: had the defining axiom schemas been the
+briefed equations themselves, each deliverable would have been one
+`allI` away from an axiom citation, `ind` would never fire, and Option
+2 would have been Option 1 with different labels.  The alternative that
+keeps the axioms second-argument *and* the theorems non-trivial is a
+term-level recursion binder — exactly the "deeper syntactic machinery"
+wall the brief anticipated (a binding term former, substitution through
+it, new capture conditions).  First-argument axiomatization dissolves
+the dilemma: the definition stays four schema rules with contentless
+realizers (the `succNeZero`/`succInj` pattern, nothing new in the
+machinery), and all four deliverables genuinely exercise Phase 2's
+induction — five `ind` derivations in total, including the auxiliary
+`(z + x) + y = (z + y) + x` (`plusRightCommDeriv`) that the
+multiplication step needs, plus theorem-to-theorem reuse
+(`timesZeroDeriv` and `timesSuccDeriv` instantiate `plusZeroDeriv`,
+`plusSuccDeriv`, and the auxiliary inside their step cases).
+
+**The equational-logic kit had to be added regardless.**  Before Phase
+A the fragment could not derive *any* equation outright — no rule
+produced an atomic conclusion (`eqDec` yields a disjunction; `succInj`
+an implication; the `orE` escape from the negative branch is circular).
+The kit is the standard first-order-with-equality apparatus for the
+signature `{0, succ, +, ×}`: `eqRefl`, plus symmetry, transitivity and
+one congruence per function symbol as implication schemas in the
+`succInj` style, all with contentless realizers (`axiomC`), soundness
+cases one line each.  A single Leibniz replacement rule was considered
+and rejected: it subsumes the kit but drags a formula parameter and two
+`SubstOK` side conditions into every use site, and its soundness case
+needs `MR_subst` gymnastics; the per-symbol kit keeps both the
+machinery cases and the derivations trivial.
+
+**Bound-variable discipline** (`Arithmetic.lean`): `∀`-elimination's
+no-capture condition forbids instantiating `∀x∀y. φ` at terms
+containing `y`, so the two-variable lemmas exist in α-variant form
+where needed — `plusSuccDeriv'` (bound variables 2, 3) is derived from
+the deliverable `plusSuccDeriv` by instantiate-and-regeneralize (allE
+twice at fresh variables, allI twice), not re-proved; the auxiliary
+binds 2, 3, 4 outright.
+
+**Machinery cases added, none silent**: `extract`/`derivBound` (ten
+`axiomC` dispatches; bounds 0/1/2 by implication depth), `soundness`
+(ten one-line truth cases), `extract_tracked` (ten junk-family cases),
+and — the one substantive continuity touch — `termEval_continuous`
+gains `plus`/`times` via the pre-existing `continuous2_comp₂`, keeping
+`allE`'s term-value reads continuous over the extended signature.
+`extract_continuous` therefore covers every new rule; the eight
+`#print axioms` checks live in `Arithmetic.lean` and run at every
+build (outputs quoted at the top of this file).
+
+**Out of scope, per the brief**: hereditary base-`k` notation and
+anything Goodstein-specific (Phase B); `TI(ε₀)` (Phase C); any
+strength claim beyond the two operations and their four equations.

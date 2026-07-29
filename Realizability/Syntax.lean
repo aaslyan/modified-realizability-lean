@@ -3,12 +3,24 @@
 
 The fragment of the project brief: intuitionistic propositional logic
 (`∧, ∨, →`, with `¬φ` as `φ → ⊥`) over atomic equations between
-`0`/`succ`-terms with variables, one quantifier rule pair (`∀`-intro /
-`∀`-elim over `ℕ`), three arithmetic axiom schemas: decidable
-equality (`s = t ∨ ¬ s = t`), `succ s ≠ 0`, and injectivity of `succ` —
-and, since the Phase-2 extension, the **arithmetic induction rule**
-`ind`: from `φ(0)` and `∀x (φ(x) → φ(succ x))`, conclude `∀x φ(x)`
-(see STATUS.md for its realizer, the primitive-recursion combinator).
+`0`/`succ`/`+`/`×`-terms with variables, one quantifier rule pair
+(`∀`-intro / `∀`-elim over `ℕ`), three arithmetic axiom schemas:
+decidable equality (`s = t ∨ ¬ s = t`), `succ s ≠ 0`, and injectivity
+of `succ` — and, since the Phase-2 extension, the **arithmetic
+induction rule** `ind`: from `φ(0)` and `∀x (φ(x) → φ(succ x))`,
+conclude `∀x φ(x)` (see STATUS.md for its realizer, the
+primitive-recursion combinator).
+
+Since the Phase-A extension the signature includes `+` and `×` as
+genuine function symbols, with two further schema groups (all with
+contentless realizers, like the successor axioms): the
+**equational-logic kit** (reflexivity, and symmetry / transitivity /
+congruence as implication schemas, one congruence per function symbol),
+and the **recursion equations defining `+` and `×`** — recursing on the
+*first* argument (`0 + t = t`, `succ s + t = succ (s + t)`,
+`0 × t = 0`, `succ s × t = (s × t) + t`), so that the classical
+second-argument equations (`x + 0 = x`, …) are genuine theorems proved
+by `ind` in `Arithmetic.lean`.
 
 Natural deduction is an inductive family `Deriv Γ φ` in `Type`, so the
 extraction function of `Extraction.lean` can recurse on it.  Hypotheses
@@ -25,11 +37,14 @@ import Mathlib.Logic.Function.Basic
 
 namespace Realizability
 
-/-- Terms: variables (named by numbers), zero, successor. -/
+/-- Terms: variables (named by numbers), zero, successor, and — since
+the Phase-A extension — sum and product. -/
 inductive Term : Type where
   | var : ℕ → Term
   | zero : Term
   | succ : Term → Term
+  | plus : Term → Term → Term
+  | times : Term → Term → Term
 deriving DecidableEq, Repr
 
 namespace Term
@@ -39,18 +54,24 @@ def eval (ρ : ℕ → ℕ) : Term → ℕ
   | var i => ρ i
   | zero => 0
   | succ t => t.eval ρ + 1
+  | plus s t => s.eval ρ + t.eval ρ
+  | times s t => s.eval ρ * t.eval ρ
 
 /-- The variables occurring in a term. -/
 def vars : Term → List ℕ
   | var i => [i]
   | zero => []
   | succ t => t.vars
+  | plus s t => s.vars ++ t.vars
+  | times s t => s.vars ++ t.vars
 
 /-- Substitution of a term for a variable. -/
 def subst (x : ℕ) (u : Term) : Term → Term
   | var i => if i = x then u else var i
   | zero => zero
   | succ t => succ (subst x u t)
+  | plus s t => plus (subst x u s) (subst x u t)
+  | times s t => times (subst x u s) (subst x u t)
 
 /-- Evaluation after substitution is evaluation in the updated
 environment. -/
@@ -66,6 +87,8 @@ theorem eval_subst (ρ : ℕ → ℕ) (x : ℕ) (u : Term) :
     · simp [subst, eval, h, Function.update]
   | zero => rfl
   | succ t ih => simp [subst, eval, ih]
+  | plus s t ihs iht => simp [subst, eval, ihs, iht]
+  | times s t ihs iht => simp [subst, eval, ihs, iht]
 
 /-- Evaluation only depends on the values of the occurring variables. -/
 theorem eval_congr {ρ ρ' : ℕ → ℕ} :
@@ -75,6 +98,16 @@ theorem eval_congr {ρ ρ' : ℕ → ℕ} :
   | var i => intro h; exact h i (by simp [vars])
   | zero => intro _; rfl
   | succ t ih => intro h; simp only [eval]; rw [ih h]
+  | plus s t ihs iht =>
+    intro h
+    simp only [eval]
+    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+  | times s t ihs iht =>
+    intro h
+    simp only [eval]
+    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
 
 end Term
 
@@ -167,5 +200,32 @@ inductive Deriv : List Formula → Formula → Type where
       Deriv Γ (eq (.succ s) .zero).neg
   | succInj {Γ : List Formula} (s t : Term) :
       Deriv Γ ((eq (.succ s) (.succ t)).imp (eq s t))
+  -- Phase A: the equational-logic kit for the signature `{0, succ, +, ×}`,
+  -- as implication schemas in the style of `succInj` (all contentless).
+  | eqRefl {Γ : List Formula} (t : Term) :
+      Deriv Γ (eq t t)
+  | eqSymm {Γ : List Formula} (s t : Term) :
+      Deriv Γ ((eq s t).imp (eq t s))
+  | eqTrans {Γ : List Formula} (s t u : Term) :
+      Deriv Γ ((eq s t).imp ((eq t u).imp (eq s u)))
+  | eqCongSucc {Γ : List Formula} (s t : Term) :
+      Deriv Γ ((eq s t).imp (eq (.succ s) (.succ t)))
+  | eqCongPlus {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
+      Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
+        (eq (.plus s₁ s₂) (.plus t₁ t₂))))
+  | eqCongTimes {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
+      Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
+        (eq (.times s₁ s₂) (.times t₁ t₂))))
+  -- Phase A: the recursion equations *defining* `+` and `×`, recursing on
+  -- the **first** argument (the mirror of the briefed equations, which are
+  -- thereby genuine `ind` theorems — see `Arithmetic.lean` and STATUS.md).
+  | zeroPlus {Γ : List Formula} (t : Term) :
+      Deriv Γ (eq (.plus .zero t) t)
+  | succPlus {Γ : List Formula} (s t : Term) :
+      Deriv Γ (eq (.plus (.succ s) t) (.succ (.plus s t)))
+  | zeroTimes {Γ : List Formula} (t : Term) :
+      Deriv Γ (eq (.times .zero t) .zero)
+  | succTimes {Γ : List Formula} (s t : Term) :
+      Deriv Γ (eq (.times (.succ s) t) (.plus (.times s t) t))
 
 end Realizability

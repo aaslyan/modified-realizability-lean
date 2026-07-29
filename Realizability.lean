@@ -12,3 +12,4 @@ import Realizability.Extraction
 import Realizability.Soundness
 import Realizability.GenericContinuity
 import Realizability.CollapseDemo
+import Realizability.Arithmetic

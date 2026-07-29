@@ -45,8 +45,8 @@ closed derivation, at every ambient the capstone consults.
   (`liftR`/`dropR` by the same mutual formula induction as
   `MR_liftR_dropR`, then `liftIter`/`dropIter`/`famOf`);
 * **one named preservation lemma per extraction combinator** (the same
-  per-rule discipline as `Extraction.lean` — the 16 lemmas are listed in
-  STATUS.md);
+  per-rule discipline as `Extraction.lean` — one lemma per rule, listed
+  in STATUS.md);
 * `extract_tracked` — the induction on `Deriv` threading the invariant;
 * **`extract_continuous`** — the capstone.
 -/
@@ -413,12 +413,18 @@ theorem TrackedCtx.cons {p : (ℕ → ℕ) → Fam} {E : List ((ℕ → ℕ) →
   · exact hp
   · exact hE X h
 
-/-- Term evaluation in a tracked environment is continuous. -/
+/-- Term evaluation in a tracked environment is continuous.  (Phase A
+adds the `+`/`×` cases: a binary composition of two continuous reads —
+`continuous2_comp₂` was already in the closure kit.) -/
 theorem termEval_continuous {R : (ℕ → ℕ) → ℕ → ℕ} (hR : TrackedEnv R) :
     ∀ u : Term, Continuous2 fun α => u.eval (R α)
   | .var i => hR i
   | .zero => continuous2_const 0
   | .succ u => continuous2_comp₁ (· + 1) (termEval_continuous hR u)
+  | .plus s t => continuous2_comp₂ (· + ·)
+      (termEval_continuous hR s) (termEval_continuous hR t)
+  | .times s t => continuous2_comp₂ (· * ·)
+      (termEval_continuous hR s) (termEval_continuous hR t)
 
 /-- Updating a tracked environment at a fixed variable with a
 continuously computed value stays tracked (rule `allI`'s environment
@@ -621,6 +627,51 @@ the contentless realizer is tracked. -/
 theorem axiomC_succInj_tracked : TrackedFam fun _ => axiomC :=
   defaultFam_tracked
 
+/-- `axiomC` preserves tracking, `eqRefl` instance (rule `eqRefl`). -/
+theorem axiomC_eqRefl_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `eqSymm` instance (rule `eqSymm`). -/
+theorem axiomC_eqSymm_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `eqTrans` instance (rule `eqTrans`). -/
+theorem axiomC_eqTrans_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `eqCongSucc` instance (rule
+`eqCongSucc`). -/
+theorem axiomC_eqCongSucc_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `eqCongPlus` instance (rule
+`eqCongPlus`). -/
+theorem axiomC_eqCongPlus_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `eqCongTimes` instance (rule
+`eqCongTimes`). -/
+theorem axiomC_eqCongTimes_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `zeroPlus` instance (rule `zeroPlus`). -/
+theorem axiomC_zeroPlus_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `succPlus` instance (rule `succPlus`). -/
+theorem axiomC_succPlus_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `zeroTimes` instance (rule
+`zeroTimes`). -/
+theorem axiomC_zeroTimes_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `succTimes` instance (rule
+`succTimes`). -/
+theorem axiomC_succTimes_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
 /-! ## The main induction and the capstone -/
 
 /-- **The invariant, threaded through the derivation**: for every
@@ -705,6 +756,36 @@ theorem extract_tracked {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
   | succInj s t =>
     intro R hR E hE
     exact axiomC_succInj_tracked
+  | eqRefl t =>
+    intro R hR E hE
+    exact axiomC_eqRefl_tracked
+  | eqSymm s t =>
+    intro R hR E hE
+    exact axiomC_eqSymm_tracked
+  | eqTrans s t u =>
+    intro R hR E hE
+    exact axiomC_eqTrans_tracked
+  | eqCongSucc s t =>
+    intro R hR E hE
+    exact axiomC_eqCongSucc_tracked
+  | eqCongPlus s₁ t₁ s₂ t₂ =>
+    intro R hR E hE
+    exact axiomC_eqCongPlus_tracked
+  | eqCongTimes s₁ t₁ s₂ t₂ =>
+    intro R hR E hE
+    exact axiomC_eqCongTimes_tracked
+  | zeroPlus t =>
+    intro R hR E hE
+    exact axiomC_zeroPlus_tracked
+  | succPlus s t =>
+    intro R hR E hE
+    exact axiomC_succPlus_tracked
+  | zeroTimes t =>
+    intro R hR E hE
+    exact axiomC_zeroTimes_tracked
+  | succTimes s t =>
+    intro R hR E hE
+    exact axiomC_succTimes_tracked
 
 /-- **Generic continuity of extraction** (the theorem closing the gap
 flagged in STATUS.md): the extracted type-2 realizer of *every* closed
