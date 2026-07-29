@@ -1,11 +1,14 @@
 /-
 # The collapse payoff: two derivations, one program
 
-`RealizesCtQ` sends a closed derivation whose extracted type-2 realizer
-is continuous to its class in `CtQ 2` — the extensional collapse of the
+`RealizesCtQ` sends a closed derivation to the class of its extracted
+type-2 realizer in `CtQ 2` — the extensional collapse of the
 Kleene–Kreisel development, reached through the capstone equivalence
 `ctQTwoEquiv`.  "The program" a derivation denotes is this class, not
-the raw extracted term.
+the raw extracted term.  It applies to **every** closed derivation
+uniformly: the continuity obligation is discharged once and for all by
+`extract_continuous` (`GenericContinuity.lean`), not by a
+per-derivation certificate.
 
 The named demo: two *different* derivations of commutativity of `∧`
 under `→`,
@@ -16,14 +19,16 @@ under `→`,
 
 whose extracted terms differ syntactically but compute the same
 functional (`demo_extract_eq`, by the pairing retraction), hence have
-the same class (`collapse_demo`).  The continuity certificate for the
-shared extracted functional is proved concretely
-(`demo_extract_continuous`) from its computed value
-(`demo_extract_apply`): it reads its argument at position `0` and at one
-further position determined by the answer.
+the same class (`collapse_demo`).  The demo's continuity certificates
+(`demo_extract_continuous`, `demo_extract_continuous₂`) are one-line
+corollaries of the general theorem; the concrete value computation
+(`demo_extract_apply`) is kept as the worked illustration of *why* the
+functional is continuous: it reads its argument at position `0` and at
+one further position determined by the answer.
 -/
 import ContinuousFunctionals.CtQ
 import Realizability.Soundness
+import Realizability.GenericContinuity
 
 namespace Realizability
 
@@ -31,10 +36,11 @@ open ContinuousFunctionals
 
 /-- **The `CtQ`-valued meaning of a closed derivation**: the class of
 its extracted type-2 realizer in the extensional collapse, through the
-capstone equivalence of the Kleene–Kreisel development. -/
+capstone equivalence of the Kleene–Kreisel development.  Total on
+closed derivations — continuity is supplied by `extract_continuous`. -/
 noncomputable def RealizesCtQ {φ : Formula} (D : Deriv [] φ)
-    (ρ : ℕ → ℕ) (h : Continuous2 (extract D ρ [] 1)) : CtQ 2 :=
-  ctQTwoEquiv.symm ⟨extract D ρ [] 1, h⟩
+    (ρ : ℕ → ℕ) : CtQ 2 :=
+  ctQTwoEquiv.symm ⟨extract D ρ [] 1, extract_continuous D ρ⟩
 
 /-- The demo's atomic formulas (any atoms would do). -/
 def demoA : Formula := .eq (.var 0) (.var 1)
@@ -89,33 +95,26 @@ theorem demo_extract_apply (ρ : ℕ → ℕ) (z : PureType 1) :
   rw [famOf_self]
   rfl
 
-/-- **Continuity of the shared extracted functional**, concretely: its
-value at `α` depends only on `α 0` and one further position computed
-from it. -/
+/-- **Continuity of the shared extracted functional** — a one-line
+corollary of the general theorem `extract_continuous`.  (The concrete
+modulus is still visible in `demo_extract_apply`: the value at `α`
+depends only on `α 0` and one further position computed from it.) -/
 theorem demo_extract_continuous (ρ : ℕ → ℕ) :
-    Continuous2 (extract demoDeriv₁ ρ [] 1) := by
-  intro α
-  refine ⟨max 1 ((α (0 : ℕ)).unpair.2 + 1), fun β hβ => ?_⟩
-  have h0 : α (0 : ℕ) = β (0 : ℕ) := hβ 0 (by
-    exact lt_of_lt_of_le Nat.one_pos (le_max_left _ _))
-  have hw : α ((α (0 : ℕ)).unpair.2) = β ((α (0 : ℕ)).unpair.2) :=
-    hβ _ (lt_of_lt_of_le (Nat.lt_succ_self _) (le_max_right _ _))
-  rw [demo_extract_apply, demo_extract_apply, ← h0, ← hw]
+    Continuous2 (extract demoDeriv₁ ρ [] 1) :=
+  extract_continuous demoDeriv₁ ρ
 
-/-- Continuity of the detour's extract, by the term equality. -/
+/-- Continuity of the detour's extract — the same one-line corollary
+(no appeal to the term equality `demo_extract_eq` needed). -/
 theorem demo_extract_continuous₂ (ρ : ℕ → ℕ) :
-    Continuous2 (extract demoDeriv₂ ρ [] 1) := by
-  rw [show extract demoDeriv₂ ρ [] = extract demoDeriv₁ ρ [] from
-    demo_extract_eq ρ []]
-  exact demo_extract_continuous ρ
+    Continuous2 (extract demoDeriv₂ ρ [] 1) :=
+  extract_continuous demoDeriv₂ ρ
 
 /-- **The collapse demo** (the brief's named instance): the two
 derivations denote the *same element of `CtQ 2`* — quotient equality of
 the extensional collapse, applied directly to the two extracted
 programs. -/
 theorem collapse_demo (ρ : ℕ → ℕ) :
-    RealizesCtQ demoDeriv₂ ρ (demo_extract_continuous₂ ρ)
-      = RealizesCtQ demoDeriv₁ ρ (demo_extract_continuous ρ) := by
+    RealizesCtQ demoDeriv₂ ρ = RealizesCtQ demoDeriv₁ ρ := by
   unfold RealizesCtQ
   apply congrArg ctQTwoEquiv.symm
   apply Subtype.ext

@@ -9,4 +9,5 @@ import Realizability.ModifiedRealizes
 import Realizability.Transport
 import Realizability.Extraction
 import Realizability.Soundness
+import Realizability.GenericContinuity
 import Realizability.CollapseDemo
