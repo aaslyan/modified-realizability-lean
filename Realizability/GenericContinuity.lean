@@ -425,6 +425,13 @@ theorem termEval_continuous {R : (ℕ → ℕ) → ℕ → ℕ} (hR : TrackedEnv
       (termEval_continuous hR s) (termEval_continuous hR t)
   | .times s t => continuous2_comp₂ (· * ·)
       (termEval_continuous hR s) (termEval_continuous hR t)
+  | .pred t => continuous2_comp₁ (· - 1) (termEval_continuous hR t)
+  | .exp s t => continuous2_comp₂ (· ^ ·)
+      (termEval_continuous hR s) (termEval_continuous hR t)
+  | .bump s t => continuous2_comp₂ bumpN
+      (termEval_continuous hR s) (termEval_continuous hR t)
+  | .good s t => continuous2_comp₂ goodN
+      (termEval_continuous hR s) (termEval_continuous hR t)
 
 /-- Updating a tracked environment at a fixed variable with a
 continuously computed value stays tracked (rule `allI`'s environment
@@ -672,6 +679,58 @@ theorem axiomC_zeroTimes_tracked : TrackedFam fun _ => axiomC :=
 theorem axiomC_succTimes_tracked : TrackedFam fun _ => axiomC :=
   defaultFam_tracked
 
+/-- `axiomC` preserves tracking, `predZero` instance (rule `predZero`). -/
+theorem axiomC_predZero_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `predSucc` instance (rule `predSucc`). -/
+theorem axiomC_predSucc_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `expZero` instance (rule `expZero`). -/
+theorem axiomC_expZero_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `expSucc` instance (rule `expSucc`). -/
+theorem axiomC_expSucc_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `bumpZero` instance (rule `bumpZero`). -/
+theorem axiomC_bumpZero_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `bumpNum` instance (rule `bumpNum`). -/
+theorem axiomC_bumpNum_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `goodZero` instance (rule `goodZero`). -/
+theorem axiomC_goodZero_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `goodSucc` instance (rule `goodSucc`). -/
+theorem axiomC_goodSucc_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `eqCongPred` instance (rule
+`eqCongPred`). -/
+theorem axiomC_eqCongPred_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `eqCongExp` instance (rule
+`eqCongExp`). -/
+theorem axiomC_eqCongExp_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `eqCongBump` instance (rule
+`eqCongBump`). -/
+theorem axiomC_eqCongBump_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `eqCongGood` instance (rule
+`eqCongGood`). -/
+theorem axiomC_eqCongGood_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
 /-! ## The main induction and the capstone -/
 
 /-- **The invariant, threaded through the derivation**: for every
@@ -786,6 +845,42 @@ theorem extract_tracked {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
   | succTimes s t =>
     intro R hR E hE
     exact axiomC_succTimes_tracked
+  | predZero =>
+    intro R hR E hE
+    exact axiomC_predZero_tracked
+  | predSucc s =>
+    intro R hR E hE
+    exact axiomC_predSucc_tracked
+  | expZero s =>
+    intro R hR E hE
+    exact axiomC_expZero_tracked
+  | expSucc s t =>
+    intro R hR E hE
+    exact axiomC_expSucc_tracked
+  | bumpZero s =>
+    intro R hR E hE
+    exact axiomC_bumpZero_tracked
+  | bumpNum k n =>
+    intro R hR E hE
+    exact axiomC_bumpNum_tracked
+  | goodZero s =>
+    intro R hR E hE
+    exact axiomC_goodZero_tracked
+  | goodSucc s t =>
+    intro R hR E hE
+    exact axiomC_goodSucc_tracked
+  | eqCongPred s t =>
+    intro R hR E hE
+    exact axiomC_eqCongPred_tracked
+  | eqCongExp s₁ t₁ s₂ t₂ =>
+    intro R hR E hE
+    exact axiomC_eqCongExp_tracked
+  | eqCongBump s₁ t₁ s₂ t₂ =>
+    intro R hR E hE
+    exact axiomC_eqCongBump_tracked
+  | eqCongGood s₁ t₁ s₂ t₂ =>
+    intro R hR E hE
+    exact axiomC_eqCongGood_tracked
 
 /-- **Generic continuity of extraction** (the theorem closing the gap
 flagged in STATUS.md): the extracted type-2 realizer of *every* closed

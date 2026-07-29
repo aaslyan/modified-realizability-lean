@@ -22,6 +22,14 @@ and the **recursion equations defining `+` and `×`** — recursing on the
 second-argument equations (`x + 0 = x`, …) are genuine theorems proved
 by `ind` in `Arithmetic.lean`.
 
+Since the Phase-B extension the signature further includes `pred`,
+`exp`, hereditary base change `bump`, and the Goodstein sequence
+`good`, with their recursion-equation schemas, the numeral graph of
+`bump` (see the rule comment and STATUS.md for why `bump` alone enters
+by its graph), and the matching congruence schemas.  The hereditary
+base-`k` *representation* itself lives in `Goodstein.lean` as a term of
+this very syntax in one distinguished base variable.
+
 Natural deduction is an inductive family `Deriv Γ φ` in `Type`, so the
 extraction function of `Extraction.lean` can recurse on it.  Hypotheses
 are managed structurally (`ax` reads the head of the context, `wk`
@@ -37,25 +45,96 @@ import Mathlib.Logic.Function.Basic
 
 namespace Realizability
 
-/-- Terms: variables (named by numbers), zero, successor, and — since
-the Phase-A extension — sum and product. -/
+/-! ## The value-level Goodstein functions (Phase B)
+
+The semantics of the Phase-B function symbols `bump` and `good`, as
+plain `ℕ`-functions defined *before* `Term` so `Term.eval` can consume
+them.  All recursions are **fuel-structural** (fuel `= n` is adequate,
+`Goodstein.lean` proves it) rather than well-founded: `WellFounded.fix`
+does not reduce in the kernel, and the certifying derivations of
+`Goodstein.lean` need concrete Goodstein values to compute by
+`rfl`/`decide`.  For the same reason the base-`b` logarithm is a local
+fueled definition rather than Mathlib's well-founded `Nat.log`. -/
+
+/-- Fueled base-`b` logarithm: the number of times `b` divides into `n`
+(zero when `b ≤ 1` or `n < b`).  Structural in the fuel. -/
+def hlogAux (b : ℕ) : ℕ → ℕ → ℕ
+  | 0, _ => 0
+  | fuel + 1, n => if 1 < b ∧ b ≤ n then hlogAux b fuel (n / b) + 1 else 0
+
+/-- The base-`b` logarithm, self-fueled: `hlog b n` is the largest `e`
+with `b ^ e ≤ n` (for `1 < b ≤ n`; zero in the degenerate cases) —
+`Goodstein.lean` proves the two facts used (`hlog_lt`,
+`pow_hlog_le`). -/
+def hlog (b n : ℕ) : ℕ :=
+  hlogAux b n n
+
+/-- **Hereditary base change, value level** (fueled): `bumpNAux k fuel n`
+peels the leading base-`k` digit `n = k^e·c + r` (`e = hlog k n`,
+`c = n / k^e`, `r = n % k^e`) and rewrites it at base `k + 1` with the
+exponent *itself* hereditarily rewritten:
+`(k+1)^(bump e)·c + bump r`.  Corresponds to
+`WilliamAngus/Goodstein`'s `(HBase.f k · (k+1)).eval ∘ HBase.ofNat k`
+(the structural base-replacement `f` on the `ofNat` representation);
+checked concretely: `bumpN 2 4 = 3 ^ 3 ^ 3 ^ 0 = 27`, both here and
+there (`4 = 2^2^2^0`).  Degenerate bases are the identity
+(`bumpN 0 n = bumpN 1 n = n`), so no `2 ≤ k` side condition is ever
+needed for soundness. -/
+def bumpNAux (k : ℕ) : ℕ → ℕ → ℕ
+  | _, 0 => 0
+  | 0, _ + 1 => 0
+  | fuel + 1, n + 1 =>
+      (k + 1) ^ bumpNAux k fuel (hlog k (n + 1)) * ((n + 1) / k ^ hlog k (n + 1))
+        + bumpNAux k fuel ((n + 1) % k ^ hlog k (n + 1))
+
+/-- Hereditary base change at the adequate fuel (`Goodstein.lean`,
+`hrep_eval_bump`, connects it to the syntactic representation read at
+base `k + 1`). -/
+def bumpN (k n : ℕ) : ℕ :=
+  bumpNAux k n n
+
+/-- **The Goodstein sequence, value level**: `goodN m 0 = m`, and one
+step bumps the base `s + 2` hereditarily and subtracts one.  This is
+`WilliamAngus/Goodstein`'s `goodsteinSequence start h n i` at
+`start = 2`: their step `i → i + 1` applies the base-change `G` at base
+`start + i = 2 + i`, exactly this `bumpN (s + 2)` at `i = s` (indexing
+convention checked against their `g`/`G`; values checked:
+`goodN 4 = 4, 26, 41, 60, …`, `goodN 3 = 3, 3, 3, 2, 1, 0, 0, …`). -/
+def goodN (m : ℕ) : ℕ → ℕ
+  | 0 => m
+  | s + 1 => bumpN (s + 2) (goodN m s) - 1
+
+/-- Terms: variables (named by numbers), zero, successor; since the
+Phase-A extension, sum and product; since the Phase-B extension,
+predecessor, exponentiation, hereditary base change (`bump`), and the
+Goodstein sequence (`good`). -/
 inductive Term : Type where
   | var : ℕ → Term
   | zero : Term
   | succ : Term → Term
   | plus : Term → Term → Term
   | times : Term → Term → Term
+  | pred : Term → Term
+  | exp : Term → Term → Term
+  | bump : Term → Term → Term
+  | good : Term → Term → Term
 deriving DecidableEq, Repr
 
 namespace Term
 
-/-- Evaluation in an environment. -/
+/-- Evaluation in an environment.  The Phase-B symbols evaluate by the
+value-level functions above (`pred` is truncated predecessor, `exp` is
+`^`, `bump` is `bumpN`, `good` is `goodN`). -/
 def eval (ρ : ℕ → ℕ) : Term → ℕ
   | var i => ρ i
   | zero => 0
   | succ t => t.eval ρ + 1
   | plus s t => s.eval ρ + t.eval ρ
   | times s t => s.eval ρ * t.eval ρ
+  | pred t => t.eval ρ - 1
+  | exp s t => s.eval ρ ^ t.eval ρ
+  | bump s t => bumpN (s.eval ρ) (t.eval ρ)
+  | good s t => goodN (s.eval ρ) (t.eval ρ)
 
 /-- The variables occurring in a term. -/
 def vars : Term → List ℕ
@@ -64,6 +143,10 @@ def vars : Term → List ℕ
   | succ t => t.vars
   | plus s t => s.vars ++ t.vars
   | times s t => s.vars ++ t.vars
+  | pred t => t.vars
+  | exp s t => s.vars ++ t.vars
+  | bump s t => s.vars ++ t.vars
+  | good s t => s.vars ++ t.vars
 
 /-- Substitution of a term for a variable. -/
 def subst (x : ℕ) (u : Term) : Term → Term
@@ -72,6 +155,10 @@ def subst (x : ℕ) (u : Term) : Term → Term
   | succ t => succ (subst x u t)
   | plus s t => plus (subst x u s) (subst x u t)
   | times s t => times (subst x u s) (subst x u t)
+  | pred t => pred (subst x u t)
+  | exp s t => exp (subst x u s) (subst x u t)
+  | bump s t => bump (subst x u s) (subst x u t)
+  | good s t => good (subst x u s) (subst x u t)
 
 /-- Evaluation after substitution is evaluation in the updated
 environment. -/
@@ -89,6 +176,10 @@ theorem eval_subst (ρ : ℕ → ℕ) (x : ℕ) (u : Term) :
   | succ t ih => simp [subst, eval, ih]
   | plus s t ihs iht => simp [subst, eval, ihs, iht]
   | times s t ihs iht => simp [subst, eval, ihs, iht]
+  | pred t ih => simp [subst, eval, ih]
+  | exp s t ihs iht => simp [subst, eval, ihs, iht]
+  | bump s t ihs iht => simp [subst, eval, ihs, iht]
+  | good s t ihs iht => simp [subst, eval, ihs, iht]
 
 /-- Evaluation only depends on the values of the occurring variables. -/
 theorem eval_congr {ρ ρ' : ℕ → ℕ} :
@@ -108,8 +199,34 @@ theorem eval_congr {ρ ρ' : ℕ → ℕ} :
     simp only [eval]
     rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
       iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+  | pred t ih => intro h; simp only [eval]; rw [ih h]
+  | exp s t ihs iht =>
+    intro h
+    simp only [eval]
+    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+  | bump s t ihs iht =>
+    intro h
+    simp only [eval]
+    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+  | good s t ihs iht =>
+    intro h
+    simp only [eval]
+    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
 
 end Term
+
+/-- The numeral for `n`: an `n`-fold `succ` of `zero`. -/
+def numeral : ℕ → Term
+  | 0 => .zero
+  | n + 1 => .succ (numeral n)
+
+/-- Numerals evaluate to their number, in every environment. -/
+@[simp] theorem numeral_eval (ρ : ℕ → ℕ) : ∀ n : ℕ, (numeral n).eval ρ = n
+  | 0 => rfl
+  | n + 1 => by simp only [numeral, Term.eval, numeral_eval ρ n]
 
 /-- Formulas of the fragment. -/
 inductive Formula : Type where
@@ -227,5 +344,46 @@ inductive Deriv : List Formula → Formula → Type where
       Deriv Γ (eq (.times .zero t) .zero)
   | succTimes {Γ : List Formula} (s t : Term) :
       Deriv Γ (eq (.times (.succ s) t) (.plus (.times s t) t))
+  -- Phase B: recursion equations for predecessor and exponentiation
+  -- (honest first-order schemas, like the Phase-A group) …
+  | predZero {Γ : List Formula} :
+      Deriv Γ (eq (.pred .zero) .zero)
+  | predSucc {Γ : List Formula} (s : Term) :
+      Deriv Γ (eq (.pred (.succ s)) s)
+  | expZero {Γ : List Formula} (s : Term) :
+      Deriv Γ (eq (.exp s .zero) (.succ .zero))
+  | expSucc {Γ : List Formula} (s t : Term) :
+      Deriv Γ (eq (.exp s (.succ t)) (.times (.exp s t) s))
+  -- … the two axioms for hereditary base change: absorption at zero
+  -- (a term schema) and the numeral graph (an `ℕ`-parameterized schema —
+  -- `bump`'s course-of-values recursion through the hereditary exponent
+  -- structure is not a first-order equation schema; the semantic
+  -- characterization "`bump` is the representation read at the next
+  -- base" is *derived*, per numeral instance, in `Goodstein.lean`) …
+  | bumpZero {Γ : List Formula} (s : Term) :
+      Deriv Γ (eq (.bump s .zero) .zero)
+  | bumpNum {Γ : List Formula} (k n : ℕ) :
+      Deriv Γ (eq (.bump (numeral k) (numeral n)) (numeral (bumpN k n)))
+  -- … the Goodstein sequence's own defining recursion (genuine
+  -- first-order schemas again: one step bumps the base `t + 2` and
+  -- takes the predecessor) …
+  | goodZero {Γ : List Formula} (s : Term) :
+      Deriv Γ (eq (.good s .zero) s)
+  | goodSucc {Γ : List Formula} (s t : Term) :
+      Deriv Γ (eq (.good s (.succ t))
+        (.pred (.bump (.succ (.succ t)) (.good s t))))
+  -- … and the congruence schemas completing the equational-logic kit
+  -- for the extended signature.
+  | eqCongPred {Γ : List Formula} (s t : Term) :
+      Deriv Γ ((eq s t).imp (eq (.pred s) (.pred t)))
+  | eqCongExp {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
+      Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
+        (eq (.exp s₁ s₂) (.exp t₁ t₂))))
+  | eqCongBump {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
+      Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
+        (eq (.bump s₁ s₂) (.bump t₁ t₂))))
+  | eqCongGood {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
+      Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
+        (eq (.good s₁ s₂) (.good t₁ t₂))))
 
 end Realizability

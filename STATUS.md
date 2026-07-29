@@ -1,4 +1,4 @@
-# Status: milestone COMPLETE, generic continuity COMPLETE, induction (Phase 2) COMPLETE, arithmetic (Phase A) COMPLETE
+# Status: milestone COMPLETE, generic continuity COMPLETE, induction (Phase 2) COMPLETE, arithmetic (Phase A) COMPLETE, hereditary base-k / Goodstein sequence (Phase B) COMPLETE
 
 `lake build` succeeds, zero `sorry`/`admit`.  `#print axioms` on the
 soundness theorem (now covering the `ind` rule and the Phase-A rules),
@@ -30,6 +30,16 @@ in `Arithmetic.lean` itself, so this is checked at every build):
 'Realizability.times_succ_extract_continuous'  … [propext, Quot.sound]
 ```
 
+and on the Phase-B certification theorems (`#print axioms` in
+`Goodstein.lean`, likewise checked at every build):
+
+```
+'Realizability.hrep_self_realized'    … [propext, Classical.choice, Quot.sound]
+'Realizability.good_compute_realized' … [propext, Classical.choice, Quot.sound]
+'Realizability.hrep_self_extract_continuous'    … [propext, Quot.sound]
+'Realizability.good_compute_extract_continuous' … [propext, Quot.sound]
+```
+
 (likewise `MR_liftR_dropR`, `FR_famOf`, `indC_tracked` —
 `[propext, Quot.sound]` — `demo_extract_eq`, and
 `demo_extract_continuous`, the latter a one-line corollary of
@@ -37,17 +47,25 @@ in `Arithmetic.lean` itself, so this is checked at every build):
 
 ## What is delivered
 
-- `Syntax.lean` — terms (since Phase A over the signature
-  `{0, succ, +, ×}`), the fragment's formulas, capture-safe
-  substitution, and the 27-rule natural-deduction family — since the
+- `Syntax.lean` — terms (since Phase A over `{0, succ, +, ×}`, since
+  Phase B additionally `pred`/`exp`/`bump`/`good`, with the
+  fuel-structural value-level functions `hlog`/`bumpN`/`goodN` and the
+  `numeral` embedding), the fragment's formulas, capture-safe
+  substitution, and the 39-rule natural-deduction family — since the
   Phase-2 extension including the arithmetic induction rule `ind`
   (from `φ(0)` and `∀x (φ(x) → φ(succ x))`, conclude `∀x φ(x)`; side
   condition: no variable capture for the substituted `succ x`, same
-  shape as `∀`-elim's), and since the Phase-A extension the
+  shape as `∀`-elim's); since the Phase-A extension the
   equational-logic kit (`eqRefl`, and `eqSymm`/`eqTrans`/`eqCongSucc`/
   `eqCongPlus`/`eqCongTimes` as implication schemas, `succInj`-style)
   plus the four first-argument recursion equations defining `+`/`×`
-  (`zeroPlus`, `succPlus`, `zeroTimes`, `succTimes`).
+  (`zeroPlus`, `succPlus`, `zeroTimes`, `succTimes`); and since the
+  Phase-B extension the recursion schemas for `pred`/`exp`/`good`
+  (`predZero`, `predSucc`, `expZero`, `expSucc`, `goodZero`,
+  `goodSucc`), the two `bump` axioms (`bumpZero`, and the numeral
+  graph `bumpNum` — see the Phase-B section), and the four matching
+  congruence schemas (`eqCongPred`, `eqCongExp`, `eqCongBump`,
+  `eqCongGood`).
 - `ModifiedRealizes.lean` — the pure-type devices (`up`/`down`,
   `pairPT`/`fstPT`/`sndPT`, `app₁`/`abs₁` with beta) and the
   **flexible-ambient** modified-realizability relation `MR ρ φ n x`
@@ -78,6 +96,14 @@ in `Arithmetic.lean` itself, so this is checked at every build):
 - `Arithmetic.lean` (Phase A) — the four defining equations of `+`/`×`
   as closed `ind` theorems with extracted, certified realizers; see the
   Phase-A section below.
+- `Goodstein.lean` (Phase B) — hereditary base-`k` representation **as
+  a term of the fragment's own syntax in one distinguished base
+  variable**, the bump-and-decrement step, and the Goodstein sequence,
+  with fragment-internal certification (`hrepSelfDeriv`,
+  `bumpHrepDeriv`, `goodComputeDeriv`) and kernel-verified value
+  cross-checks against `WilliamAngus/Goodstein`; see the Phase-B
+  section below.  Goodstein's theorem itself is **not** proved and not
+  claimed — Phases C/D.
 - `CollapseDemo.lean` — `RealizesCtQ` (the class of a closed
   derivation's extracted type-2 realizer in `CtQ 2`, via the parent
   project's capstone equivalence `ctQTwoEquiv`) — now **total on closed
@@ -129,7 +155,12 @@ in `Arithmetic.lean` itself, so this is checked at every build):
     atomic conclusions carry no computational content, so each
     soundness case is just the equation's truth from its premises'
     truths (`derivBound`: 0 for the bare-equation schemas, 1/2 for the
-    single/nested implication schemas).
+    single/nested implication schemas);
+28. –39. `axiomC` — contentless realizers for the twelve Phase-B
+    schemas (`predZero`, `predSucc`, `expZero`, `expSucc`, `bumpZero`,
+    `bumpNum`, `goodZero`, `goodSucc`, `eqCongPred`, `eqCongExp`,
+    `eqCongBump`, `eqCongGood`), same discipline and bounds as the
+    Phase-A group.
 
 ## The per-combinator continuity preservation lemmas (all in `GenericContinuity.lean`)
 
@@ -174,7 +205,13 @@ combinator sends tracked inputs to tracked outputs:
     composition of two continuous reads, `continuous2_comp₂`, already
     in the closure kit) — the `allE` case reads term values off tracked
     environments, so evaluation over the extended signature had to stay
-    continuous.  No case of `extract_tracked` is left silent.
+    continuous.  No case of `extract_tracked` is left silent;
+28. –39. `axiomC_predZero_tracked` … `axiomC_eqCongGood_tracked` — one
+    per Phase-B schema, all the tracked junk family; and
+    `termEval_continuous` gains the `pred`/`exp`/`bump`/`good` cases —
+    `bump`/`good` are *arbitrary* functions of two continuously
+    computed values, so `continuous2_comp₂` again covers them with no
+    new closure fact.  No case of `extract_tracked` is left silent.
 
 The capstone `extract_continuous` is the induction on `Deriv`
 (`extract_tracked`) invoking one preservation lemma per case — the same
@@ -382,3 +419,123 @@ build (outputs quoted at the top of this file).
 **Out of scope, per the brief**: hereditary base-`k` notation and
 anything Goodstein-specific (Phase B); `TI(ε₀)` (Phase C); any
 strength claim beyond the two operations and their four equations.
+
+## Phase B (hereditary base-k and the Goodstein sequence): COMPLETE
+
+**Scope, stated plainly per the brief**: this phase makes Goodstein's
+theorem *expressible* and certifies the definitions; it does **not**
+prove Goodstein's theorem, does not touch `TI(ε₀)` or ordinal
+notations, and no such claim is made anywhere.  Those are Phases C/D.
+
+### The encoding decision (the load-bearing choice)
+
+**A hereditary base-`k` representation is a term of the fragment's own
+syntax, in one distinguished free variable — variable `0`, "the
+base".**  `hrep k n` (`Goodstein.lean`) is the term
+`x^(hrep k e)·c + hrep k r` over `{0, succ, +, ×, exp}`, exponents
+hereditarily in the same shape.  Justification:
+
+- *Bumping the base is not an operation at all* under this encoding —
+  it is evaluating the **same term** at base `k + 1`
+  (`hrep_eval_bump`), which is the mathematical essence of a Goodstein
+  step.  The reference repository's base-change `f` does exactly this
+  (it maps `HBase base h → HBase (base+1) _` leaving the tree
+  untouched); our encoding makes that structural fact definitional.
+- *Existence is a derivable equation, not an axiom*: the certifying
+  evaluator `hrepSubstDeriv` proves, inside the fragment,
+  `(hrep k n)[base := b̂] = (value)̂` for every base numeral, from the
+  recursion axioms of `+`/`×`/`exp` alone; `hrepSelfDeriv` is its
+  existence instance `(hrep k n)[base := k̂] = n̂`.  No axiom about
+  `hrep` exists.
+- The alternative encodings the brief anticipated (Gödel-coded digit
+  sequences via pairing arithmetic, or `pairPT`-level realizer
+  structure) would put the representation *outside* the term language
+  or demand a coding apparatus (`div`/`mod`/β-function) far heavier
+  than Phase D needs.  The fragment's own terms already *are* finite
+  trees over exactly the right signature.
+
+The grammar of representations is `HTerm` (`Prop`-valued: base
+variable, `zero`, `succ`, `+`, `×`, `exp` — nothing else), with
+`hrep_hterm` and `HTerm.vars_eq_zero` the well-formedness facts.
+
+### The `bump` compromise, flagged
+
+`bump`'s recursion is course-of-values *through the hereditary
+exponent structure* — not a first-order equation schema over open
+terms.  It therefore enters the fragment by its **numeral graph**
+(`bumpNum : ⊢ bump k̂ n̂ = (bumpN k n)̂`) plus zero-absorption
+(`bumpZero`, a genuine term schema).  The semantic characterization
+"`bump` is the representation read at the next base" is **derived**,
+per numeral instance, as `bumpHrepDeriv` — proved from `bumpNum` and
+the certifying evaluator, not axiomatized.  Open-term decomposition
+axioms for `bump` (for `ind` proofs *about* `bump` in Phase D, if the
+descent argument needs them fragment-side) are deliberately deferred;
+what Phase D certainly needs value-side is already here.  `pred`,
+`exp`, and `good` need no such compromise: their defining equations
+are honest first-order schemas (`good`'s recursion `goodZero`/
+`goodSucc` is exactly the sequence's definition, and the fragment
+*computes* the sequence from it: `goodComputeDeriv`, e.g. the closed
+theorem `⊢ good 4̂ 1̂ = 26̂`).
+
+### Uniqueness: deferred, and why that is safe
+
+Existence is proved (meta: `hrep_eval_self`; fragment:
+`hrepSelfDeriv`, both unconditional in `k` — degenerate bases `k ≤ 1`
+yield the one-digit representation and the identity bump, so no
+`k ≥ 2` side condition contaminates the statements).  Uniqueness —
+canonicity of digit bounds (`c < k`) and exponent ordering, the
+reference's `NFBelow`/`NF` layer — is **deferred**: every object Phase
+D consumes factors through the *deterministic function* `hrep`; no
+statement in this development quantifies over "some representation of
+`n`", so canonicity is never load-bearing here.  It becomes Phase-D
+work exactly if the ordinal assignment is defined on arbitrary
+`HTerm`s rather than on `hrep`'s image.
+
+### Implementation note: fuel, not well-founded recursion
+
+`hlog`/`bumpN`/`hrep` recurse structurally on fuel `= n` (adequacy:
+`hlog_lt`, `pow_hlog_le`) instead of well-founded recursion or
+Mathlib's `Nat.log`, because `WellFounded.fix` does not reduce in the
+kernel: the concrete cross-checks (`goodN_four` etc.) are `rfl`, and
+`goodFourOneDeriv`'s type `numeral (goodN 4 1) = numeral 26` checks by
+kernel computation.  Division, modulus and powers are
+kernel-accelerated, so only the logarithm needed the treatment.
+
+### Cross-check against `WilliamAngus/Goodstein` (reference only)
+
+Checked against `Goodstein/HBase.lean` and `Goodstein/Goodstein.lean`
+of that repository (classical Mathlib development; no code imported —
+their machinery proves facts about `ℕ`/ordinals directly, ours must
+live inside the derivation system):
+
+- `hrep` ↔ `HBase.ofNat`; term shape `x^e·c + r` ↔ constructor
+  `hadd i aᵢ rest ↦ base^(eval i)·aᵢ + eval rest`; checked at
+  `n = 4, k = 2`: both produce `2^(2^(2^0))` (theirs as a tree, ours
+  as the term with base variable), value `4`.
+- `bumpN` ↔ `eval ∘ f` (their base replacement): `bumpN 2 4 = 27 =
+  3^(3^(3^0))`, kernel-verified (`bumpN_two_four`).
+- `Term.gstep`/`pred (bump …)` ↔ their `G = (f …).pred`; value at
+  `(2, 4)` is `26` both ways.
+- `goodN`/`good` ↔ `goodsteinSequence start h n i` at `start = 2`:
+  their step `i → i+1` applies `G` at base `start + i = 2 + i`; ours
+  bumps base `s + 2` at step `s → s+1` — the same convention, no
+  off-by-one (the brief's explicit worry).  Values kernel-verified:
+  `goodN 4 = 4, 26, 41, 60, …` (`goodN_four`) and
+  `goodN 3 = 3, 3, 3, 2, 1, 0, 0` (`goodN_three`), the classical
+  sequences.
+- Their `HBase.pred` ↔ our `pred` symbol (truncated predecessor);
+  their `NFBelow`/`NF` ↔ our deferred canonicity layer (above).
+
+### File placement
+
+`Syntax.lean` holds only what must live with `Term`/`eval`/`Deriv`:
+the value-level functions (`hlog`, `bumpN`, `goodN`), `numeral`, the
+four constructors, and the twelve rules.  Everything else — `hrep`,
+the grammar, the meta theorems, the derivation-formers, the certifying
+evaluator, the certification block — is the new `Goodstein.lean`
+(importing `Arithmetic.lean`).  Machinery cases added with no silent
+gaps: `extract`/`derivBound`/`soundness`/`extract_tracked` (twelve
+each) and `termEval_continuous` (`pred`/`exp`/`bump`/`good` via the
+existing `continuous2_comp₂`); `extract_continuous` covers every new
+rule, and the four `#print axioms` checks in `Goodstein.lean` run at
+every build (outputs quoted at the top of this file).

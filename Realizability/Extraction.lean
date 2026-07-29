@@ -192,6 +192,18 @@ noncomputable def extract : {Γ : List Formula} → {φ : Formula} →
   | _, _, .succPlus _ _, _, _ => axiomC
   | _, _, .zeroTimes _, _, _ => axiomC
   | _, _, .succTimes _ _, _, _ => axiomC
+  | _, _, .predZero, _, _ => axiomC
+  | _, _, .predSucc _, _, _ => axiomC
+  | _, _, .expZero _, _, _ => axiomC
+  | _, _, .expSucc _ _, _, _ => axiomC
+  | _, _, .bumpZero _, _, _ => axiomC
+  | _, _, .bumpNum _ _, _, _ => axiomC
+  | _, _, .goodZero _, _, _ => axiomC
+  | _, _, .goodSucc _ _, _, _ => axiomC
+  | _, _, .eqCongPred _ _, _, _ => axiomC
+  | _, _, .eqCongExp _ _ _ _, _, _ => axiomC
+  | _, _, .eqCongBump _ _ _ _, _, _ => axiomC
+  | _, _, .eqCongGood _ _ _ _, _, _ => axiomC
 
 /-- The ambient level above which a derivation's extracted family
 realizes its conclusion. -/
@@ -227,5 +239,17 @@ def derivBound : {Γ : List Formula} → {φ : Formula} → Deriv Γ φ → ℕ
   | _, _, .succPlus _ _ => 0
   | _, _, .zeroTimes _ => 0
   | _, _, .succTimes _ _ => 0
+  | _, _, .predZero => 0
+  | _, _, .predSucc _ => 0
+  | _, _, .expZero _ => 0
+  | _, _, .expSucc _ _ => 0
+  | _, _, .bumpZero _ => 0
+  | _, _, .bumpNum _ _ => 0
+  | _, _, .goodZero _ => 0
+  | _, _, .goodSucc _ _ => 0
+  | _, _, .eqCongPred _ _ => 1
+  | _, _, .eqCongExp _ _ _ _ => 2
+  | _, _, .eqCongBump _ _ _ _ => 2
+  | _, _, .eqCongGood _ _ _ _ => 2
 
 end Realizability

@@ -49,7 +49,36 @@ recommendations.  Items get moved to "Resolved" when you answer them.
    equational-logic kit as per-symbol implication schemas rather than
    a single Leibniz replacement rule.
 
+8. **Phase B: encoding of hereditary base-`k` representations** (the
+   brief named this the single most consequential design decision and
+   delegated it).  *Resolved 2026-07-29: a representation is a term of
+   the fragment's own syntax in one distinguished free variable (the
+   base, variable `0`)* — so bumping the base is evaluating the same
+   term at `k + 1` (the reference repo's base-replacement `f` made
+   definitional), existence is a *derivable* fragment equation
+   produced by a certifying evaluator (no axiom about `hrep` exists),
+   and uniqueness/canonicity is deferred with an explicit safety
+   argument.  One compromise flagged: `bump` enters the fragment by
+   its numeral graph (`bumpNum`), since its course-of-values recursion
+   through the exponent structure is not a first-order schema.  Full
+   rationale in STATUS.md's Phase-B section.
+
 ## Open
+
+3½. **The fragment has no `∃` — Phase C must decide how Goodstein's
+   theorem will be *stated*.**  Flagged during Phase B (2026-07-29):
+   the target `∀m ∃s. G(m, s) = 0` is Π₂, and the fragment's formulas
+   have only `∀` (plus `∧∨→⊥` over equations).  Phase B is unaffected
+   (its deliverables are equations and their certifications), but
+   Phase D cannot even state termination without either (a) an `∃`
+   clause added to `Formula`/`MR` — the natural choice for this
+   project, since modified realizability of `∃` carries the witness,
+   and *extracting the Goodstein stopping-time function is presumably
+   the point of the roadmap* — or (b) a negative translation, which
+   would gut the extraction payoff.  Recommendation: fold `∃` into
+   Phase C alongside `TI(ε₀)` (its `MR` clause is the `orI` pattern:
+   pair a witness numeral with a realizer), rather than discovering
+   the gap mid-Phase-D.
 
 4. **Next chapter in `kleene-kreisel-lean`.**  Per the stated pipeline:
    Kreisel's density theorem is next (completing the Kleene-tree pairing

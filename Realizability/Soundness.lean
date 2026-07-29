@@ -344,5 +344,96 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
     show (Term.eval ρ s + 1) * Term.eval ρ t
       = Term.eval ρ s * Term.eval ρ t + Term.eval ρ t
     exact Nat.succ_mul _ _
+  -- Phase B: the recursion equations for `pred`/`exp`, true in `ℕ` …
+  | predZero =>
+    intro ρ env henv n hn
+    show 0 - 1 = 0
+    rfl
+  | predSucc s =>
+    intro ρ env henv n hn
+    show Term.eval ρ s + 1 - 1 = Term.eval ρ s
+    omega
+  | expZero s =>
+    intro ρ env henv n hn
+    show Term.eval ρ s ^ 0 = 0 + 1
+    exact Nat.pow_zero _
+  | expSucc s t =>
+    intro ρ env henv n hn
+    show Term.eval ρ s ^ (Term.eval ρ t + 1)
+      = Term.eval ρ s ^ Term.eval ρ t * Term.eval ρ s
+    exact Nat.pow_succ ..
+  -- … the two `bump` axioms (absorption at zero is the fueled
+  -- function's base case; the numeral graph is its own graph) …
+  | bumpZero s =>
+    intro ρ env henv n hn
+    show bumpN (Term.eval ρ s) 0 = 0
+    rfl
+  | bumpNum k n' =>
+    intro ρ env henv n hn
+    show bumpN ((numeral k).eval ρ) ((numeral n').eval ρ)
+      = (numeral (bumpN k n')).eval ρ
+    rw [numeral_eval, numeral_eval, numeral_eval]
+  -- … the Goodstein recursion, which is `goodN`'s own definition …
+  | goodZero s =>
+    intro ρ env henv n hn
+    show goodN (Term.eval ρ s) 0 = Term.eval ρ s
+    rfl
+  | goodSucc s t =>
+    intro ρ env henv n hn
+    show goodN (Term.eval ρ s) (Term.eval ρ t + 1)
+      = bumpN (Term.eval ρ t + 1 + 1) (goodN (Term.eval ρ s) (Term.eval ρ t)) - 1
+    rfl
+  -- … and the congruence schemas.
+  | eqCongPred s t =>
+    intro ρ env henv n hn
+    have hb : (1 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      intro x hx
+      show Term.eval ρ s - 1 = Term.eval ρ t - 1
+      rw [(hx : Term.eval ρ s = Term.eval ρ t)]
+  | eqCongExp s₁ t₁ s₂ t₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show Term.eval ρ s₁ ^ Term.eval ρ s₂
+          = Term.eval ρ t₁ ^ Term.eval ρ t₂
+        rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
+          (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+  | eqCongBump s₁ t₁ s₂ t₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show bumpN (Term.eval ρ s₁) (Term.eval ρ s₂)
+          = bumpN (Term.eval ρ t₁) (Term.eval ρ t₂)
+        rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
+          (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+  | eqCongGood s₁ t₁ s₂ t₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show goodN (Term.eval ρ s₁) (Term.eval ρ s₂)
+          = goodN (Term.eval ρ t₁) (Term.eval ρ t₂)
+        rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
+          (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
 
 end Realizability
