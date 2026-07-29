@@ -4,9 +4,11 @@
 The fragment of the project brief: intuitionistic propositional logic
 (`∧, ∨, →`, with `¬φ` as `φ → ⊥`) over atomic equations between
 `0`/`succ`-terms with variables, one quantifier rule pair (`∀`-intro /
-`∀`-elim over `ℕ`), and three arithmetic axiom schemas: decidable
-equality (`s = t ∨ ¬ s = t`), `succ s ≠ 0`, and injectivity of `succ`.
-**No induction axiom** — deliberately excluded; see STATUS.md.
+`∀`-elim over `ℕ`), three arithmetic axiom schemas: decidable
+equality (`s = t ∨ ¬ s = t`), `succ s ≠ 0`, and injectivity of `succ` —
+and, since the Phase-2 extension, the **arithmetic induction rule**
+`ind`: from `φ(0)` and `∀x (φ(x) → φ(succ x))`, conclude `∀x φ(x)`
+(see STATUS.md for its realizer, the primitive-recursion combinator).
 
 Natural deduction is an inductive family `Deriv Γ φ` in `Type`, so the
 extraction function of `Extraction.lean` can recurse on it.  Hypotheses
@@ -15,8 +17,9 @@ weakens), which matches the curried-context extraction discipline.
 
 Substitution bookkeeping is kept minimal: `∀`-elim carries the side
 condition that the substituted term's variables are not bound in the
-formula (no capture), and `∀`-intro the usual freshness condition for
-the context.
+formula (no capture), `∀`-intro the usual freshness condition for
+the context, and `ind` the same no-capture condition as `∀`-elim for
+`succ x` — the term its step case substitutes.
 -/
 import Mathlib.Logic.Function.Basic
 
@@ -153,6 +156,11 @@ inductive Deriv : List Formula → Formula → Type where
       Deriv Γ φ → FreshIn x Γ → Deriv Γ (.all x φ)
   | allE {Γ : List Formula} {x : ℕ} {φ : Formula} (u : Term) :
       Deriv Γ (.all x φ) → Formula.SubstOK u φ → Deriv Γ (φ.subst x u)
+  | ind {Γ : List Formula} {x : ℕ} {φ : Formula} :
+      Deriv Γ (φ.subst x .zero) →
+      Deriv Γ (.all x (φ.imp (φ.subst x (.succ (.var x))))) →
+      Formula.SubstOK (.succ (.var x)) φ →
+      Deriv Γ (.all x φ)
   | eqDec {Γ : List Formula} (s t : Term) :
       Deriv Γ ((eq s t).or (eq s t).neg)
   | succNeZero {Γ : List Formula} (s : Term) :

@@ -31,6 +31,49 @@ theorem CtxR_congr {ρ ρ' : ℕ → ℕ} :
     intro n hn
     exact (MR_congr ψ n _ (h ψ (List.mem_cons_self ..))).mp (hc.1 n hn)
 
+/-- **Closure of `MR` under primitive recursion, uniformly in the
+ambient level** — the new theorem of the induction extension: the
+pure-type counterpart of the recursor's realizing clause in the
+soundness of modified realizability for induction (Troelstra 1973; see
+STATUS.md for the exact citation).  Stated once for every ambient `m`,
+per the level-free-core discipline; no level-by-level instances exist.
+
+This is the **"small" induction**: ordinary natural-number induction on
+the numeral `k` being realized, at a fixed ambient `m`, strictly nested
+inside the "big" induction over `Deriv` that `soundness` performs
+(which invokes this lemma exactly once, in its `ind` case).  The
+iteration never changes ambient level: `MR`'s `→` clause consumes and
+produces realizers at the same level, so the step realizer `b` —
+consumed through the `∀` clause at ambient `m + 2` and the `→` clause
+at `m + 1` — sends ambient-`m` realizers of `φ(k)` to ambient-`m`
+realizers of `φ(succ k)`.  The substitution lemma converts between
+`φ(0)` / `φ(succ x)` under `ρ` and `φ` under the updated environment at
+both ends of each step. -/
+theorem MR_indRecC {ρ : ℕ → ℕ} {x : ℕ} {φ : Formula}
+    (hok : Formula.SubstOK (.succ (.var x)) φ) {m : ℕ}
+    {a : PureType (m + 1)} {b : PureType (m + 3)}
+    (ha : MR ρ (φ.subst x .zero) m a)
+    (hb : MR ρ (.all x (φ.imp (φ.subst x (.succ (.var x))))) (m + 2) b) :
+    ∀ k : ℕ, MR (Function.update ρ x k) φ m (indRecC a b k) := by
+  intro k
+  -- The small induction: on the numeral, at the fixed ambient `m`.
+  induction k with
+  | zero =>
+    have h0 : Formula.SubstOK Term.zero φ := fun y hy => by
+      simp [Term.vars] at hy
+    exact (MR_subst φ h0 ρ m a).mp ha
+  | succ k ih =>
+    -- One step: the `∀` clause of `hb` at the numeral `k`, then the
+    -- `→` clause at the induction hypothesis.
+    have hstep := hb k (indRecC a b k) ih
+    have hconv := (MR_subst φ hok (Function.update ρ x k) m _).mp hstep
+    have heval : Term.eval (Function.update ρ x k) (.succ (.var x))
+        = k + 1 := by
+      show Function.update ρ x k x + 1 = k + 1
+      simp [Function.update]
+    rw [heval, Function.update_idem] at hconv
+    exact hconv
+
 /-- **Soundness of extraction** for the fragment: derivable formulas are
 realized by their extracted families, above the derivation's bound. -/
 theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
@@ -147,6 +190,29 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
     exact ih ρ env henv (n + 1) (by
       have hb : derivBound D ≤ n := hn
       omega) (u.eval ρ)
+  | @ind Γ x φ D₁ D₂ hok ih₁ ih₂ =>
+    -- The "big"-induction case: unfold the `allIC` packaging, then hand
+    -- everything to the "small" induction `MR_indRecC`, instantiated at
+    -- the premises' extracted families (base at ambient `m`, step at
+    -- ambient `m + 2`).
+    intro ρ env henv n hn
+    have hb : max (derivBound D₁) (derivBound D₂) + 1 ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      intro k
+      show MR (Function.update ρ x k) φ m
+        (app₁ (abs₁ fun z =>
+          indRecC (extract D₁ ρ env m) (extract D₂ ρ env (m + 2))
+            (z (defaultPT m)))
+          (natPT (m + 1) k))
+      rw [app₁_abs₁]
+      show MR (Function.update ρ x k) φ m
+        (indRecC (extract D₁ ρ env m) (extract D₂ ρ env (m + 2))
+          (natPT (m + 1) k (defaultPT m)))
+      rw [show natPT (m + 1) k (defaultPT m) = k from rfl]
+      exact MR_indRecC hok (ih₁ ρ env henv m (by omega))
+        (ih₂ ρ env henv (m + 2) (by omega)) k
   | eqDec s t =>
     intro ρ env henv n hn
     have hb : (1 : ℕ) ≤ n := hn

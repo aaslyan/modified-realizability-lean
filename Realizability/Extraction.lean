@@ -18,6 +18,9 @@ Every rule has its own named combinator, listed in STATUS.md:
   `impEC` — application one ambient up;
 * `botEC` — vacuous; `allIC` — abstraction reading the numeral from the
   argument; `allEC` — application at the numeral of the term's value;
+* `indC` — the induction recursor: the type-indexed primitive recursion
+  `indRecC` (the one combinator that *iterates* — the number of `app₁`
+  steps is the numeral being realized), packaged by `allIC`;
 * `eqDecC` — the decidable-equality tag; `axiomC` — the (contentless)
   realizer of the two successor axioms.
 
@@ -108,6 +111,36 @@ noncomputable def allIC (bodyAt : ℕ → Fam) : Fam :=
 noncomputable def allEC (f : Fam) (k : ℕ) : Fam :=
   fun n => app₁ (f (n + 1)) (natPT (n + 1) k)
 
+/-- **The type-indexed primitive recursor at a fixed ambient `m`**
+(rule `ind`): from the base realizer `a` and the step functional `b` —
+the step family's ambient-`(m + 2)` member, whose `∀` clause consumes a
+numeral and whose `→` clause then consumes an ambient-`m` realizer —
+iterate `app₁` along the numeral:
+
+    indRecC a b 0       = a
+    indRecC a b (k + 1) = app₁ (app₁ b (natPT (m + 2) k)) (indRecC a b k)
+
+Unlike every other combinator in this file, this one *iterates*: the
+number of applications performed is the numeral being realized.  It is
+genuine primitive recursion at the realizer's own type
+`PureType (m + 1)` (the `Nat.rec` motive is the pure type, not `ℕ`),
+stated once uniformly in the ambient `m` per the level-free-core
+discipline — the ambient never changes during the iteration, because
+`MR`'s `→` clause consumes and produces at the same level.  Correctness
+is `MR_indRecC` in `Soundness.lean`. -/
+noncomputable def indRecC {m : ℕ} (a : PureType (m + 1))
+    (b : PureType (m + 3)) : ℕ → PureType (m + 1)
+  | 0 => a
+  | k + 1 => app₁ (app₁ b (natPT (m + 2) k)) (indRecC a b k)
+
+/-- `ind`: the recursor family — combinator 17.  At each numeral `k`
+the ambient-indexed family `m ↦ indRecC (a m) (b (m + 2)) k`, packaged
+by `allIC` exactly as `∀`-introduction packages its uniform families:
+the concluded formula has the same `∀x. φ` shape, so the same packaging
+(abstraction reading the numeral off the argument) applies verbatim. -/
+noncomputable def indC (a b : Fam) : Fam :=
+  allIC fun k => fun m => indRecC (a m) (b (m + 2)) k
+
 /-- `eqDec`: tag by the (meta-level) decision of the equation; the
 payloads are contentless. -/
 noncomputable def eqDecC (t : Bool) : Fam :=
@@ -144,6 +177,7 @@ noncomputable def extract : {Γ : List Formula} → {φ : Formula} →
   | _, _, @Deriv.allI _ y _ D _, ρ, env =>
       allIC (fun k => extract D (Function.update ρ y k) env)
   | _, _, .allE u D _, ρ, env => allEC (extract D ρ env) (u.eval ρ)
+  | _, _, .ind D₁ D₂ _, ρ, env => indC (extract D₁ ρ env) (extract D₂ ρ env)
   | _, _, .eqDec s t, ρ, _ => eqDecC (decide (s.eval ρ = t.eval ρ))
   | _, _, .succNeZero _, _, _ => axiomC
   | _, _, .succInj _ _, _, _ => axiomC
@@ -166,6 +200,7 @@ def derivBound : {Γ : List Formula} → {φ : Formula} → Deriv Γ φ → ℕ
   | _, _, .botE D => derivBound D
   | _, _, .allI D _ => derivBound D + 1
   | _, _, .allE _ D _ => derivBound D
+  | _, _, .ind D₁ D₂ _ => max (derivBound D₁) (derivBound D₂) + 1
   | _, _, .eqDec _ _ => 1
   | _, _, .succNeZero _ => 1
   | _, _, .succInj _ _ => 1

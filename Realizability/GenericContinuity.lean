@@ -96,6 +96,24 @@ theorem continuous2_eval {X : (ℕ → ℕ) → ℕ} (hX : Continuous2 X) :
   show α (X α) = β (X β)
   rw [← hXβ, ← hval]
 
+/-- Consulting a `ℕ`-indexed family of continuous functionals at a
+continuously computed index is continuous: near any oracle the index is
+locally constant, so the diagonal locally agrees with one member of the
+family.  This is the countably-branching generalization of the binary
+case split `continuous2_ite` below, added for rule `ind`, whose
+iteration count is read off the oracle. -/
+theorem continuous2_apply_nat {k : (ℕ → ℕ) → ℕ} {G : (ℕ → ℕ) → ℕ → ℕ}
+    (hk : Continuous2 k) (hG : ∀ j, Continuous2 fun α => G α j) :
+    Continuous2 fun α => G α (k α) := by
+  intro α
+  obtain ⟨N₁, h₁⟩ := hk α
+  obtain ⟨N₂, h₂⟩ := hG (k α) α
+  refine ⟨N₁ + N₂, fun β hβ => ?_⟩
+  have hkβ : k α = k β := h₁ β fun i hi => hβ i (by omega)
+  show G α (k α) = G β (k β)
+  rw [← hkβ]
+  exact h₂ β fun i hi => hβ i (by omega)
+
 /-- Pointwise case split on the equality of two continuously computed
 scrutinees preserves continuity. -/
 theorem continuous2_ite {c₁ c₂ X Y : (ℕ → ℕ) → ℕ}
@@ -208,6 +226,16 @@ theorem abs₁_tracked {n : ℕ} {G : (ℕ → ℕ) → PureType (n + 1) → Pur
   fun Z hZ =>
     hG (fun α => fstPT (Z α)) (fstPT_tracked hZ) _
       ((up_down_tracked n).2 (sndPT_tracked hZ))
+
+/-- Tracking at a continuously computed numeral index: consulting a
+family of tracked families at a continuous index preserves tracking —
+the level-lifted form of `continuous2_apply_nat`, and the only new
+closure fact rule `ind` needs. -/
+theorem tracked_apply_nat {n : ℕ} {k : (ℕ → ℕ) → ℕ}
+    {G : (ℕ → ℕ) → ℕ → PureType (n + 1)}
+    (hk : Continuous2 k) (hG : ∀ j, Tracked (n + 1) fun α => G α j) :
+    Tracked (n + 1) fun α => G α (k α) :=
+  fun Y hY => continuous2_apply_nat hk fun j => hG j Y hY
 
 /-- Pointwise case split on two continuously computed scrutinees
 preserves tracking at every level. -/
@@ -537,6 +565,29 @@ theorem allEC_tracked {f : (ℕ → ℕ) → Fam} {k : (ℕ → ℕ) → ℕ}
     TrackedFam fun α => allEC (f α) (k α) :=
   fun n => app₁_tracked (hf (n + 1)) (natPT_tracked hk)
 
+/-- `indC` preserves tracking (rule `ind`) — combinator 17's
+preservation lemma.  Two small inductions meet here: per *fixed*
+iteration count `j` the recursor is tracked by induction on `j` (each
+step is `app₁` of tracked pieces — the existing closure lemmas suffice),
+and the *actual* count, read continuously off the abstraction's
+argument, is absorbed by `tracked_apply_nat` (near any oracle the count
+is locally constant).  The `allIC` packaging then closes the
+abstraction by β-reduction exactly as in the `allI` case. -/
+theorem indC_tracked {a b : (ℕ → ℕ) → Fam}
+    (ha : TrackedFam a) (hb : TrackedFam b) :
+    TrackedFam fun α => indC (a α) (b α) := by
+  have hrec : ∀ m j,
+      Tracked (m + 1) fun α => indRecC (a α m) (b α (m + 2)) j := by
+    intro m j
+    induction j with
+    | zero => exact ha m
+    | succ j ih =>
+      exact app₁_tracked (app₁_tracked (hb (m + 2))
+        (natPT_tracked (continuous2_const j))) ih
+  show TrackedFam fun α =>
+    allIC fun k => fun m => indRecC (a α m) (b α (m + 2)) k
+  exact allIC_tracked fun k hk m => tracked_apply_nat hk fun j => hrec m j
+
 /-- `eqDecC` preserves tracking (rule `eqDec`): the decision tag of two
 continuously computed values is a pointwise case split between two
 constant tracked families. -/
@@ -637,6 +688,11 @@ theorem extract_tracked {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
     show TrackedFam fun α =>
       allEC (extract D (R α) (E.map (· α))) (u.eval (R α))
     exact allEC_tracked (ih R hR E hE) (termEval_continuous hR u)
+  | ind D₁ D₂ hok ih₁ ih₂ =>
+    intro R hR E hE
+    show TrackedFam fun α =>
+      indC (extract D₁ (R α) (E.map (· α))) (extract D₂ (R α) (E.map (· α)))
+    exact indC_tracked (ih₁ R hR E hE) (ih₂ R hR E hE)
   | eqDec s t =>
     intro R hR E hE
     show TrackedFam fun α =>
