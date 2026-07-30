@@ -1141,6 +1141,12 @@ modifier was deleted.
 
 ## Phase D4 (making the extracted function fast): DIAGNOSED, NOT FIXED
 
+> **Superseded in one respect by Phase D6** (below): D4's headline
+> measurement — 2377 recursor entries, 2376 at the same code — is real but
+> is *not* a cost proxy, because producing the recursor's value at a code
+> is `O(1)` closure allocation.  D6 collapses those entries completely
+> (measured: 2376 hits, 0 misses) and the wall clock does not move.
+
 The brief asked for a profile first and a `@[csimp]`-based fix second.
 The profile came out clean and decisive; the fix does not exist under the
 brief's own constraint that every replacement be proof-backed.  Both
@@ -2214,3 +2220,145 @@ at the three published instances.
 'Realizability.rightStep_descends'       … [propext, Quot.sound]
 'Realizability.no_infinite_right_battle' … [propext, Quot.sound]
 ```
+
+## Phase D6 (memoizing the evaluation path): IMPLEMENTED, PROVED, AND MEASURED TO NOT HELP
+
+The brief authorized the fix D4 named and declined to attempt: give the
+evaluation path genuine memoization, keyed by the ordinal-notation code,
+as an explicit verified table threaded as data rather than hidden state.
+It is implemented and proved in `Extraction.lean`.  **It works exactly as
+designed, achieves a 100 % cache hit rate, and does not change the wall
+clock at all.**  The measurements below say why, and they correct D4's
+headline proxy.
+
+### What was built
+
+* `MemoTbl`/`memoFind`/`memoVal` — an association list from notation code
+  to the recursor's value, with a `match`-based lookup (deliberately not
+  `Option.getD`, whose default is evaluated eagerly and would recompute on
+  every *hit*).
+* `memoRec` — the memoizing evaluator, `ℕ → ℕ → MemoTbl → PureType × MemoTbl`.
+  Before building the closure at `k` it folds itself over the candidate
+  codes `≤ B` lying `≺ k`, **threading the table**, so each code is
+  computed at most once across the whole build.
+* `tiRecCRaw` — a copy of `tiRecC`, `rfl`-equal to it, used as the
+  fallback.  It exists so that switching the memo path on cannot loop:
+  a fallback calling `tiRecC` would re-enter the memoized implementation
+  with a fresh table.
+* `tiCTable`/`tiCFast` — the same idea one level up, building the table
+  *outside* the `abs₁` so it is shared across applications of the
+  `∀x φ(x)` realizer.
+
+### The two obligations, proved
+
+| theorem | says | axioms |
+|---|---|---|
+| `memo_ok` | the evaluator's output is `tiRecC`'s, **and** every table it returns satisfies the invariant | `[propext, Quot.sound]` |
+| `tiRecCFast_eq` | `tiRecCFast φ b k = tiRecC φ b k`, at every code | `[propext, Quot.sound]` |
+| `tiCFind_sound` | every entry of a built table is the value it stands for | `[propext, Quot.sound]` |
+| `tiCFast_eq` | `tiCFast φ b = tiC φ b`, at every ambient | `[propext, Quot.sound]` |
+
+The invariant is `MemoOK φ b tbl := ∀ j v, memoFind tbl j = some v → v = tiRecC φ b j`.
+Correctness holds for **every** bound `memoBound` and **every** fuel: a
+lookup that misses recomputes, so those are speed parameters only.  (The
+brief's stronger phrasing — that even a *corrupted* table costs only time
+— is not achievable and is not claimed: a wrong entry would be returned.
+What is proved is that the tables this code builds are correct, and that
+any table satisfying the invariant may be substituted freely.)
+
+### The measurements
+
+Instrumented at `m = 1`, ambient 12, with the memo path switched on:
+
+| | value |
+|---|---|
+| `MEMOHIT` (requests served from the table) | **2376** |
+| `MEMOMISS` (requests recomputed) | **0** |
+| `TICFAM` (evaluations of the `tiC` family) | 1 |
+| fallbacks into the raw recursion | 0 |
+
+So the table serves *every one* of D4's 2376 repeated requests for code
+`0`.  The memo is not partially effective; it is completely effective at
+what it was built for.
+
+Wall clock, like for like — same source, the two `csimp` lemmas attached
+versus detached, timed inside the evaluator with `IO.monoMsNow`:
+
+| | memo on | memo off |
+|---|---|---|
+| `goodsteinStopTime 0` | 1 ms | 1 ms |
+| `goodsteinStopTime 1` | 4693 ms | 4614 ms |
+| `hydraBattleLength 0` | 1 ms | 1 ms |
+| `hydraBattleLength 1` | 4703 ms | 4758 ms |
+| `goodsteinStopTime 2` | no output at 600 s | no output at 600 s |
+
+`m = 3` was not attempted; `m = 2` bounds it.  The differences at `m = 1`
+are within noise and have no consistent sign.
+
+### Why — and the correction to D4
+
+`app₁ F x` is `fun w => F (pairPT x (up n w))`: a **closure**.  So
+`tiRecC φ b k` allocates two closures and performs no work — producing
+the recursor's value at a code is `O(1)`.  A table that hands back the
+same closure rather than rebuilding it therefore saves exactly two
+allocations per hit, and 2376 × `O(1)` is nothing.
+
+The cost is in *applying* that value.  Each of the 2376 consumers applies
+it to **its own argument**, and each application runs the progressiveness
+realizer from scratch; that is what branches ≈ 2376-fold per Goodstein
+step and gives D4's extrapolated 1.4 × 10¹⁰ at `m = 2`.  Caching a
+function does not cache its applications, in any pure language.
+
+**This corrects D4's headline proxy.**  D4 reported "2377 recursor body
+entries, 2376 of them at the same code" as the measure of the problem.
+Those entries are real, but they are `O(1)` each, so the entry count was
+never a cost proxy — and collapsing it, which this phase does completely,
+buys nothing.  The quantity that actually tracks the cost is the number
+of *applications* of the recursor's value (≈ 10⁵ at `m = 1`, measured),
+and no table keyed by the notation code touches it.
+
+The sharper statement of the obstruction: a table that would collapse the
+tree must be keyed by `(code, argument)`, and the arguments are
+`PureType` values — functions — with no decidable equality to key on.
+The blocker is not that pure Lean lacks the state D4 pointed at; it is
+that the repeated work is *function application*, which has no key.
+
+### What is shipped, and what is not
+
+The two `csimp` lemmas are **deliberately left detached**, so the
+compiled evaluation path is byte-identical to what it was before this
+phase.  This follows D4's own precedent, which reverted three proved-but-
+inert `csimp` variants rather than ship them: an optimization that is
+measured to change nothing should not be presented as one.  The
+definitions and the four theorems stay, as the record of what was tried
+and what it establishes; switching the path on is adding `@[csimp]` to
+`tiRecC_eq_tiRecCFast` and `tiC_eq_tiCFast`, and the module header says
+so.
+
+### Regression check (required by the brief, run explicitly)
+
+* `lake build` succeeds, 691 jobs, zero `sorry`/`admit`.
+* Every `#print axioms` line in the repository was captured before and
+  after and diffed: **identical**, 57 lines, no change anywhere —
+  arithmetic, Goodstein, Hydra, collapse demo, generic continuity.  The
+  four new theorems are additions at `[propext, Quot.sound]`.
+* Every `#eval`/`#guard` unchanged: `goodsteinStopTime 0/1` = `0/1`,
+  `hydraBattleLength 0/1` = `0/1`, `battleLenH 200 1 (path 3) = 37` and
+  the rightmost-strategy guards still pass, the battle traces and node
+  counts byte-identical.
+
+### The residual, quantified
+
+The extract's cost at `m = 1` is ≈ 1.0 × 10⁵ applications of the
+recursor's value (measured: 104 466), taking ≈ 4.6 s, i.e. ≈ 44 µs each.
+The branching factor is ≈ 2376 per Goodstein step and is ambient-
+independent (D4).  So `m = 2` (three steps) is ≈ 5.9 × 10¹¹ applications,
+≈ 7 × 10⁶ s, and `m = 3` (five steps) ≈ 3 × 10¹⁸ — consistent with both
+phases' observations that neither terminates.  Memoization by code
+removes 0 % of that.
+
+Closing it would need one of: sharing at the level of *applications*
+(a different evaluator, not a different function); a derivation that
+consults its induction hypothesis fewer times (D4's option 1, out of
+scope for this brief); or an extraction whose realizers are first-order
+data rather than closures.  None is attempted here, and none is claimed.

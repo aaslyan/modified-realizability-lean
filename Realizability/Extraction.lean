@@ -190,6 +190,242 @@ theorem tiRecC_eq (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) (k : ℕ
   simp only [dite_eq_ite]
   rfl
 
+/-! ## Memoized evaluation of the transfinite recursor (Phase D6)
+
+Phase D4 measured the extracted program's cost and found it is *not*
+redundant work inside any primitive — three `@[csimp]` sharing variants
+were proved and measured to change nothing — but repeated evaluation of
+**identical recursive calls**: at `m = 1`, 2376 of the recursor's 2377
+body entries are at the same notation code `0`, requested over and over.
+`csimp` on a primitive cannot collapse those, because it changes what a
+function computes and not how often its caller calls it.
+
+What follows is the fix D4 named and declined to attempt: an explicit,
+fully verified memo table, threaded as ordinary data rather than hidden
+state — dynamic programming as an accumulator.  Nothing existing is
+replaced: `tiRecC` keeps its definition and every theorem about it, and
+the memo path is connected to it by a proof (`tiRecC_eq_tiRecCFast`)
+rather than by an unverified `@[implemented_by]`.
+
+`tiRecCFast_eq` and `memo_ok` are the two obligations: the memoized
+evaluator returns exactly what `tiRecC` returns, and the table it builds
+contains only correct entries.  Correctness never depends on the bound
+`memoBound` or on the fuel — those are speed parameters, and a lookup
+that misses simply recomputes.
+
+## It works, and it does not help.  Measured, not assumed.
+
+The two `csimp` lemmas below are deliberately **not attached** as
+attributes, so the shipped evaluation path is unchanged.  With them
+attached and instrumented, at `m = 1`:
+
+* `MEMOHIT = 2376`, `MEMOMISS = 0` — the table serves *every* one of D4's
+  2376 repeated requests for code `0`.  The memo is not merely correct,
+  it is completely effective at what it was built for.
+* Wall clock, like for like: `goodsteinStopTime 1` in **4693 ms** with
+  the memo against **4614 ms** without; `hydraBattleLength 1` 4703 ms
+  against 4758 ms.  Both within noise.  `m = 2` still produced no output
+  at 600 s.
+
+The reason is visible in `app₁` two screens up: `app₁ F x` is
+`fun w => F (pairPT x (up n w))`, a **closure**.  So `tiRecC φ b k`
+allocates two closures and does no work — producing the recursor's value
+at a code is `O(1)`, and a table that hands back the same closure instead
+of rebuilding it saves exactly those two allocations.  The cost is in
+*applying* the value: each of the 2376 consumers applies it to its own
+argument, and each application runs the progressiveness realizer from
+scratch.  Caching a function does not cache its applications.
+
+Collapsing the tree would need a table keyed by `(code, argument)` — and
+the arguments are `PureType` values, i.e. functions, with no decidable
+equality to key on.  That is a sharper statement of the obstruction than
+D4 had: it is not that Lean lacks the state, it is that the repeated work
+is function application and there is nothing to key it by.
+
+It also corrects D4's headline proxy: the *entry count* is not a cost
+proxy, because an entry is `O(1)`.  See STATUS.md's Phase-D6 section for
+the full accounting.
+
+To switch the memo path on, add `@[csimp]` to the two lemmas below. -/
+
+/-- The memo table: notation code ↦ the recursor's value there. -/
+def MemoTbl (m₂ : ℕ) : Type := List (ℕ × PureType (m₂ + 3))
+
+/-- Table lookup. -/
+def memoFind {m₂ : ℕ} : MemoTbl m₂ → ℕ → Option (PureType (m₂ + 3))
+  | [], _ => none
+  | (j, v) :: t, k => if j = k then some v else memoFind t k
+
+/-- A private copy of `tiRecC`, definitionally equal to it, used as the
+memo path's fallback.
+
+It exists for one reason: `tiRecC`'s compiled implementation is replaced
+by the memoized one below, so a fallback that called `tiRecC` would
+re-enter the memo path with a fresh table and could not terminate.  This
+copy is compiled as written. -/
+def tiRecCRaw (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) :
+    ℕ → PureType (m₂ + 3) :=
+  oLt_wf.fix fun k rec =>
+    app₁ (app₁ b (natPT (m₂ + 4) k))
+      (abs₁ fun ζ => abs₁ fun _w =>
+        if h : OLt (ζ (defaultPT (m₂ + 1))) k then
+          dropR φ (dropR φ (rec (ζ (defaultPT (m₂ + 1))) h))
+        else defaultPT (m₂ + 1))
+
+theorem tiRecCRaw_eq (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) (k : ℕ) :
+    tiRecCRaw φ b k = tiRecC φ b k := rfl
+
+/-- The value at a code: the table's entry if there is one, else the
+honest recursion.  Written as a `match` rather than with `Option.getD`
+deliberately — `getD`'s default argument is evaluated eagerly, which
+would recompute on every *hit*. -/
+def memoVal (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5))
+    (tbl : MemoTbl m₂) (j : ℕ) : PureType (m₂ + 3) :=
+  match memoFind tbl j with
+  | some v => v
+  | none => tiRecCRaw φ b j
+
+/-- **The table invariant**: every entry is the value `tiRecC` computes at
+that code.  This is what makes a lookup interchangeable with a
+computation. -/
+def MemoOK (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5))
+    (tbl : MemoTbl m₂) : Prop :=
+  ∀ j v, memoFind tbl j = some v → v = tiRecC φ b j
+
+theorem memoVal_eq {φ : Formula} {m₂ : ℕ} {b : PureType (m₂ + 5)}
+    {tbl : MemoTbl m₂} (h : MemoOK φ b tbl) (j : ℕ) :
+    memoVal φ b tbl j = tiRecC φ b j := by
+  unfold memoVal
+  cases hm : memoFind tbl j with
+  | none => exact tiRecCRaw_eq φ b j
+  | some v => exact h j v hm
+
+/-- One unfolding of the recursor with the recursive call served from the
+table.  This is `tiRecC_eq`'s right-hand side with `tiRecC φ b` replaced
+by `memoVal φ b tbl`, and the table is captured by the closure — which is
+the whole point: every later application of that closure reads the same
+already-computed value instead of recomputing it. -/
+def tiBodyWith (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5))
+    (tbl : MemoTbl m₂) (k : ℕ) : PureType (m₂ + 3) :=
+  app₁ (app₁ b (natPT (m₂ + 4) k))
+    (abs₁ fun ζ => abs₁ fun _w =>
+      if OLt (ζ (defaultPT (m₂ + 1))) k then
+        dropR φ (dropR φ (memoVal φ b tbl (ζ (defaultPT (m₂ + 1)))))
+      else defaultPT (m₂ + 1))
+
+theorem tiBodyWith_eq {φ : Formula} {m₂ : ℕ} {b : PureType (m₂ + 5)}
+    {tbl : MemoTbl m₂} (h : MemoOK φ b tbl) (k : ℕ) :
+    tiBodyWith φ b tbl k = tiRecC φ b k := by
+  rw [tiRecC_eq]
+  unfold tiBodyWith
+  simp only [memoVal_eq h]
+
+/-! The memoized evaluator.  `memoRec fuel k tbl` returns the value at `k`
+together with an extended table; before building the closure at `k` it
+folds itself over the candidate codes, **threading the table**, so each
+code is computed at most once across the whole build.  Candidates are the
+codes `≤ B` lying `≺ k`; a code outside that range is simply recomputed,
+which costs time and never correctness. -/
+
+def memoRec (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) (B : ℕ) :
+    ℕ → ℕ → MemoTbl m₂ → PureType (m₂ + 3) × MemoTbl m₂
+  | 0, k, tbl => (tiRecCRaw φ b k, tbl)
+  | fuel + 1, k, tbl =>
+      match memoFind tbl k with
+      | some v => (v, tbl)
+      | none =>
+          let tbl' := (List.range (B + 1)).foldl
+            (fun t j => if oltB j k then (memoRec φ b B fuel j t).2 else t) tbl
+          let v := tiBodyWith φ b tbl' k
+          (v, (k, v) :: tbl')
+
+/-- Seeding preserves the invariant: folding a table-preserving step over
+any list of codes preserves it. -/
+theorem memoFold_ok {φ : Formula} {m₂ : ℕ} {b : PureType (m₂ + 5)}
+    {step : MemoTbl m₂ → ℕ → MemoTbl m₂}
+    (hstep : ∀ (t : MemoTbl m₂) (j : ℕ), MemoOK φ b t → MemoOK φ b (step t j)) :
+    ∀ (js : List ℕ) (tbl : MemoTbl m₂), MemoOK φ b tbl →
+      MemoOK φ b (js.foldl step tbl)
+  | [], _, h => h
+  | j :: js, tbl, h => memoFold_ok hstep js _ (hstep tbl j h)
+
+/-- **The two obligations, proved together**: the evaluator's primary
+output is `tiRecC`'s value, and the table it hands back satisfies the
+invariant.  Induction on the fuel; the seeding fold consumes the same
+induction hypothesis, which is why both halves are one statement. -/
+theorem memo_ok (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) (B : ℕ) :
+    ∀ (fuel k : ℕ) (tbl : MemoTbl m₂), MemoOK φ b tbl →
+      MemoOK φ b (memoRec φ b B fuel k tbl).2
+      ∧ (memoRec φ b B fuel k tbl).1 = tiRecC φ b k := by
+  intro fuel
+  induction fuel with
+  | zero => exact fun k tbl h => ⟨h, tiRecCRaw_eq φ b k⟩
+  | succ fuel ih =>
+    intro k tbl h
+    have hstep : ∀ (t : MemoTbl m₂) (j : ℕ), MemoOK φ b t →
+        MemoOK φ b ((fun t j => if oltB j k then (memoRec φ b B fuel j t).2 else t) t j) := by
+      intro t j ht
+      by_cases hj : oltB j k = true
+      · simpa [hj] using (ih j t ht).1
+      · simpa [hj] using ht
+    cases hm : memoFind tbl k with
+    | some v =>
+      have he : memoRec φ b B (fuel + 1) k tbl = (v, tbl) := by
+        simp [memoRec, hm]
+      rw [he]
+      exact ⟨h, h k v hm⟩
+    | none =>
+      set tbl' := (List.range (B + 1)).foldl
+        (fun t j => if oltB j k then (memoRec φ b B fuel j t).2 else t) tbl with htbl'
+      have hseed : MemoOK φ b tbl' := memoFold_ok hstep _ tbl h
+      have he : memoRec φ b B (fuel + 1) k tbl
+          = (tiBodyWith φ b tbl' k, (k, tiBodyWith φ b tbl' k) :: tbl') := by
+        simp [memoRec, hm, htbl']
+      rw [he]
+      refine ⟨?_, tiBodyWith_eq hseed k⟩
+      intro j w hw
+      by_cases hjk : k = j
+      · subst hjk
+        have hv : w = tiBodyWith φ b tbl' k := by
+          have h2 : memoFind ((k, tiBodyWith φ b tbl' k) :: tbl') k
+              = some (tiBodyWith φ b tbl' k) := by simp [memoFind]
+          rw [h2] at hw
+          injection hw with h3
+          exact h3.symm
+        rw [hv]
+        exact tiBodyWith_eq hseed k
+      · exact hseed j w (by simpa [memoFind, hjk] using hw)
+
+/-- How far the table reaches.  A **speed parameter only** — every theorem
+below holds for every value of it.  Chosen from the codes the two
+headline derivations actually request: the Goodstein ordinals for
+`m ≤ 3` are `0, 1, 2, 3, 9, 10` and the small Hydra ones `0, 1, 2, 3`. -/
+def memoBound : ℕ := 32
+
+/-- **The memoized recursor.**  Same value as `tiRecC`, computed with a
+table. -/
+def tiRecCFast (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) (k : ℕ) :
+    PureType (m₂ + 3) :=
+  (memoRec φ b memoBound (memoBound + 3) k []).1
+
+/-- **The equivalence** — the brief's step 2.  Holds at every code, and
+independently of the bound and the fuel. -/
+theorem tiRecCFast_eq (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) (k : ℕ) :
+    tiRecCFast φ b k = tiRecC φ b k := by
+  have hnil : MemoOK φ b ([] : MemoTbl m₂) := by
+    intro j v hv
+    exact absurd hv (by simp [memoFind])
+  exact (memo_ok φ b memoBound (memoBound + 3) k [] hnil).2
+
+/-- The switch.  Adding `@[csimp]` here routes compiled evaluation through
+the memo table; the definition of `tiRecC` is untouched either way, and
+kernel reduction (`rfl`, `decide`) is never affected, since `csimp`
+governs only code generation.  Left detached: measured to change nothing
+(see the section header). -/
+theorem tiRecC_eq_tiRecCFast : @tiRecC = @tiRecCFast := by
+  funext φ m₂ b k
+  exact (tiRecCFast_eq φ b k).symm
+
 /-- `tiEps0`: the recursor family — combinator 40.  Packaged by `allIC`
 exactly as `indC` is: the concluded formula is again `∀x. φ`, so the same
 abstraction (read the notation code off the argument) applies.  The two
@@ -202,6 +438,98 @@ def tiFamAt (φ : Formula) (b : Fam) (k : ℕ) : Fam
 
 def tiC (φ : Formula) (b : Fam) : Fam :=
   allIC (tiFamAt φ b)
+
+/-! ### The table one level up, where the repetition actually is
+
+Instrumenting the memoized `tiRecC` showed the recursor's body still
+entered exactly 2377 times at `m = 1` — D4's own count, unchanged, with
+the fallback never taken.  The reason is that the repeated requests do
+not come from *inside* the recursion at all: `tiC` packages the recursor
+with `allIC`, whose abstraction re-evaluates `tiFamAt φ b k m` on **every
+application of the `∀x φ(x)` realizer**, each time entering `tiRecC` from
+the top with a fresh table.  A table threaded inside one call cannot see
+the other 2375 calls.
+
+So the table has to be built where it can be shared: *outside* the
+`abs₁`, once per ambient, captured by the closure.  `tiCTable` does that,
+and `tiCFast` is `tiC` with the lookup in place of the recomputation. -/
+
+/-- Values of the recursor family at the codes `≤ B`, at one ambient.
+Built once and captured. -/
+def tiCTable (φ : Formula) (b : Fam) (B : ℕ) (m : ℕ) :
+    List (ℕ × PureType (m + 1)) :=
+  (List.range (B + 1)).map fun k => (k, tiFamAt φ b k m)
+
+/-- Lookup with the honest computation as fallback. -/
+def tiCFind {m : ℕ} : List (ℕ × PureType (m + 1)) → ℕ →
+    Option (PureType (m + 1))
+  | [], _ => none
+  | (j, v) :: t, k => if j = k then some v else tiCFind t k
+
+def tiCVal (φ : Formula) (b : Fam) {m : ℕ}
+    (tbl : List (ℕ × PureType (m + 1))) (k : ℕ) : PureType (m + 1) :=
+  match tiCFind tbl k with
+  | some v => v
+  | none => tiFamAt φ b k m
+
+/-- Every entry of a table built from `tiFamAt` is the value it stands
+for — the invariant, proved rather than assumed. -/
+theorem tiCFind_sound (φ : Formula) (b : Fam) (m : ℕ) :
+    ∀ (js : List ℕ) (k : ℕ) (v : PureType (m + 1)),
+      tiCFind (js.map fun k => (k, tiFamAt φ b k m)) k = some v →
+      v = tiFamAt φ b k m
+  | [], k, v, h => by simp [tiCFind] at h
+  | j :: js, k, v, h => by
+    rw [List.map_cons] at h
+    by_cases hjk : j = k
+    · subst hjk
+      simp only [tiCFind, if_pos rfl] at h
+      injection h with h'
+      exact h'.symm
+    · simp only [tiCFind, if_neg hjk] at h
+      exact tiCFind_sound φ b m js k v h
+
+theorem tiCVal_eq (φ : Formula) (b : Fam) (B m k : ℕ) :
+    tiCVal φ b (tiCTable φ b B m) k = tiFamAt φ b k m := by
+  show (match tiCFind (tiCTable φ b B m) k with
+        | some v => v
+        | none => tiFamAt φ b k m) = tiFamAt φ b k m
+  cases hf : tiCFind (tiCTable φ b B m) k with
+  | none => rfl
+  | some v => exact tiCFind_sound φ b m _ k v hf
+
+/-- `tiC`, evaluated through a table built once per ambient. -/
+def tiCFast (φ : Formula) (b : Fam) : Fam :=
+  fun n =>
+    match n with
+    | 0 => defaultPT 1
+    | m + 1 =>
+        let tbl := tiCTable φ b memoBound m
+        abs₁ fun z => tiCVal φ b tbl (z (defaultPT m))
+
+/-- **The equivalence**, at every ambient and every code. -/
+theorem tiCFast_eq (φ : Formula) (b : Fam) : tiCFast φ b = tiC φ b := by
+  funext n
+  cases n with
+  | zero => rfl
+  | succ m =>
+    show (abs₁ fun z => tiCVal φ b (tiCTable φ b memoBound m) (z (defaultPT m)))
+      = abs₁ fun z => tiFamAt φ b (z (defaultPT m)) m
+    simp only [tiCVal_eq]
+
+/-- The same switch one level up.  `tiCFast` builds its table *outside*
+the `abs₁`, so it is shared across every application of the `∀x φ(x)`
+realizer — the placement D4's diagnosis pointed at.  Instrumentation
+found that abstraction is applied exactly **once** per evaluation
+(`TICFAM = 1`), so there was nothing there to share either. -/
+theorem tiC_eq_tiCFast : @tiC = @tiCFast := by
+  funext φ b
+  exact (tiCFast_eq φ b).symm
+
+#print axioms memo_ok
+#print axioms tiRecCFast_eq
+#print axioms tiCFast_eq
+#print axioms tiCFind_sound
 
 /-- `exI`: pair the **witness** with the payload — combinator 43.  This is
 `orI₁C`/`orI₂C` with a numeral in place of a constant tag, and it is

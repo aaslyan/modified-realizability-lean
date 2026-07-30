@@ -1,0 +1,82 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+A Lean 4 formalization of **modified realizability for a minimal fragment of arithmetic**, with proof-term extraction, soundness, and a generic continuity theorem for every extracted realizer. Built as a companion to the Kleene–Kreisel continuous-functionals development.
+
+Two headline theorems are derived *inside* the fragment, each with its witness function extracted and certified: **Goodstein's theorem** (`∀m ∃t. good(m,t) = 0`, Phase D2) and the **Kirby–Paris Hydra theorem** (`∀h ∃t. hydra(h,t) = 0`, Phase H5). The Hydra theorem is proved a second time in the metatheory in its strategy-free form (`hercules_wins`, Phase H7), since the fragment has no function variables and so cannot quantify over plays. Neither independence result (unprovability in PA) is formalized, and neither may be claimed.
+
+## Commands
+
+- `lake build` — the only command. There is no separate test suite: correctness *is* the build. `#print axioms` checks are embedded in `Arithmetic.lean` and `Goodstein.lean`, so axiom hygiene is verified on every build.
+- `lake build Realizability.Goodstein` — build a single module (module names mirror file paths under `Realizability/`).
+- Toolchain is pinned in `lean-toolchain` (`leanprover/lean4:v4.26.0`); elan handles it automatically.
+
+**Path dependency**: the build requires a sibling checkout of the Kleene–Kreisel project at `../kleene-kreisel-lean` (declared in `lakefile.lean` as `require ContinuousFunctionals`). It supplies `PureType`, `Assoc`, `Ct`, `CtPer`, `ctQTwoEquiv`, etc. — never reimplement those here.
+
+## Non-negotiable invariants
+
+- **Zero `sorry`/`admit`.** The build must stay green with no placeholders.
+- **Axiom budget**: realization theorems report exactly `[propext, Classical.choice, Quot.sound]`; continuity theorems only `[propext, Quot.sound]`. The embedded `#print axioms` commands enforce this.
+- **`Epsilon0.lean` must stay `Classical`-free** (`[propext, Quot.sound]`). Its `oLt_wf` is used in the *definition* of `tiRecC`, so any `Classical.choice` there propagates into `extract` and breaks every continuity theorem's budget. Two concrete consequences: never use Mathlib's `Nat.pair`/`Nat.unpair` (its entire lemma set is choice-dependent — that is why the pairing is hand-rolled), and never use the `by_cases` tactic in that module (it can fall back on `Classical.byCases`; use the local `decEm` instead).
+- **`Hydra.lean`'s *definitions* carry the same constraint** (its proofs do not): since H4 they sit inside `Term.eval`, hence inside `extract`. `#print axioms hydraStepN`/`hydraSeqN`/`ordOfHydraN` must keep reporting *does not depend on any axioms*.
+- `autoImplicit` is off (set in `lakefile.lean`); bind all variables explicitly.
+
+## Architecture
+
+Module chain (each imports the previous):
+
+0. `Epsilon0.lean` (Phase C; before `Syntax.lean`) — ordinal notations below `ε₀` as natural-number codes (`mkO`/`oE`/`oC`/`oR` over a hand-rolled kernel-computable triangular pairing), the Cantor-normal-form order `precB`, the normal-form predicate `nfB`, the order the rule uses (`oltB`/`OLt`/`oltN` = comparison **conjoined with** normal form), and **`oLt_wf`**.  Normal forms are not optional: on arbitrary notations the comparison has an infinite descending chain (`ω ≻ 1 + ω ≻ …`), machine-checked in the file.
+0¼. `Hydra.lean` (Phases H1–H3; also before `Syntax.lean`) — hydras as a mutual `Hydra`/`Forest` pair coded into `ℕ` through Phase C's pairing (**both** round trips proved, so `∀h` ranges over exactly the trees and `0` is the dead hydra), the Kirby–Paris move `cutH`/`hydraStepN`, the battle `hydraSeqN`, the ordinal assignment `ordOfHydra`/`ordOfHydraN` built on the CNF sum `insertExp`, and the descent theorem `cutH_descends`/`olt_ordOfHydraN_step`. It precedes `Syntax.lean` because `Term.eval` evaluates the H4 symbols by its functions — so its **definitions** are inside `extract`'s dependency graph and must stay choice-free and kernel-computable (its proofs need not).
+0½. `OrdinalAssignment.lean` (Phase D1; also before `Syntax.lean`) — the value-level functions the symbols evaluate by (`hlog`, `bumpN`, `goodN`, moved here from `Syntax.lean`/`Goodstein.lean` in Phase D) and the **ordinal assignment** `ordOf` with its three theorems: `nfB_ordOf` (normality), `ordOf_bumpN` (base change preserves the ordinal, `2 ≤ k`), `ordOf_descent` (the Goodstein step descends). `Soundness.lean` consumes these for the `ordDescent` case, which is why they must precede `Syntax.lean`.
+1. `Syntax.lean` — terms over `{0, succ, +, ×, pred, exp, bump, good, prec, ord, hcut, hydra, hord}`, formulas (`∧∨→⊥`, `∀`, and since Phase D0 `∃`), capture-safe substitution, the decidability instances for the quantifier rules' side conditions (so concrete derivations use `decide +kernel`), and the 55-rule natural-deduction family `Deriv Γ φ` (an inductive in `Type`, so extraction can recurse on it). Also `numeral`.
+2. `ModifiedRealizes.lean` — the **flexible-ambient** relation `MR ρ φ n x`: realizers live in `PureType (n+1)`, all clauses at one level, binders stepping down. No level coercion occurs in the definition.
+3. `Transport.lean` — the level transports `liftR`/`dropR` (where all coercions concentrate) and the family generator `famOf`.
+4. `Extraction.lean` — `extract`, dispatching to **one named combinator per derivation rule**, plus the ambient bound `derivBound`.
+5. `Soundness.lean` — `soundness` (big induction over `Deriv`, one case per rule) and `MR_indRecC` (the small induction: closure of `MR` under primitive recursion, uniform in the ambient).
+6. `GenericContinuity.lean` — `extract_continuous`: every closed derivation's extract is continuous. Invariant is the oracle-parameterized logical relation `Tracked`; abstraction closure holds by β-reduction, so no associates are ever constructed. One `*_tracked` preservation lemma per combinator.
+7. `CollapseDemo.lean` — `RealizesCtQ` in `CtQ 2` (total on closed derivations) and the two-derivations-same-functional demo.
+8. `Arithmetic.lean` (Phase A) — the four second-argument equations of `+`/`×` proved as genuine `ind` theorems (defining axioms recurse on the *first* argument — the "mirror recursion" design; see STATUS.md for why).
+9. `Goodstein.lean` (Phase B) — hereditary base-`k` representation **as a term of the fragment's own syntax in base variable 0** (so bumping the base = evaluating the same term at `k+1`), the Goodstein sequence, fragment-internal certifications, and kernel-verified cross-checks. Goodstein's theorem itself is **not** proved and must not be claimed — that is Phase D.
+10. `TransfiniteInduction.lean` (Phase C) — the `tiEps0` rule's headline module: `ordTerm` (notations *are* Phase B's `HTerm` grammar read at base `ω`, so there is no second encoding), the Goodstein ordinal assignment `ordOf` with kernel-verified descent instances, the rule exercised end to end, and the `#print axioms` block (including the extended `soundness`/`extract_continuous`).  (Phase C did not prove Goodstein's theorem; Phase D does.)
+11. `Exists.lean` (Phase D0) — the `∃` checkpoint: the fragment's first existential theorem and the witness read off its realizer. `∃` reuses `∨`'s pairing machinery entirely and costs no ambient level.
+12. `GoodsteinTheorem.lean` (Phase D2) — **`goodsteinTheorem : Deriv [] (∀m ∃t. good(m,t) = 0)`**, by `tiEps0` on "every state with ordinal `x` terminates". Read `namedIHDeriv`: the fragment's naive substitution forbids instantiating the induction hypothesis at a term mentioning a bound variable, so the derivation names the ordinal with a fresh `∀z` first.
+12½. `OrdinalDescent.lean` (Phase D5) — the Goodstein descent **derived** from three single-symbol schemas (`ordBump`, `ordPredLt`, `bumpNeZero`, each discharged by one D1 theorem) instead of imported as a composite, plus `ord_descent_via_fragment`, the round trip recovering the semantic descent through `soundness`. `Deriv.ordDescent` keeps the name and signature of the deleted constructor, so `GoodsteinTheorem.lean` is unchanged.
+13. `GoodsteinExtraction.lean` (Phase D3) — `goodsteinStopTime` (the extracted witness function), `goodsteinStopTime_spec` (correct at *every* input, from soundness), continuity, and the `CtQ 2` class. It runs: `#eval goodsteinStopTime 1` prints `1`.
+14. `HydraFragment.lean` (Phase H4) — the Hydra layer's fragment side: the three symbols' schemas (`hydraZero`/`hydraSucc` recursion, `hcutNum` numeral graph, the three congruences, and the single imported descent `hordCutLt`), `hydraComputeDeriv` (the fragment computes concrete battles), and `hydra_descent_via_fragment` (the round trip proving the import faithful). Also states `hydraGoal`.
+15. `HydraTheorem.lean` (Phase H5) — **`hydraTheorem : Deriv [] (∀h ∃t. hydra(h,t) = 0)`**, the Kirby–Paris termination theorem by `tiEps0`, D2's derivation shape line for line including the naming step. Independence from PA is **not** proved and must not be claimed.
+16. `HydraExtraction.lean` (Phase H6) — `hydraBattleLength`, its `_spec` from soundness, continuity, and the `CtQ 2` class. Runs at codes 0 and 1; code 2 does not finish, for D4's unshared-duplication reason, not for any Hydra-specific one.
+17. `HydraGeneral.lean` (Phase H7) — the general game in the metatheory: the legal-move relation `Play` (any head, any replication factor), `play_descends`, **`hercules_wins`** (well-foundedness = every play is finite), `play_stuck_iff_leaf` (it ends at the bare head), and `hydraStep_play` (the fragment's battle is one of these plays). The fragment *cannot* state this — quantifying over plays means quantifying over functions — which is why H5 names one battle. Choice-free throughout.
+18. `HydraDisplay.lean` (Phase H8) — the battle run **on trees** instead of codes (`battleLenH`, 98 s → <1 s, certified equal to the code-level `battleLen`), the published Kirby–Paris lengths `1, 3, 37` `#guard`ed at every build, and the bracket-notation battle trace with each state's ordinal beside it. Codes grow doubly exponentially; nothing that only needs the tree should touch them.
+19. `HydraStrategies.lean` (Phase H9) — the rightmost-head strategy, shown to be an instance of H7's `Play`, so its descent (`rightStep_descends`) and termination come in one line each. Also `#guard`s that both strategies give the published lengths `1, 3, 37` while passing through different states. Strategy-independence of the length is *checked at instances*, not proved.
+
+### The per-rule discipline (most important structural rule)
+
+Every derivation rule has a matching case in **four places**: `extract` + `derivBound` (Extraction), `soundness` (Soundness), and `extract_tracked` (GenericContinuity). Adding a function symbol additionally requires a `termEval_continuous` case (and cases in `Term.eval`/`vars`/`subst`/`eval_subst`/`eval_congr`). **No case may be left silent** — when extending the fragment, touch all of them, and add the corresponding `#print axioms` checks for new headline theorems.
+
+The two recursing combinators are the ones to imitate when adding another: `indRecC`/`indC` (recursion along `succ`, correctness `MR_indRecC`, tracking `indC_tracked`) and `tiRecC`/`tiC` (recursion along `≺`, correctness `MR_tiRecC`, tracking `tiRecC_tracked`/`tiC_tracked`). Both are packaged by `allIC`; both prove tracking at a *fixed* recursion index and absorb the oracle-dependent index with `tracked_apply_nat`. `tiRecC_eq` (the non-dependent unfolding of the well-founded recursion) is what both of its proofs rewrite with.
+
+### Design decisions to preserve
+
+- **Do not ship an optimization that measures as a no-op.** D4 reverted three proved `csimp` variants for this reason, and D6's memo path (`memoRec`/`tiRecCFast`/`tiCFast`) is kept *with its `csimp` lemmas detached* for the same reason — the definitions and proofs stay as the record, the compiled path is unchanged. Before touching evaluation performance, read D6: producing the recursor's value at a code is `O(1)` (`app₁` returns a closure), so the cost is in *applications*, which no table keyed by the notation code can reach.
+- Axiom schemas with atomic/implication conclusions get **contentless realizers** (`axiomC`, the `succNeZero` pattern) — don't invent computational content for them.
+- Value-level recursions use **fuel, not `WellFounded.fix`**, because `WellFounded.fix` doesn't reduce in the kernel and the concrete cross-checks (`goodN_four` etc.) must be `rfl`.
+- `bump` alone enters the fragment by its **numeral graph** (`bumpNum`), not an open-term schema — its recursion is course-of-values through the exponent structure. Documented compromise; don't "fix" it casually. The Hydra move `hcut` has one (`hcutNum`) for the same reason: tree surgery through the decoding is course-of-values, not a first-order equation schema.
+- The Hydra layer imports **exactly one** mathematical fact, `hordCutLt`, and it follows D5's `ordPredLt` pattern: one property of one move symbol relative to one ordinal symbol, saying nothing about the battle, and quantified over the replication factor. Everything battle-specific is derived. Don't add a schema about a *battle step* — that would undo H5 the way a composite schema would have undone D5.
+- Uniqueness/canonicity of hereditary representations is deferred **at the term level** (everything Phase B consumes factors through the deterministic `hrep`), but **not** at the notation level: Phase C's order is only well-founded on normal forms, so `nfB` is built and load-bearing there.  Don't "simplify" `oltB` by dropping its normality conjuncts.
+- `tiEps0`'s order premise `y ≺ x` is an *equation*, hence has contentless realizers — realizing it **is** the descent fact the recursion needs.  Don't give `prec` computational content.
+- `tiRecC` uses two `dropR φ` transports because the rule's antecedent is a nested `∀→` pair, consuming `φ(y)` realizers two ambient levels below where the recursion produces them.  That is why `derivBound` carries `lvl φ + 2`; `ind` needed no such thing.
+- `∃` is the `∨` clause with the tag generalized to a numeral: `exIC`/`exEC` reuse `pairPT`/`fstPT`/`sndPT`, and `lvl (∃y φ) = lvl φ`.  Don't build a second pairing mechanism, and don't give `∃` an ambient level — binders that *package* realizers cost nothing; only those that *consume* them (`→`, `∀`) cost a level.
+- The transports and extraction combinators are **computable** (no `noncomputable`).  That is load-bearing for Phase D3: without it `#eval` on the extract fails outright.  Don't reintroduce the marker.
+- The Goodstein descent is **derived**, not imported (Phase D5).  What is imported is three single-symbol schemas — `ordBump`, `ordPredLt`, `bumpNeZero` — each discharged by exactly one Phase-D1 theorem.  Preserve that 1:1 correspondence: an added schema without a matching theorem, or a schema that is itself about a Goodstein *step*, undoes the phase.
+
+## Documentation discipline
+
+- **HYDRA.md** is the self-contained account of the Hydra project (H1–H9): the three headline statements, the single imported schema, what is out of scope, the phase map, the trace, and the reproduction commands. Keep it in step with STATUS.md's per-phase sections — STATUS.md is the record, HYDRA.md is the map.
+
+- **STATUS.md** is the authoritative record: scope, per-phase deliverables, design decisions *with rationale*, flagged deviations and compromises, and the quoted `#print axioms` outputs. Update it whenever any of those change.
+- **QUESTIONS.md** is a running record of decision points raised to the user, with options and recommendations; items move to "Resolved" (with the answer and date) when the user decides. Genuine design forks should be recorded there, not silently chosen.
+- Citations name only what was actually verified; when the primary text is inaccessible, say so and cite at the granularity actually checked rather than guessing (see STATUS.md's Troelstra citation for the model).
+- Out-of-scope claims are stated explicitly per phase (e.g. no soundness-for-HA claim, no Goodstein-theorem claim).

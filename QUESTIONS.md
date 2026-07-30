@@ -131,7 +131,19 @@ genuine mathematical fork, recorded rather than silently chosen.)*
    own, not a refactor.
 
 12. **The extracted program is correct but not efficient.**  *Diagnosed
-   2026-07-29 in Phase D4 and left unfixed, deliberately.*  The profile:
+   2026-07-29 in Phase D4; the authorized memoization fix was built,
+   proved and measured in Phase D6 (2026-07-30) and **does not help** —
+   see STATUS.md's D6 section for the numbers.*  The one-line summary:
+   memoizing the recursor by notation code achieves a 100 % hit rate
+   (2376 hits, 0 misses at `m = 1`) and changes the wall clock by nothing
+   (4693 ms against 4614 ms), because `app₁` returns a *closure* — so
+   producing the recursor's value at a code is `O(1)`, and the cost is in
+   *applying* it, once per consumer, with a different argument each time.
+   A table that would collapse the tree must be keyed by
+   `(code, argument)`, and arguments are `PureType` functions with no
+   decidable equality.  D4's entry count was therefore never a cost
+   proxy.  Recommendation unchanged: leave it; the correctness theorem
+   carries the content at every input.  *Original D4 entry follows.*  The profile:
    at `m = 1` the recursor's body is entered 2377 times at only **two**
    distinct notation codes — 2376 of them at the same code — so the cost
    is re-evaluation of an identical recursive call, ≈ 2400× per Goodstein
