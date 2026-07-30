@@ -240,3 +240,67 @@ recursive branch does.
 This is the last mathematical step of H3.  Everything it consumes —
 accumulator monotonicity, exponent monotonicity, `precB_insertExp_self`,
 `precB_mkO_exp`, transitivity, asymmetry, totality — is now proved.
+
+
+## Head exponent of `insertIter`, and the resolution
+
+Write `E = oE X`.  From `insertExp`'s four branches, its head exponent is
+determined:
+
+| branch | condition | result | head |
+|---|---|---|---|
+| Z | `X = 0` | `mkO e 0 0` | `e` |
+| A | `e = E` | `mkO E (oC X + 1) (oR X)` | `E` (`= e`) |
+| B | `E ≺ e` | `mkO e 0 X` | `e` |
+| C | `e ≺ E` | `mkO E (oC X) (insertExp e (oR X))` | `E` |
+
+So **`head (insertExp e X) = max(e, E)`** under `≺`, and this sharpens
+`oE_insertExp` (which says only "one of the two") into "which one".
+
+Iterating, the head is **stable**: for `n ≥ 1`,
+`head (insertIter a n X) = max(a, E)`.  Each further insertion of `ω^a`
+sees an accumulator whose head is already `max(a, E)`, so it takes branch
+**A** when `a ⪰ E` and branch **C** when `a ≺ E`, and neither changes the
+head.  The three shapes, all by induction on `n`:
+
+* `a ≻ E`: `insertIter a n X = mkO a (n-1) X` — the **merge shape**.  The
+  `n` copies are one `mkO` with coefficient `n-1`, not a tower.
+* `a = E`: `insertIter a n X = mkO E (oC X + n) (oR X)` — merges into
+  `X`'s own coefficient.
+* `a ≺ E`: `insertIter a n X = mkO E (oC X) (insertIter a n (oR X))` —
+  every insertion is pushed into the remainder.
+
+### The resolution: induct on `X`, not on `n`
+
+Now compare against `insertExp b X` with `a ≺ b`, splitting on `b` versus
+`E`:
+
+1. **`b ≻ E`.**  Right side is `mkO b 0 X`.  Left side's head is
+   `max(a, E)`, and both `a ≺ b` and `E ≺ b`, so the head is `≺ b` and
+   `precB_mkO_exp` settles it — **regardless of `n`**, since that
+   constructor ignores coefficients and remainders entirely.
+2. **`b = E`.**  Right side is `mkO E (oC X + 1) (oR X)`.  Since
+   `a ≺ b = E`, the left side is `mkO E (oC X) (…)`: same head, smaller
+   coefficient, so `precB_mkO_coeff` — again regardless of `n`.
+3. **`b ≺ E`.**  Both sides push into the remainder: right is
+   `mkO E (oC X) (insertExp b (oR X))`, left is
+   `mkO E (oC X) (insertIter a n (oR X))`.  Same head, same coefficient,
+   so it reduces to *the same statement at `oR X`*.
+
+That third case is the induction step, and it is on **`X`**, with `n`
+universally quantified.  The earlier attempt inducted on `n` and got
+stuck because inserting always increases; here `n` never drives anything —
+it only ever appears as a coefficient, in exactly the two places where
+the order constructors ignore coefficients.  That is the same fact that
+makes arbitrarily many copies harmless, arriving in the proof structure
+rather than as a separate observation.
+
+### Sub-lemmas to prove, in order
+
+1. `oE_insertIter : oE (insertIter a n X) = a ∨ oE (insertIter a n X) = oE X`
+   — induction on `n` over `oE_insertExp`.  Enough for case 1.
+2. `insertIter_push : a ≺ oE X → insertIter a n X =
+   mkO (oE X) (oC X) (insertIter a n (oR X))` — induction on `n`; each
+   step is branch **C**, which needs the accumulator's head to still be
+   `oE X`, i.e. 1.  Enough for cases 2 and 3.
+3. the bound itself, by induction on `X` with `n` general, using 1 and 2.
