@@ -103,9 +103,21 @@ recommendations.  Items get moved to "Resolved" when you answer them.
 ## Open
 
 *(nothing blocking; the roadmap's phases and the Hydra project's six are
-all delivered, as is Phase E.  Item 12 is engineering, not mathematics;
-items 13 and 14 are genuine mathematical forks, recorded rather than
-silently chosen.)*
+all delivered, as are Phases E and F.  Item 12 is engineering, not
+mathematics; items 13–15 are design points, recorded rather than silently
+chosen.)*
+
+15. **Pascal: how should `XOR` enter the fragment?**  *Raised and
+   answered 2026-07-30, in Phase F, since the brief delegated the
+   choice.*  The brief offered `a + b − 2·a·b` or a case-split axiom.
+   **Neither is used**: `a + b − 2ab` is *not expressible* in this
+   signature at all, because `pred` is the only non-monotone operation
+   and it subtracts constants from terms, so nothing built from
+   `+`/`×`/`exp` under outer `pred`s can be `1 − x`.  `xor` therefore
+   enters by its **numeral graph**, like `bump`, `prec` and `hcut`, and
+   the case analysis lands in the proofs (driven by `pasTotal`) rather
+   than in four conditional axioms.  Recorded because the alternative
+   the brief suggested first looks available and is not.
 
 14. **Hanoi: is "optimal" the same as "shortest"?**  *Raised and
    answered 2026-07-30, at the close of Phase E.*  The brief's formal

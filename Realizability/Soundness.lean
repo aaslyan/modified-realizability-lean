@@ -831,4 +831,58 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
                 (hz : Term.eval ρ v₁ = Term.eval ρ v₂),
                 (hu : Term.eval ρ k₁ = Term.eval ρ k₂)]
 
+  -- Phase F2: the Pascal layer.  All four `pas` equations are `pasN`'s
+  -- own definition, and `xorNum` is `xorN`'s graph on numerals.
+  | pasZeroZero =>
+    intro ρ env henv n hn
+    show pasN 0 0 = 0 + 1
+    rfl
+  | pasZeroSucc k =>
+    intro ρ env henv n hn
+    show pasN 0 (Term.eval ρ k + 1) = 0
+    rfl
+  | pasSuccZero nT =>
+    intro ρ env henv n hn
+    show pasN (Term.eval ρ nT + 1) 0 = 0 + 1
+    rfl
+  | pasSuccSucc nT k =>
+    intro ρ env henv n hn
+    show pasN (Term.eval ρ nT + 1) (Term.eval ρ k + 1)
+      = xorN (pasN (Term.eval ρ nT) (Term.eval ρ k))
+          (pasN (Term.eval ρ nT) (Term.eval ρ k + 1))
+    rfl
+  | xorNum a b =>
+    intro ρ env henv n hn
+    show xorN ((numeral a).eval ρ) ((numeral b).eval ρ)
+      = (numeral (xorN a b)).eval ρ
+    rw [numeral_eval, numeral_eval, numeral_eval]
+  | eqCongXor s₁ t₁ s₂ t₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show xorN (Term.eval ρ s₁) (Term.eval ρ s₂)
+          = xorN (Term.eval ρ t₁) (Term.eval ρ t₂)
+        rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
+          (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+  | eqCongPas s₁ t₁ s₂ t₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show pasN (Term.eval ρ s₁) (Term.eval ρ s₂)
+          = pasN (Term.eval ρ t₁) (Term.eval ρ t₂)
+        rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
+          (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+
 end Realizability

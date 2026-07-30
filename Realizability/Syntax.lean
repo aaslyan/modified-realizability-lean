@@ -50,6 +50,7 @@ the context, and `ind` the same no-capture condition as `∀`-elim for
 import Realizability.OrdinalAssignment
 import Realizability.Hydra
 import Realizability.Hanoi
+import Realizability.Pascal
 
 namespace Realizability
 
@@ -78,6 +79,8 @@ inductive Term : Type where
   | happ : Term → Term → Term
   | mvcount : Term → Term
   | solves : Term → Term → Term → Term → Term → Term
+  | xor : Term → Term → Term
+  | pas : Term → Term → Term
 deriving DecidableEq, Repr
 
 namespace Term
@@ -105,6 +108,8 @@ def eval (ρ : ℕ → ℕ) : Term → ℕ
   | mvcount t => hlen (t.eval ρ)
   | solves n f t v k =>
       solvesN (n.eval ρ) (f.eval ρ) (t.eval ρ) (v.eval ρ) (k.eval ρ)
+  | xor s t => xorN (s.eval ρ) (t.eval ρ)
+  | pas s t => pasN (s.eval ρ) (t.eval ρ)
 
 /-- The variables occurring in a term. -/
 def vars : Term → List ℕ
@@ -126,6 +131,8 @@ def vars : Term → List ℕ
   | happ s t => s.vars ++ t.vars
   | mvcount t => t.vars
   | solves n f t v k => n.vars ++ f.vars ++ t.vars ++ v.vars ++ k.vars
+  | xor s t => s.vars ++ t.vars
+  | pas s t => s.vars ++ t.vars
 
 /-- Substitution of a term for a variable. -/
 def subst (x : ℕ) (u : Term) : Term → Term
@@ -148,6 +155,8 @@ def subst (x : ℕ) (u : Term) : Term → Term
   | mvcount t => mvcount (subst x u t)
   | solves n f t v k =>
       solves (subst x u n) (subst x u f) (subst x u t) (subst x u v) (subst x u k)
+  | xor s t => xor (subst x u s) (subst x u t)
+  | pas s t => pas (subst x u s) (subst x u t)
 
 /-- Evaluation after substitution is evaluation in the updated
 environment. -/
@@ -179,6 +188,8 @@ theorem eval_subst (ρ : ℕ → ℕ) (x : ℕ) (u : Term) :
   | mvcount t ih => simp [subst, eval, ih]
   | solves n f t v k ihn ihf iht ihv ihk =>
       simp [subst, eval, ihn, ihf, iht, ihv, ihk]
+  | xor s t ihs iht => simp [subst, eval, ihs, iht]
+  | pas s t ihs iht => simp [subst, eval, ihs, iht]
 
 /-- Evaluation only depends on the values of the occurring variables. -/
 theorem eval_congr {ρ ρ' : ℕ → ℕ} :
@@ -255,6 +266,16 @@ theorem eval_congr {ρ ρ' : ℕ → ℕ} :
       iht fun y hy => h y (Or.inl (Or.inl (Or.inr hy))),
       ihv fun y hy => h y (Or.inl (Or.inr hy)),
       ihk fun y hy => h y (Or.inr hy)]
+  | xor s t ihs iht =>
+    intro h
+    simp only [eval]
+    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+  | pas s t ihs iht =>
+    intro h
+    simp only [eval]
+    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
 
 end Term
 
@@ -616,6 +637,34 @@ inductive Deriv : List Formula → Formula → Type where
         (eq (.happ s₁ s₂) (.happ t₁ t₂))))
   | eqCongMvcount {Γ : List Formula} (s t : Term) :
       Deriv Γ ((eq s t).imp (eq (.mvcount s) (.mvcount t)))
+  -- Phase F2: **Pascal's triangle mod 2**.  `pas n k` is the parity of
+  -- the binomial coefficient and `xor` is exclusive or; the four
+  -- equations below are `pasN`'s own structural recursion, and they are
+  -- the phase's *entire* import.  The characteristic clauses
+  -- `pas(n,n) = 1` and "`pas` vanishes above the diagonal" are **not**
+  -- axioms: `PascalTheorem.lean` derives them by `ind`.
+  --
+  -- `xor` enters by its numeral graph, like `bump`, `prec` and `hcut`
+  -- before it, because `a + b − 2ab` is **not expressible** in this
+  -- signature: `pred` subtracts constants from terms, and a composition
+  -- of monotone operations under outer `pred`s cannot be `1 − x`.
+  | pasZeroZero {Γ : List Formula} :
+      Deriv Γ (eq (.pas .zero .zero) (.succ .zero))
+  | pasZeroSucc {Γ : List Formula} (k : Term) :
+      Deriv Γ (eq (.pas .zero (.succ k)) .zero)
+  | pasSuccZero {Γ : List Formula} (n : Term) :
+      Deriv Γ (eq (.pas (.succ n) .zero) (.succ .zero))
+  | pasSuccSucc {Γ : List Formula} (n k : Term) :
+      Deriv Γ (eq (.pas (.succ n) (.succ k))
+        (.xor (.pas n k) (.pas n (.succ k))))
+  | xorNum {Γ : List Formula} (a b : ℕ) :
+      Deriv Γ (eq (.xor (numeral a) (numeral b)) (numeral (xorN a b)))
+  | eqCongXor {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
+      Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
+        (eq (.xor s₁ s₂) (.xor t₁ t₂))))
+  | eqCongPas {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
+      Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
+        (eq (.pas s₁ s₂) (.pas t₁ t₂))))
   | eqCongSolves {Γ : List Formula} (n₁ n₂ f₁ f₂ t₁ t₂ v₁ v₂ k₁ k₂ : Term) :
       Deriv Γ ((eq n₁ n₂).imp ((eq f₁ f₂).imp ((eq t₁ t₂).imp ((eq v₁ v₂).imp
         ((eq k₁ k₂).imp

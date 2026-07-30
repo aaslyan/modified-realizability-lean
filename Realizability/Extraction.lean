@@ -640,6 +640,15 @@ def extract : {Γ : List Formula} → {φ : Formula} →
   | _, _, .eqCongHapp _ _ _ _, _, _ => axiomC
   | _, _, .eqCongMvcount _ _, _, _ => axiomC
   | _, _, .eqCongSolves _ _ _ _ _ _ _ _ _ _, _, _ => axiomC
+  -- Phase F2: the Pascal schemas, contentless like every other equation
+  -- axiom of the fragment.
+  | _, _, .pasZeroZero, _, _ => axiomC
+  | _, _, .pasZeroSucc _, _, _ => axiomC
+  | _, _, .pasSuccZero _, _, _ => axiomC
+  | _, _, .pasSuccSucc _ _, _, _ => axiomC
+  | _, _, .xorNum _ _, _, _ => axiomC
+  | _, _, .eqCongXor _ _ _ _, _, _ => axiomC
+  | _, _, .eqCongPas _ _ _ _, _, _ => axiomC
 
 /-- **The witness is readable off an `∃`-realizer**: the first component
 at the canonical point is the witness the introduction rule supplied.
@@ -747,5 +756,14 @@ def derivBound : {Γ : List Formula} → {φ : Formula} → Deriv Γ φ → ℕ
   | _, _, .eqCongHapp _ _ _ _ => 2
   | _, _, .eqCongMvcount _ _ => 1
   | _, _, .eqCongSolves _ _ _ _ _ _ _ _ _ _ => 5
+  -- Phase F2: bare equations at every ambient; the congruences need one
+  -- binder level per implication.
+  | _, _, .pasZeroZero => 0
+  | _, _, .pasZeroSucc _ => 0
+  | _, _, .pasSuccZero _ => 0
+  | _, _, .pasSuccSucc _ _ => 0
+  | _, _, .xorNum _ _ => 0
+  | _, _, .eqCongXor _ _ _ _ => 2
+  | _, _, .eqCongPas _ _ _ _ => 2
 
 end Realizability

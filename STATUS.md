@@ -1,4 +1,4 @@
-# Status: COMPLETE through Phase H9 and Phase E (Hanoi) — Goodstein's theorem *and* the Kirby–Paris Hydra theorem are proved inside the fragment, each with its witness function extracted, certified, and executed; and the Hydra theorem is proved again in the metatheory in its full strategy-free form
+# Status: COMPLETE through Phase H9, Phase E (Hanoi) and Phase F (Pascal mod 2) — Goodstein's theorem *and* the Kirby–Paris Hydra theorem are proved inside the fragment, each with its witness function extracted, certified, and executed; and the Hydra theorem is proved again in the metatheory in its full strategy-free form
 
 Phases: milestone (modified realizability + extraction + soundness),
 generic continuity, induction (2), arithmetic (A), hereditary base-`k`
@@ -2572,3 +2572,177 @@ Only the classical three-peg problem; no claim about four-peg or
 restricted variants.  No general list theory beyond what this encoding
 needs.  Classical minimality over arbitrary legal move sequences, as
 above.
+
+## Phase F (Pascal's triangle mod 2): COMPLETE — the extracted Sierpiński decider
+
+The lightest of the three showpieces, deliberately: the statement is a
+**decidable disjunction**, not an existence statement, so the extract is a
+decision *function* rather than a witness — and there is no `TI(ε₀)`, no
+ordinal, and (unlike Hanoi) no `∃` anywhere in the phase.
+
+### F1 — the value layer (`Pascal.lean`, before `Syntax.lean`)
+
+```
+pas(0,0) = 1     pas(0,k+1) = 0     pas(n+1,0) = 1
+pas(n+1,k+1) = pas(n,k) XOR pas(n,k+1)
+```
+
+structural in the row, both recursive calls one row up — branching, like
+Hanoi's, but cheap.
+
+**Why `XOR` is a symbol and not a term, decided and recorded as the brief
+asked.**  The brief offered `a + b − 2·a·b` or a case-split axiom.
+Neither is used, because **`a + b − 2ab` is not expressible in this
+fragment at all**: the arithmetic is `+`, `×`, `exp`, `pred`, and `pred`
+is the only non-monotone operation — it subtracts *constants* from terms,
+so a composition of monotone operations under finitely many outer `pred`s
+is monotone in `x`, and `1 − x` is not.  So `xor` enters by its **numeral
+graph**, the `bumpNum`/`precNum`/`hcutNum` pattern, for the same reason
+each of those has one.  The case analysis then lands in the *proofs*,
+driven by the totality theorem, rather than in four conditional axioms.
+
+### F2 — the fragment layer
+
+Two symbols (`pas`, `xor`), and the import is exactly `pasN`'s four
+structural equations plus `xor`'s numeral graph.  **The characteristic
+clauses are not assumed**: `pas(n,n) = 1` and vanishing above the
+diagonal are derived in F3.
+
+### F3 — four theorems, all by ordinary `ind`
+
+| theorem | says |
+|---|---|
+| `pasZeroCol` | `∀n. pas(n,0) = 1` |
+| `pasAbove` | `∀n ∀j. pas(n, succ(n+j)) = 0` |
+| `pasDiag` | `∀n. pas(n,n) = 1` |
+| **`pasTotal`** | `∀n ∀k. pas(n,k) = 1 ∨ pas(n,k) = 0` |
+
+`pasAbove` is the real one: it needs its hypothesis at **two** arguments
+(`j` and `j+1`), which is what makes the inner `∀j` load-bearing, and it
+consumes Phase A's `x + succ y = succ (x + y)` to line the indices up.
+`pasDiag` reads the diagonal off `pasAbove` at `j = 0`.
+
+**A device worth naming.**  The fragment has no case-analysis axiom
+("every number is `0` or a successor") and no order relation, so a
+variable cannot be split into `0`/`succ k` by any rule.  Where an
+informal proof says "case on `k`", these derivations run `ind` on `k` and
+**discard the induction hypothesis** — the base and step of an induction
+are exactly the two cases of a `0`/`succ` split.  It recurs three times
+in this phase, and `pasTotal` is a genuinely nested induction: outer on
+the row, inner on the column.
+
+### F4 — the extracted decider
+
+`derivBound pasTotal = 8`.  The realizer of a disjunction carries the
+**tag** saying which side holds, so `pasTag n k` *is* the decision, and
+
+```
+pasDecide_eq : ∀ n k, pasDecide n k = pasN n k
+```
+
+proves from `soundness` that it decides correctly at every `(n,k)` —
+which is what makes this extract a decision procedure rather than a
+witness.
+
+**Cross-checks against an independent reference.**  `Nat.choose` appears
+only in `PascalExtraction.lean`, only in `#guard`s, never in the fragment
+or in any proof — the role `WilliamAngus/Goodstein` played in Phase B.
+Checked at every build: the **extracted decider** against
+`Nat.choose n k % 2` for all `n ≤ 8`, and the fragment's symbol against
+it for all `n ≤ 16`, plus named instances (`C(7,3) = 35` odd,
+`C(16,8) = 12870` even, `C(15,5) = 3003` odd, `C(20,4) = 4845` odd).
+
+### The grid, recorded verbatim
+
+Rows 0–7 are printed **by the extracted realizer** (`pasRowExtract`);
+rows 0–15 by the fragment's own symbol, which `pasDecide_eq` proves
+computes the same bits:
+
+```
+[[1],
+ [1, 1],
+ [1, 0, 1],
+ [1, 1, 1, 1],
+ [1, 0, 0, 0, 1],
+ [1, 1, 0, 0, 1, 1],
+ [1, 0, 1, 0, 1, 0, 1],
+ [1, 1, 1, 1, 1, 1, 1, 1],
+ [1, 0, 0, 0, 0, 0, 0, 0, 1],
+ [1, 1, 0, 0, 0, 0, 0, 0, 1, 1],
+ [1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+ [1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1],
+ [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+ [1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1],
+ [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+ [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+```
+
+and as a picture (`#` = 1, `.` = 0), verbatim from the build log:
+
+```
+                #
+               # #
+              # . #
+             # # # #
+            # . . . #
+           # # . . # #
+          # . # . # . #
+         # # # # # # # #
+        # . . . . . . . #
+       # # . . . . . . # #
+      # . # . . . . . # . #
+     # # # # . . . . # # # #
+    # . . . # . . . # . . . #
+   # # . . # # . . # # . . # #
+  # . # . # . # . # . # . # . #
+ # # # # # # # # # # # # # # # #
+```
+
+Every cell is one instance of the proved disjunction, resolved by the
+proof itself — which is the sense in which this visualization *is* the
+theorem rather than a picture of its behaviour.
+
+### The realizer's evaluation wall, measured
+
+Running the **extracted realizer** (rather than the fragment's symbol)
+costs, per single cell, at the middle of row `n`:
+
+| row | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---|---|---|---|---|---|---|
+| ms | 29 | 62 | 342 | 719 | 4 210 | 8 861 | 51 434 |
+
+≈ 3.4× per row — the branching blowup Phase E measured for Hanoi and
+Phase D6 diagnosed: the induction hypothesis is consulted twice per step
+(at `k` and `k+1`) and both consultations are re-evaluated rather than
+shared.  So a 16-row triangle drawn by the realizer is out of reach
+(row 16 alone would be hours per cell), and the build draws rows 0–7 that
+way and the rest from the fragment's symbol.
+
+This costs nothing in what is *proved*: `pasDecide_eq` holds at every
+`(n,k)`, so the recorded grid is certified to be what the realizer
+computes exactly where running it is infeasible.  The gap between the two
+is evaluation cost, not content.
+
+### Budget
+
+```
+'Realizability.pasN_total'             … [propext, Quot.sound]
+'Realizability.pasN_diag'              … [propext, Quot.sound]
+'Realizability.pasN_above'             … [propext, Quot.sound]
+'Realizability.pas_realized'           … [propext, Classical.choice, Quot.sound]
+'Realizability.pasDecide_eq'           … [propext, Classical.choice, Quot.sound]
+'Realizability.pas_extract_continuous' … [propext, Quot.sound]
+```
+
+The expected pattern.  Full regression: every `#print axioms` line in the
+repository diffed before and after — **no pre-existing line changed**.
+
+### Out of scope, as stated
+
+The Kummer/Lucas bitwise characterization (`pas(n,k) = 1` iff `k`'s
+binary digits are a submask of `n`'s) is **not** attempted, per the
+brief: it is the stretch goal, needs base-2 digit extraction via Phase
+B's `hrep` technique, and is a genuinely stronger theorem than anything
+here — this phase's content is `pas`'s own recursive characterization.
+No general binomial-coefficient theory, factorials or division enter
+anywhere.

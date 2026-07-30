@@ -136,6 +136,19 @@ Goodstein's and Hydra's were linear chains.
 | 52 | **`hanoiTheorem`** | `HanoiTheorem.lean` | `⊢ ∀n∀f∀t∀v ∃k. Solves(n,f,t,v,k) ∧ MoveCount k = 2^n − 1`, by ordinary `ind`. |
 | 53 | `hanoiSolution`, **`hanoiSolution_spec`**, `hanoiMoves` | `HanoiExtraction.lean` | The extracted solver, correct and optimal at every input, and its output decoded into readable `(src,dst)` pairs — the classical sequences, `#eval`ed at n=1..4. |
 
+### 1.9 The Pascal layer (F1–F4) — the third theorem, and the one you can *see*
+
+The lightest infrastructure of all: a decidable disjunction, so the
+extract is a decision **function**, not a witness — and the picture it
+draws is the theorem, not an illustration of it.
+
+| # | Declaration | File | What it gives you |
+|---|---|---|---|
+| 54 | `xorN`, `pasN` | `Pascal.lean` | The mod-2 recursion. Read the header for why `xor` must be a symbol: `a + b − 2ab` is not expressible in this signature. |
+| 55 | `pasAbove`, `pasDiag`, `pasZeroCol` | `PascalTheorem.lean` | The characteristic clauses **derived**, not assumed. `pasAbove` is the real induction — it needs its hypothesis at two arguments. |
+| 56 | **`pasTotal`** | `PascalTheorem.lean` | `⊢ ∀n∀k. pas(n,k) = 1 ∨ pas(n,k) = 0`, by nested `ind`. The header names the standing device: `ind` with the hypothesis discarded *is* the fragment's `0`/`succ` case split. |
+| 57 | `pasTag`, **`pasDecide_eq`**, `pasTriangle` | `PascalExtraction.lean` | The disjunction's tag as a decision procedure, proved correct at every `(n,k)` from soundness — and the Sierpiński triangle it prints. **Start here if you want to see a theorem rather than read one.** |
+
 ---
 
 ## 2. The four sub-phases in plain language

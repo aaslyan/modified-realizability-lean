@@ -488,6 +488,10 @@ theorem termEval_continuous {R : (ℕ → ℕ) → ℕ → ℕ} (hR : TrackedEnv
   | .happ s t => continuous2_comp₂ happN
       (termEval_continuous hR s) (termEval_continuous hR t)
   | .mvcount t => continuous2_comp₁ hlen (termEval_continuous hR t)
+  | .xor s t => continuous2_comp₂ xorN
+      (termEval_continuous hR s) (termEval_continuous hR t)
+  | .pas s t => continuous2_comp₂ pasN
+      (termEval_continuous hR s) (termEval_continuous hR t)
   | .solves n f t v k => continuous2_comp₅ solvesN
       (termEval_continuous hR n) (termEval_continuous hR f)
       (termEval_continuous hR t) (termEval_continuous hR v)
@@ -930,6 +934,21 @@ theorem axiomC_hydraSucc_tracked : TrackedFam fun _ => axiomC :=
 theorem axiomC_hordCutLt_tracked : TrackedFam fun _ => axiomC :=
   defaultFam_tracked
 
+/-- `axiomC` preserves tracking, the Phase-F2 Pascal instances. -/
+theorem axiomC_pasZeroZero_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_pasZeroSucc_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_pasSuccZero_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_pasSuccSucc_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_xorNum_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_eqCongXor_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_eqCongPas_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
 /-- `axiomC` preserves tracking, the Phase-E2 Hanoi instances. -/
 theorem axiomC_solvesZero_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
 
@@ -1203,6 +1222,27 @@ theorem extract_tracked {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
   | eqCongSolves n₁ n₂ f₁ f₂ t₁ t₂ v₁ v₂ k₁ k₂ =>
     intro R hR E hE
     exact axiomC_eqCongSolves_tracked
+  | pasZeroZero =>
+    intro R hR E hE
+    exact axiomC_pasZeroZero_tracked
+  | pasZeroSucc k =>
+    intro R hR E hE
+    exact axiomC_pasZeroSucc_tracked
+  | pasSuccZero n =>
+    intro R hR E hE
+    exact axiomC_pasSuccZero_tracked
+  | pasSuccSucc n k =>
+    intro R hR E hE
+    exact axiomC_pasSuccSucc_tracked
+  | xorNum a b =>
+    intro R hR E hE
+    exact axiomC_xorNum_tracked
+  | eqCongXor s₁ t₁ s₂ t₂ =>
+    intro R hR E hE
+    exact axiomC_eqCongXor_tracked
+  | eqCongPas s₁ t₁ s₂ t₂ =>
+    intro R hR E hE
+    exact axiomC_eqCongPas_tracked
 
 /-- **Generic continuity of extraction** (the theorem closing the gap
 flagged in STATUS.md): the extracted type-2 realizer of *every* closed
