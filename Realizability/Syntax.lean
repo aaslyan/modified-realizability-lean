@@ -41,7 +41,7 @@ formula (no capture), `∀`-intro the usual freshness condition for
 the context, and `ind` the same no-capture condition as `∀`-elim for
 `succ x` — the term its step case substitutes.
 -/
-import Mathlib.Logic.Function.Basic
+import Realizability.Epsilon0
 
 namespace Realizability
 
@@ -118,6 +118,7 @@ inductive Term : Type where
   | exp : Term → Term → Term
   | bump : Term → Term → Term
   | good : Term → Term → Term
+  | prec : Term → Term → Term
 deriving DecidableEq, Repr
 
 namespace Term
@@ -135,6 +136,7 @@ def eval (ρ : ℕ → ℕ) : Term → ℕ
   | exp s t => s.eval ρ ^ t.eval ρ
   | bump s t => bumpN (s.eval ρ) (t.eval ρ)
   | good s t => goodN (s.eval ρ) (t.eval ρ)
+  | prec s t => oltN (s.eval ρ) (t.eval ρ)
 
 /-- The variables occurring in a term. -/
 def vars : Term → List ℕ
@@ -147,6 +149,7 @@ def vars : Term → List ℕ
   | exp s t => s.vars ++ t.vars
   | bump s t => s.vars ++ t.vars
   | good s t => s.vars ++ t.vars
+  | prec s t => s.vars ++ t.vars
 
 /-- Substitution of a term for a variable. -/
 def subst (x : ℕ) (u : Term) : Term → Term
@@ -159,6 +162,7 @@ def subst (x : ℕ) (u : Term) : Term → Term
   | exp s t => exp (subst x u s) (subst x u t)
   | bump s t => bump (subst x u s) (subst x u t)
   | good s t => good (subst x u s) (subst x u t)
+  | prec s t => prec (subst x u s) (subst x u t)
 
 /-- Evaluation after substitution is evaluation in the updated
 environment. -/
@@ -180,6 +184,7 @@ theorem eval_subst (ρ : ℕ → ℕ) (x : ℕ) (u : Term) :
   | exp s t ihs iht => simp [subst, eval, ihs, iht]
   | bump s t ihs iht => simp [subst, eval, ihs, iht]
   | good s t ihs iht => simp [subst, eval, ihs, iht]
+  | prec s t ihs iht => simp [subst, eval, ihs, iht]
 
 /-- Evaluation only depends on the values of the occurring variables. -/
 theorem eval_congr {ρ ρ' : ℕ → ℕ} :
@@ -211,6 +216,11 @@ theorem eval_congr {ρ ρ' : ℕ → ℕ} :
     rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
       iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
   | good s t ihs iht =>
+    intro h
+    simp only [eval]
+    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+  | prec s t ihs iht =>
     intro h
     simp only [eval]
     rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
@@ -385,5 +395,39 @@ inductive Deriv : List Formula → Formula → Type where
   | eqCongGood {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
       Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
         (eq (.good s₁ s₂) (.good t₁ t₂))))
+  -- Phase C: **transfinite induction along the ordinal notations below
+  -- `ε₀`** (`tiEps0`), the one rule of the fragment that is not a
+  -- consequence of its own resources — this is the content of
+  -- Gentzen/Kirby–Paris.  Variables range over `ℕ`, read as notation
+  -- *codes* (`Epsilon0.lean`), and `y ≺ x` is the atomic formula
+  -- `prec y x = 1`, so the rule stays inside the fragment's
+  -- equations-only formula language.  Progressiveness of `φ` yields
+  -- `∀x φ(x)`; its realizer is the recursor `tiRecC`, whose defining
+  -- recursion runs along `≺` rather than along `succ` (contrast `ind`).
+  --
+  -- Side conditions, all three needed by the soundness proof: the two
+  -- variables are distinct (so that `x`'s value survives the inner
+  -- binder), the substituted variable does not get captured, and `y` is
+  -- not free in `φ` (so that `φ(y)` under the inner environment is
+  -- `φ` under `x ↦ y`'s value).
+  | tiEps0 {Γ : List Formula} {x y : ℕ} {φ : Formula} :
+      Deriv Γ (Formula.all x
+        ((Formula.all y ((eq (.prec (.var y) (.var x)) (.succ .zero)).imp
+          (φ.subst x (.var y)))).imp φ)) →
+      x ≠ y →
+      Formula.SubstOK (.var y) φ →
+      ¬ φ.FreeIn y →
+      Deriv Γ (.all x φ)
+  -- Phase C: the numeral graph of the order (`prec` is a *decidable*
+  -- comparison of codes, so the fragment computes it on numerals — the
+  -- same device as Phase B's `bumpNum`, and for the same reason: the
+  -- recursion is course-of-values through the notation structure, not a
+  -- first-order equation schema) …
+  | precNum {Γ : List Formula} (a b : ℕ) :
+      Deriv Γ (eq (.prec (numeral a) (numeral b)) (numeral (oltN a b)))
+  -- … and its congruence schema, completing the equational kit.
+  | eqCongPrec {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
+      Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
+        (eq (.prec s₁ s₂) (.prec t₁ t₂))))
 
 end Realizability

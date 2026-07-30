@@ -432,6 +432,8 @@ theorem termEval_continuous {R : (ℕ → ℕ) → ℕ → ℕ} (hR : TrackedEnv
       (termEval_continuous hR s) (termEval_continuous hR t)
   | .good s t => continuous2_comp₂ goodN
       (termEval_continuous hR s) (termEval_continuous hR t)
+  | .prec s t => continuous2_comp₂ oltN
+      (termEval_continuous hR s) (termEval_continuous hR t)
 
 /-- Updating a tracked environment at a fixed variable with a
 continuously computed value stays tracked (rule `allI`'s environment
@@ -601,6 +603,76 @@ theorem indC_tracked {a b : (ℕ → ℕ) → Fam}
     allIC fun k => fun m => indRecC (a α m) (b α (m + 2)) k
   exact allIC_tracked fun k hk m => tracked_apply_nat hk fun j => hrec m j
 
+/-- **The transfinite recursor preserves tracking, at each fixed
+notation** — the inner half of `tiC_tracked`, by well-founded induction
+along `≺` (the same induction `MR_tiRecC` performs, for the other
+invariant).  The recursive calls sit under a case split on `j' ≺ j` whose
+condition does *not* depend on the oracle, so the split is discharged
+index-by-index and the *oracle-dependent* index is absorbed by
+`tracked_apply_nat` — exactly as the iteration count is in
+`indC_tracked`.  The two `dropR` transports are handled by
+`liftR_dropR_tracked`. -/
+theorem tiRecC_tracked (φ : Formula) {m₂ : ℕ}
+    {b : (ℕ → ℕ) → PureType (m₂ + 5)} (hb : Tracked (m₂ + 5) b) :
+    ∀ j : ℕ, Tracked (m₂ + 3) fun α => tiRecC φ (b α) j := by
+  intro j
+  refine oLt_wf.induction
+    (C := fun j => Tracked (m₂ + 3) fun α => tiRecC φ (b α) j) j ?_
+  intro j ih
+  have he : (fun α => tiRecC φ (b α) j) = fun α =>
+      app₁ (app₁ (b α) (natPT (m₂ + 4) j))
+        (abs₁ fun ζ => abs₁ fun _w =>
+          if OLt (ζ (defaultPT (m₂ + 1))) j then
+            dropR φ (dropR φ (tiRecC φ (b α) (ζ (defaultPT (m₂ + 1)))))
+          else defaultPT (m₂ + 1)) := by
+    funext α
+    exact tiRecC_eq φ (b α) j
+  rw [he]
+  refine app₁_tracked (app₁_tracked hb (natPT_tracked (continuous2_const j))) ?_
+  refine abs₁_tracked fun Z hZ => ?_
+  refine abs₁_tracked fun W hW => ?_
+  have hk : Continuous2 fun α => Z α (defaultPT (m₂ + 1)) :=
+    hZ _ (defaultPT_tracked (m₂ + 1))
+  refine tracked_apply_nat (n := m₂) (k := fun α => Z α (defaultPT (m₂ + 1)))
+    (G := fun α j' =>
+      if OLt j' j then dropR φ (dropR φ (tiRecC φ (b α) j'))
+      else defaultPT (m₂ + 1)) hk (fun j' => ?_)
+  rcases decEm (OLt j' j) with h | h
+  · have he₂ : (fun α =>
+        if OLt j' j then dropR φ (dropR φ (tiRecC φ (b α) j'))
+        else defaultPT (m₂ + 1))
+        = fun α => dropR φ (dropR φ (tiRecC φ (b α) j')) := by
+      funext α
+      rw [if_pos h]
+    rw [he₂]
+    exact (liftR_dropR_tracked φ).2 ((liftR_dropR_tracked φ).2 (ih j' h))
+  · have he₂ : (fun α =>
+        if OLt j' j then dropR φ (dropR φ (tiRecC φ (b α) j'))
+        else defaultPT (m₂ + 1))
+        = fun _ => defaultPT (m₂ + 1) := by
+      funext α
+      rw [if_neg h]
+    rw [he₂]
+    exact defaultPT_tracked (m₂ + 1)
+
+/-- `tiC` preserves tracking (rule `tiEps0`) — combinator 40's
+preservation lemma.  The `allIC` packaging closes the abstraction by
+β-reduction, exactly as for `allI`/`ind`; the notation code read off the
+argument is continuous, so `tracked_apply_nat` consults the family of
+recursors at it. -/
+theorem tiC_tracked (φ : Formula) {b : (ℕ → ℕ) → Fam} (hb : TrackedFam b) :
+    TrackedFam fun α => tiC φ (b α) := by
+  refine allIC_tracked fun k hk => ?_
+  intro m
+  cases m with
+  | zero => exact defaultPT_tracked 1
+  | succ m' =>
+    cases m' with
+    | zero => exact defaultPT_tracked 2
+    | succ m₂ =>
+      show Tracked (m₂ + 3) fun α => tiRecC φ (b α (m₂ + 4)) (k α)
+      exact tracked_apply_nat hk fun j => tiRecC_tracked φ (hb (m₂ + 4)) j
+
 /-- `eqDecC` preserves tracking (rule `eqDec`): the decision tag of two
 continuously computed values is a pointwise case split between two
 constant tracked families. -/
@@ -729,6 +801,15 @@ theorem axiomC_eqCongBump_tracked : TrackedFam fun _ => axiomC :=
 /-- `axiomC` preserves tracking, `eqCongGood` instance (rule
 `eqCongGood`). -/
 theorem axiomC_eqCongGood_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `precNum` instance (rule `precNum`). -/
+theorem axiomC_precNum_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `eqCongPrec` instance (rule
+`eqCongPrec`). -/
+theorem axiomC_eqCongPrec_tracked : TrackedFam fun _ => axiomC :=
   defaultFam_tracked
 
 /-! ## The main induction and the capstone -/
@@ -881,6 +962,16 @@ theorem extract_tracked {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
   | eqCongGood s₁ t₁ s₂ t₂ =>
     intro R hR E hE
     exact axiomC_eqCongGood_tracked
+  | @tiEps0 Γ x y φ D hxy hok hfree ih =>
+    intro R hR E hE
+    show TrackedFam fun α => tiC φ (extract D (R α) (E.map (· α)))
+    exact tiC_tracked φ (ih R hR E hE)
+  | precNum a b =>
+    intro R hR E hE
+    exact axiomC_precNum_tracked
+  | eqCongPrec s₁ t₁ s₂ t₂ =>
+    intro R hR E hE
+    exact axiomC_eqCongPrec_tracked
 
 /-- **Generic continuity of extraction** (the theorem closing the gap
 flagged in STATUS.md): the extracted type-2 realizer of *every* closed

@@ -1,4 +1,4 @@
-# Status: milestone COMPLETE, generic continuity COMPLETE, induction (Phase 2) COMPLETE, arithmetic (Phase A) COMPLETE, hereditary base-k / Goodstein sequence (Phase B) COMPLETE
+# Status: milestone COMPLETE, generic continuity COMPLETE, induction (Phase 2) COMPLETE, arithmetic (Phase A) COMPLETE, hereditary base-k / Goodstein sequence (Phase B) COMPLETE, transfinite induction to ε₀ (Phase C) COMPLETE
 
 `lake build` succeeds, zero `sorry`/`admit`.  `#print axioms` on the
 soundness theorem (now covering the `ind` rule and the Phase-A rules),
@@ -28,6 +28,21 @@ in `Arithmetic.lean` itself, so this is checked at every build):
 'Realizability.plus_succ_extract_continuous'   … [propext, Quot.sound]
 'Realizability.times_zero_extract_continuous'  … [propext, Quot.sound]
 'Realizability.times_succ_extract_continuous'  … [propext, Quot.sound]
+```
+
+and on the Phase-C theorems (`#print axioms` in
+`TransfiniteInduction.lean`, checked at every build — note the first
+line, which is the well-foundedness of the notation order that the
+transfinite recursor is defined by, and which is deliberately
+`Classical`-free so the continuity budget survives):
+
+```
+'Realizability.oLt_wf'                     … [propext, Quot.sound]
+'Realizability.MR_tiRecC'                  … [propext, Classical.choice, Quot.sound]
+'Realizability.ti_demo_realized'           … [propext, Classical.choice, Quot.sound]
+'Realizability.prec_one_omega_realized'    … [propext, Classical.choice, Quot.sound]
+'Realizability.ti_demo_extract_continuous' … [propext, Quot.sound]
+'Realizability.ordOf_goodstein_three_descends' … does not depend on any axioms
 ```
 
 and on the Phase-B certification theorems (`#print axioms` in
@@ -104,6 +119,16 @@ and on the Phase-B certification theorems (`#print axioms` in
   cross-checks against `WilliamAngus/Goodstein`; see the Phase-B
   section below.  Goodstein's theorem itself is **not** proved and not
   claimed — Phases C/D.
+- `Epsilon0.lean` (Phase C, and the only module *before* `Syntax.lean`)
+  — the ordinal notations below `ε₀` as natural-number codes, their
+  Cantor-normal-form order `≺`, the normal-form predicate that makes it
+  well-founded, and **`oLt_wf`**; plus a hand-rolled choice-free,
+  kernel-computable triangular pairing (Mathlib's `Nat.pair` could not be
+  used — see the Phase-C section).
+- `TransfiniteInduction.lean` (Phase C) — the identification of the
+  notations with Phase B's `HTerm` grammar (`ordTerm`), the Goodstein
+  ordinal assignment `ordOf` with kernel-verified descent instances, the
+  rule exercised end to end, and the `#print axioms` block.
 - `CollapseDemo.lean` — `RealizesCtQ` (the class of a closed
   derivation's extracted type-2 realizer in `CtQ 2`, via the parent
   project's capstone equivalence `ctQTwoEquiv`) — now **total on closed
@@ -160,7 +185,17 @@ and on the Phase-B certification theorems (`#print axioms` in
     schemas (`predZero`, `predSucc`, `expZero`, `expSucc`, `bumpZero`,
     `bumpNum`, `goodZero`, `goodSucc`, `eqCongPred`, `eqCongExp`,
     `eqCongBump`, `eqCongGood`), same discipline and bounds as the
-    Phase-A group.
+    Phase-A group;
+40. `tiC` — **the transfinite recursor** (rule `tiEps0`): `tiRecC`,
+    defined by `WellFounded.fix` along the notation order `≺`, packaged
+    by `allIC` exactly as `indC` is.  The second combinator that
+    recurses, and the only one whose recursion is not along `ℕ`'s
+    successor structure.  Correctness is `MR_tiRecC` (`Soundness.lean`);
+    `tiRecC_eq` is the non-dependent unfolding both the soundness and
+    the continuity proof use;
+41. –42. `axiomC` — contentless realizers for the two remaining Phase-C
+    schemas (`precNum`, the numeral graph of the order, and
+    `eqCongPrec`).
 
 ## The per-combinator continuity preservation lemmas (all in `GenericContinuity.lean`)
 
@@ -212,6 +247,16 @@ combinator sends tracked inputs to tracked outputs:
     `bump`/`good` are *arbitrary* functions of two continuously
     computed values, so `continuous2_comp₂` again covers them with no
     new closure fact.  No case of `extract_tracked` is left silent.
+
+40. `tiC_tracked` (`tiEps0`) — the recursor is tracked at each *fixed*
+    notation by well-founded induction along `≺` (`tiRecC_tracked`), and
+    the oracle-dependent notation code is absorbed by the same
+    `tracked_apply_nat` that rule `ind` needed — no new closure fact was
+    required.  The case split on `j' ≺ j` inside the recursor does not
+    depend on the oracle, so it is discharged index by index rather than
+    by `ite_tracked`.  `termEval_continuous` gains the `prec` case
+    (`continuous2_comp₂ oltN`);
+41. –42. `axiomC_precNum_tracked`, `axiomC_eqCongPrec_tracked`.
 
 The capstone `extract_continuous` is the induction on `Deriv`
 (`extract_tracked`) invoking one preservation lemma per case — the same
@@ -539,3 +584,307 @@ each) and `termEval_continuous` (`pred`/`exp`/`bump`/`good` via the
 existing `continuous2_comp₂`); `extract_continuous` covers every new
 rule, and the four `#print axioms` checks in `Goodstein.lean` run at
 every build (outputs quoted at the top of this file).
+
+## Phase C (transfinite induction up to `ε₀`): COMPLETE
+
+**Scope, stated plainly per the brief**: this phase adds the rule
+`tiEps0`, extracts and certifies its realizer, and proves that realizer
+continuous.  It does **not** prove Goodstein's theorem (Phase D), makes
+**no** conservativity/consistency/strength claim about the extended
+fragment, does not claim (and does not prove) that the fragment fails to
+derive the rule — that is standard metatheory for PA, invoked only as
+framing — and does not generalize beyond `ε₀`.
+
+```
+∀x. (∀y. y ≺ x → φ(y)) → φ(x)
+─────────────────────────────  (tiEps0)
+          ∀x. φ(x)
+```
+
+### The representation decision: notations are natural-number codes
+
+The fragment has **one sort** — its variables range over `ℕ` and its
+atomic formulas are equations — so `tiEps0`'s `∀x`/`∀y` cannot range over
+a separate type of notations, and `y ≺ x` cannot be a new atomic
+predicate.  Both are therefore *coded*: `x`, `y` are natural numbers read
+as Cantor-normal-form trees, and `y ≺ x` is the equation
+`prec y x = succ zero`, `prec` being a new function symbol whose value
+semantics is the characteristic function of the order (`oltN`).  The
+coding (`Epsilon0.lean`) is
+
+```
+code 0                      ↦ the ordinal 0
+mkO e c r = ⟪e, ⟪c, r⟫⟫ + 1  ↦ ω^(e)·(c+1) + (r)
+```
+
+and it is a **bijection** `ℕ ≅ {CNF trees}` (`mkO_oE_oC_oR`): the rule's
+`∀x` ranges over exactly the notations, with no undecodable codes.
+
+*One tempting alternative is a trap, and is worth recording.*  Since
+Phase B already represents `n` hereditarily in base `k`, one could code a
+notation by the natural number whose hereditary base-2 representation it
+is — no new coding at all.  That collapses the phase: the map
+`n ↦ ord₂(n)` is *order-preserving*, so `≺` becomes `<` on `ℕ`, and
+`tiEps0` becomes ordinary course-of-values induction, derivable from
+Phase 2's `ind`.  (Hereditary base-2 reaches only ordinals whose Cantor
+normal form has all coefficients `1`, an initial segment of order type
+`ω` — which is exactly why it is order-isomorphic to `ℕ` and exactly why
+it is useless here.)  The coding above avoids this: it is not
+order-preserving, and the kernel-verified Goodstein instance in
+`TransfiniteInduction.lean` shows the descent `9 ≻ 2 ≻ 10 ≻ 3 ≻ 1 ≻ 0`
+*increasing* numerically at its second step.
+
+### Canonicity: load-bearing here — the Phase-B flag, closed
+
+Phase B deferred canonicity of hereditary representations and flagged
+that it becomes load-bearing "exactly if the ordinal assignment is
+defined on arbitrary `HTerm`s".  This phase quantifies over arbitrary
+notations, so the question was checked directly, as the brief required.
+**The answer is that canonicity is not optional, and the failure is not
+subtle.**  On arbitrary CNF trees the comparison admits an infinite
+descending chain:
+
+```
+ω  ≻  1 + ω  ≻  1 + (1 + ω)  ≻  1 + (1 + (1 + ω))  ≻  …
+```
+
+Every step wins by comparing head exponents (`0 ≺ 1`), and every term in
+the chain denotes the *same* ordinal `ω`, since `1 + ω = ω`.  Two
+representations of one ordinal, ranked strictly — precisely the ambiguity
+Phase B could defer.  Machine-checked witnesses:
+`precB_onePlus_omega`, `precB_onePlus_onePlus_omega`,
+`nfB_onePlus_omega`.
+
+Resolution, per the brief's first option: the order the rule uses
+(`oltB`) is the comparison **conjoined with the normal-form predicate**
+`nfB` — hereditarily, the remainder's head exponent strictly below the
+head exponent.  This is the `NFBelow`/`NF` layer Phase B deferred, now
+built.  Two consequences worth being explicit about:
+
+* the rule's *conclusion* is still unrestricted (`∀x φ(x)` for every
+  natural number, not only for normal codes): a non-normal code has no
+  `≺`-predecessors, so progressiveness proves `φ` of it outright.  No
+  side condition of `tiEps0` mentions normality;
+* nothing in the phase quantifies over "some representation of an
+  ordinal" — the assignment `ordOf` is again a deterministic function,
+  as `hrep` was.
+
+### What Lean needed — the brief's prediction, corrected
+
+The brief predicted that no well-foundedness theorem would be needed:
+the recursor was to be built by structural recursion on the notation's
+subterms, and Lean's acceptance of that recursion was to be the formal
+counterpart of Gentzen's "direct inspection of a concretely presented
+notation system".  **The prediction does not hold, and the reason is
+structural, not technical**: `≺`-descent is not subterm descent.  From
+`ω^ω` one descends to `ω^2·2 + ω·2 + 2`, a *larger* tree — Phase B's own
+numbers exhibit it (`hrep 2 4` is `ω^ω`; one Goodstein step lands on the
+three-summand notation for `26`).  A recursion that only reaches
+subterms cannot reach the predecessors the rule quantifies over, so no
+amount of care with the recursion's shape avoids the issue.
+
+So `Epsilon0.lean` proves **`oLt_wf`**, well-foundedness of `≺` on normal
+forms, and `tiRecC` is `WellFounded.fix` on it.  The brief's *point*
+survives intact, and in a sharper form than the structural version would
+have given:
+
+> The proof needs no ordinals, no `Classical`, and nothing beyond what
+> Lean's own inductive types provide: three nested inductions —
+> accessibility of the head exponent (outer), the coefficient (middle,
+> ordinary strong induction on `ℕ`), accessibility of the remainder
+> (inner, itself supplied by the outer hypothesis, since a normal form's
+> remainder has a smaller head exponent) — matching the three ways one
+> notation can precede another.  Gentzen's answer to Hilbert's programme
+> was that inspecting an explicitly presented notation system convinces
+> us it is well-ordered, and that this conviction is not reducible to the
+> arithmetic it justifies.  Here that inspection is a short induction the
+> kernel checks, and its cost is visible in the build: `oLt_wf` needs
+> `[propext, Quot.sound]`, strictly less than the
+> `[propext, Classical.choice, Quot.sound]` of the realization theorems
+> it underwrites.  (The other half of Gentzen's point — that the
+> *arithmetic* cannot return the favour — is standard metatheory for PA,
+> not something proved here for this fragment; see the citation note.)
+
+### `Classical.choice` had to be kept out of the *definition* — and that forced a hand-rolled pairing
+
+A constraint that shaped the module and is worth recording because it is
+easy to trip over: `tiRecC`'s **definition** mentions `oLt_wf`, so every
+axiom of the well-foundedness proof is inherited by `extract`, hence by
+`extract_continuous`, whose budget is `[propext, Quot.sound]`.  Two
+things had to be dealt with:
+
+* **Mathlib's `Nat.pair`/`Nat.unpair` cannot be used.**  Its inverse goes
+  through `Nat.sqrt`, and *every* Mathlib lemma about that pairing
+  (`Nat.pair_unpair`, `Nat.unpair_left_le`, …) depends on
+  `Classical.choice` — measured, not assumed.  `Epsilon0.lean` therefore
+  builds the triangular (Cantor) pairing from scratch: `tri` structurally,
+  the inverse by a fueled downward search, arithmetic-only proofs.  Bonus:
+  it also *reduces in the kernel*, which Mathlib's does not, so the
+  Phase-B practice of kernel-verified cross-checks survives into this
+  phase (`ordOf_goodstein_three` is `rfl`; the descent instances are
+  `decide`).
+* **The `by_cases` tactic can fall back on `Classical.byCases`.**  It did,
+  inside the strong-induction helper, and quietly cost `Classical.choice`
+  for the whole module.  Every case split in `Epsilon0.lean` now goes
+  through the explicit decidable split `decEm`, and the file's strong
+  induction is proved locally rather than imported.  This is a standing
+  invariant of that module, not a one-off cleanup.
+
+### The realizer, and the level bookkeeping the rule costs
+
+`tiRecC φ b k = app₁ (app₁ b k̂) ⟨progressiveness argument at k⟩`, the
+argument returning the recursive value at `j` when handed `j` and any
+realizer of `j ≺ k`.  Two structural points:
+
+* **The order premise carries no computational content.**  `y ≺ x` is an
+  *equation* of the fragment, so realizing it *is* the fact
+  `oltN j k = 1`, i.e. `OLt j k` — exactly the descent the well-founded
+  recursion needs.  All of the rule's content is in the recursion; none
+  is in the premise.  (This is the `succNeZero`/`axiomC` design decision
+  paying off in a place where it matters: had `≺` been given
+  computational content, the recursor would have had to *check* the
+  descent instead of receiving it.)
+* **Two `dropR φ` transports are forced by levels.**  Contrast `ind`,
+  whose step formula `∀x (φ(x) → φ(succ x))` let the iterate stay at one
+  ambient level (recorded in the Phase-2 section as the pleasant
+  surprise that the transports were not needed).  Here the antecedent is
+  *itself* a `∀→` pair, so it consumes realizers of `φ(y)` two ambient
+  levels below the level at which the recursion produces them.  Hence
+  `MR_tiRecC`'s hypothesis `lvl φ ≤ m₂` and `derivBound`'s
+  `max (derivBound D) (lvl φ + 2) + 1`.  So Phase C is the first rule
+  whose realizer genuinely needs `Transport.lean` in its *recursion*, not
+  only at its binders.
+
+`MR_tiRecC` is the phase's new theorem — the counterpart of
+`MR_indRecC` one level of recursion up — proved by well-founded induction
+in Lean along `≺`, the "small" induction, invoked exactly once by the
+`tiEps0` case of the big induction over `Deriv`.  Its three side
+conditions are each used exactly once: `x ≠ y` to read `x`'s value
+through the inner binder, `SubstOK (var y) φ` for `MR_subst`, and
+`¬ φ.FreeIn y` for the `MR_congr` step that discards the inner binder's
+assignment.
+
+### Generic continuity against the new combinator — answered explicitly
+
+As with `ind`, generic continuity does not come for free (`extract_tracked`
+is an induction over `Deriv`, so the rule adds a case), but the invariant
+needed **no strengthening and no new closure fact**.  `tiRecC_tracked`
+mirrors `MR_tiRecC`: well-founded induction along `≺` gives tracking at
+each *fixed* notation, and the oracle-dependent notation code is absorbed
+by `tracked_apply_nat` — the same lemma rule `ind` introduced for its
+iteration count.  One simplification is worth noting: the recursor's
+internal case split (`j' ≺ j`) does **not** depend on the oracle, so it
+is discharged index by index and `ite_tracked` is not needed.  The two
+`dropR`s are covered by `liftR_dropR_tracked`.  `CollapseDemo.lean` was
+not touched, and `RealizesCtQ`/`collapse_demo` cover `tiEps0`-derivations
+unchanged.
+
+### Machinery cases added, none silent
+
+Rule count 39 → **42**: `tiEps0`, plus `precNum` (the numeral graph of
+the order) and `eqCongPrec` (its congruence schema, completing the
+equational kit).  `prec` joins the signature, so `Term.eval`/`vars`/
+`subst`/`eval_subst`/`eval_congr` each gain a case, as does
+`termEval_continuous` (`continuous2_comp₂ oltN`).  Per-rule discipline:
+`extract` + `derivBound` (three cases), `soundness` (three), and
+`extract_tracked` (three).  `precNum` follows the flagged Phase-B
+`bumpNum` pattern for the same reason — the comparison's recursion is
+course-of-values through the notation structure, not a first-order
+equation schema — and, as there, the general facts about it are proved,
+not axiomatized (`Epsilon0.lean`'s order constructors).
+
+### The bridge to Phase B, and what Phase D still owes
+
+`ordTerm` decodes a notation code into a term of Phase B's grammar
+(`ordTerm_hterm : HTerm (ordTerm c)`): the notations of this phase *are*
+Phase B's hereditary representations, with the base variable read as `ω`
+instead of as a numeral — no second encoding, per the brief.  `ordOf k n`
+is the ordinal assignment for the Goodstein sequence, clause for clause
+the mirror of `hrepAux` with `mkO` for the term constructors.  Verified
+in the kernel (`TransfiniteInduction.lean`): the ordinals along `G(3)`
+are `ω+1, ω, 3, 2, 1, 0` (codes `9, 2, 10, 3, 1, 0`), all normal, each
+strictly `≺` its predecessor, and `ordOf 3 (bumpN 2 3) = ordOf 2 3` — the
+base change leaving the ordinal fixed.
+
+Phase D's remaining obligations are stated in that module rather than
+implied: (1) `nfB (ordOf k n) = true` for `2 ≤ k` (Phase B's deferred
+digit-bound/exponent-ordering facts, i.e. real `hlog` theory); (2)
+`ordOf (k+1) (bumpN k n) = ordOf k n` in general (the fuels differ on the
+two sides, unlike Phase B's `hrepAux_eval_bump`, so a fuel-adequacy lemma
+for `ordOfAux` comes first); (3) the descent
+`OLt (ordOf (k+1) (bumpN k n - 1)) (ordOf k n)`.  Only (3) uses
+`tiEps0`; (1) and (2) are ordinary Phase-B-style work.
+
+**And the gap that is not ours to close here**: the fragment still has no
+`∃`, so `∀m ∃s. good m s = 0` cannot be *stated*, let alone proved (open
+item 3½ in QUESTIONS.md, raised during Phase B and deliberately not
+folded into this phase — the transfinite-induction work turned out to be
+self-contained, and `∃` touches `Formula`, `MR`, the transports and the
+tracking relation, which is a phase-sized change of its own).
+
+### Citation (checked as far as the primary text allows)
+
+The construction is the standard one for functionals defined by
+transfinite recursion on a primitive-recursive ordering: W. W. Tait,
+*Functionals defined by transfinite recursion*, **Journal of Symbolic
+Logic 30(2) (June 1965), 155–174**, DOI 10.2307/2270132 (Zbl
+0133.25202).  Its companion is *The substitution method*, JSL 30(2)
+(1965), 175–192, DOI 10.2307/2270133; the similarly-dated *Infinitely
+long terms of transfinite type* (in Crossley–Dummett, eds., *Formal
+Systems and Recursive Functions*, North-Holland 1965, 176–185, DOI
+10.1016/S0049-237X(08)71689-6) is a **different** paper and is not the
+source for this construction.
+
+Granularity, stated plainly per the house discipline — the brief asked
+for this explicitly, and Phase B's Troelstra citation is the template.
+**The primary text was not accessible**; this citation is at *abstract*
+granularity.  Checked directly: Cambridge Core (abstract and reference
+list free, body paywalled), JSTOR (403 to this environment), Project
+Euclid (the legacy URL now redirects to the homepage; JSL is no longer
+hosted there), Unpaywall / OpenAlex / Semantic Scholar (all report the
+DOI closed with no repository copy), the Internet Archive (no item; the
+1965 conference volume is present but lending-restricted with
+search-inside disabled), Google Books (nothing), zbMATH Open (metadata
+and reference list, no review text), and Tait's own former homepage at
+`home.uchicago.edu/~wwtx/` (now 404; its 2024-10-05 Wayback snapshot
+posts 20 papers, none earlier than 1981).  Both JSL reviews — Vesley,
+JSL 31(3) (1966), 509–510, and López-Escobar, JSL 40(4) (1975), 623–624 —
+are likewise paywalled, the former offering only a first-page image.
+
+What the author's abstract (free, and byte-identical to Crossref's
+record) *does* verify, and all that is claimed on its authority: the
+paper treats quantifier-free second-order systems of primitive recursive
+arithmetic extended by rules that "have the form of definition by
+transfinite recursion up to some ordinal ξ (where ξ is represented by a
+primitive recursive (p.r.) ordering)"; the systems are described in
+**§2**, elementary closure properties in **§3**, less elementary ones in
+**§§5–7**, and "the key lemma (**Theorem 1**) needed for the reduction of
+these equations to transfinite recursion is simply a sharpening of the
+Brouwer-Kleene idea".  No section or theorem beyond §2, §3, §§5–7 and
+Theorem 1 is cited, and **the abstract does not single out `ε₀`** — it
+states the recursion for a general ordinal given by a p.r. ordering — so
+no `ε₀`-specific claim is made on its authority.  (The distributed
+abstract also has a lacuna after "The main results of this paper are of
+two sorts:" and prints subscripts inconsistent with its own gloss; both
+are the publisher's transcription, not ours.)
+
+For the `ε₀` scheme specifically the granularity available was Tait's own
+later restatement, read in full: W. W. Tait, *The substitution method
+revisited*, in Feferman et al. (eds.), *Proofs, Categories and
+Computations: Essays in Honor of Grigori Mints*, Tributes 13, College
+Publications 2010, 231–241 (Zbl 1225.03076), obtained from the archived
+copy of his homepage.  There he works in "the quantifier-free system
+PRA²_{ε₀} … with definition by recursion on each ordinal α < ε₀", with
+"the order type ε₀ … represented in some standard way by a primitive
+recursive ordering ≺ of ω with least element 0" — the setup this phase
+formalizes — and attributes to the 1965 paper by number both a
+conservativity result ("Tait 1965a, Theorem 4") and a bound on the
+ordinals needed ("Tait 1965a, §5").  **Those numbers are Tait's own
+citations, verified in the 2010 text and not checked against the 1965
+text.**  Two further pointers found in the literature — a "Theorem 3" and
+a page reference "p. 163" — rest on OCR and on a paywalled paper
+respectively, and are therefore *not* recorded as verified.
+
+Kirby–Paris and Gentzen are cited here only for the *framing* (that the
+fragment cannot derive the rule), which this development does not prove
+and does not claim.

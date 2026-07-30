@@ -19,10 +19,14 @@ Every rule has its own named combinator, listed in STATUS.md:
 * `botEC` — vacuous; `allIC` — abstraction reading the numeral from the
   argument; `allEC` — application at the numeral of the term's value;
 * `indC` — the induction recursor: the type-indexed primitive recursion
-  `indRecC` (the one combinator that *iterates* — the number of `app₁`
-  steps is the numeral being realized), packaged by `allIC`;
+  `indRecC` (the number of `app₁` steps is the numeral being realized),
+  packaged by `allIC`;
+* `tiC` — the transfinite recursor (Phase C): `tiRecC`, recursion along
+  the notation order `≺` of `Epsilon0.lean` rather than along `succ`,
+  likewise packaged by `allIC`.  These two are the only combinators that
+  recurse;
 * `eqDecC` — the decidable-equality tag; `axiomC` — the (contentless)
-  realizer of the two successor axioms.
+  realizer of the two successor axioms and of every later schema.
 
 `derivBound` assigns each derivation the ambient level above which its
 extracted family realizes the conclusion (`Soundness.lean`).
@@ -141,6 +145,64 @@ the concluded formula has the same `∀x. φ` shape, so the same packaging
 noncomputable def indC (a b : Fam) : Fam :=
   allIC fun k => fun m => indRecC (a m) (b (m + 2)) k
 
+/-- **The transfinite recursor at a fixed ambient** (rule `tiEps0`) —
+combinator 40, and the second combinator that recurses (the first being
+`indRecC`).  Where `indRecC` iterates `app₁` along a numeral's successor
+structure, this one recurses along the notation order `≺`
+(`Epsilon0.lean`):
+
+    tiRecC φ b k = app₁ (app₁ b k̂) ⟨the progressiveness argument at k⟩
+
+and the progressiveness argument, when handed a notation `j` and *any*
+realizer of `j ≺ k` (an equation, hence contentless), returns the
+recursive value at `j`.  Two `dropR φ` transports appear because the
+premise's nested `∀→` consumes its `φ(y)` realizers two ambient levels
+below the one the recursion runs at — the level bookkeeping that `ind`
+escaped (its step formula has no nested binder pair).
+
+`WellFounded.fix` on `oLt_wf` is used here, and only here.  Two things
+make that unproblematic: this combinator is `noncomputable` and never
+asked to reduce in the kernel (unlike the Phase-B value functions), and
+`Epsilon0.lean` proves `oLt_wf` without `Classical`, so the continuity
+theorems' axiom budget is unaffected.  `tiRecC_eq` below is the
+non-dependent restatement used by both `MR_tiRecC` (`Soundness.lean`)
+and `tiC_tracked` (`GenericContinuity.lean`). -/
+noncomputable def tiRecC (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) :
+    ℕ → PureType (m₂ + 3) :=
+  oLt_wf.fix fun k rec =>
+    app₁ (app₁ b (natPT (m₂ + 4) k))
+      (abs₁ fun ζ => abs₁ fun _w =>
+        if h : OLt (ζ (defaultPT (m₂ + 1))) k then
+          dropR φ (dropR φ (rec (ζ (defaultPT (m₂ + 1))) h))
+        else defaultPT (m₂ + 1))
+
+/-- One unfolding of the recursor, with the recursive call in
+non-dependent form (the accessibility argument is not used in the body,
+so `WellFounded.fix_eq` plus `dite_eq_ite` removes it). -/
+theorem tiRecC_eq (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) (k : ℕ) :
+    tiRecC φ b k =
+      app₁ (app₁ b (natPT (m₂ + 4) k))
+        (abs₁ fun ζ => abs₁ fun _w =>
+          if OLt (ζ (defaultPT (m₂ + 1))) k then
+            dropR φ (dropR φ (tiRecC φ b (ζ (defaultPT (m₂ + 1)))))
+          else defaultPT (m₂ + 1)) := by
+  conv_lhs => rw [tiRecC, WellFounded.fix_eq]
+  simp only [dite_eq_ite]
+  rfl
+
+/-- `tiEps0`: the recursor family — combinator 40.  Packaged by `allIC`
+exactly as `indC` is: the concluded formula is again `∀x. φ`, so the same
+abstraction (read the notation code off the argument) applies.  The two
+sub-`lvl φ + 2` ambients are junk, and `derivBound` keeps them
+unreachable. -/
+noncomputable def tiFamAt (φ : Formula) (b : Fam) (k : ℕ) : Fam
+  | 0 => defaultPT 1
+  | 1 => defaultPT 2
+  | m₂ + 2 => tiRecC φ (b (m₂ + 4)) k
+
+noncomputable def tiC (φ : Formula) (b : Fam) : Fam :=
+  allIC (tiFamAt φ b)
+
 /-- `eqDec`: tag by the (meta-level) decision of the equation; the
 payloads are contentless. -/
 noncomputable def eqDecC (t : Bool) : Fam :=
@@ -204,6 +266,9 @@ noncomputable def extract : {Γ : List Formula} → {φ : Formula} →
   | _, _, .eqCongExp _ _ _ _, _, _ => axiomC
   | _, _, .eqCongBump _ _ _ _, _, _ => axiomC
   | _, _, .eqCongGood _ _ _ _, _, _ => axiomC
+  | _, _, @Deriv.tiEps0 _ _ _ φ D _ _ _, ρ, env => tiC φ (extract D ρ env)
+  | _, _, .precNum _ _, _, _ => axiomC
+  | _, _, .eqCongPrec _ _ _ _, _, _ => axiomC
 
 /-- The ambient level above which a derivation's extracted family
 realizes its conclusion. -/
@@ -251,5 +316,10 @@ def derivBound : {Γ : List Formula} → {φ : Formula} → Deriv Γ φ → ℕ
   | _, _, .eqCongExp _ _ _ _ => 2
   | _, _, .eqCongBump _ _ _ _ => 2
   | _, _, .eqCongGood _ _ _ _ => 2
+  -- Phase C: the recursor needs two ambient levels above the formula's
+  -- own for its two `dropR` transports, plus one for the `∀` packaging.
+  | _, _, @Deriv.tiEps0 _ _ _ φ D _ _ _ => max (derivBound D) (lvl φ + 2) + 1
+  | _, _, .precNum _ _ => 0
+  | _, _, .eqCongPrec _ _ _ _ => 2
 
 end Realizability

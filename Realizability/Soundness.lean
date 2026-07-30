@@ -9,6 +9,11 @@ invokes the corresponding named combinator's behavior, with the
 transports supplying hypothesis families at binders (`FR_famOf`), the
 substitution lemma at `∀`-elimination, and environment congruence at
 `∀`-introduction.
+
+Two "small" inductions live here, each invoked exactly once by the big
+one: `MR_indRecC` (closure of `MR` under primitive recursion along
+`succ`, rule `ind`) and `MR_tiRecC` (closure under transfinite recursion
+along `≺`, rule `tiEps0`).
 -/
 import Realizability.Extraction
 
@@ -73,6 +78,91 @@ theorem MR_indRecC {ρ : ℕ → ℕ} {x : ℕ} {φ : Formula}
       simp [Function.update]
     rw [heval, Function.update_idem] at hconv
     exact hconv
+
+/-- **Closure of `MR` under transfinite recursion along `≺`** — the new
+theorem of the Phase-C extension, and the exact counterpart of
+`MR_indRecC` one level of recursion up: if `b` realizes the
+progressiveness premise
+
+    ∀x. (∀y. y ≺ x → φ(y)) → φ(x)
+
+then the recursor's value at every notation code `k` realizes `φ(x)`
+under `x ↦ k`.  Proved by **well-founded induction in Lean along `≺`**
+(`oLt_wf`), the "small" induction of this rule — strictly nested inside
+`soundness`'s big induction over `Deriv`, exactly as `MR_indRecC`'s
+numeral induction is.
+
+Three things are worth naming, since they are what makes the proof go:
+
+* the hypothesis `y ≺ x` is an *equation* of the fragment, so its
+  realizers carry no content — realizing it **is** the fact
+  `oltN j k = 1`, i.e. `OLt j k`, which is precisely the descent the
+  well-founded induction needs.  The rule's computational content is
+  therefore entirely in the recursion, none of it in the order premise;
+* the two `dropR φ` transports are forced by levels, not by taste: the
+  premise's antecedent is itself a `∀→` pair, so it consumes realizers
+  of `φ(y)` two ambient levels below the level at which the recursion
+  produces them.  Hence the hypothesis `lvl φ ≤ m₂` and
+  `derivBound`'s `lvl φ + 2`;
+* the side conditions are each used once — `x ≠ y` to read `x`'s value
+  through the inner binder, `SubstOK` for `MR_subst`, and `y` not free
+  in `φ` for the `MR_congr` step that discards the inner binder's
+  assignment. -/
+theorem MR_tiRecC {ρ : ℕ → ℕ} {x y : ℕ} {φ : Formula}
+    (hxy : x ≠ y) (hok : Formula.SubstOK (.var y) φ) (hfree : ¬ φ.FreeIn y)
+    {m₂ : ℕ} (hlvl : lvl φ ≤ m₂) {b : PureType (m₂ + 5)}
+    (hb : MR ρ (Formula.all x
+      ((Formula.all y ((Formula.eq (.prec (.var y) (.var x)) (.succ .zero)).imp
+        (φ.subst x (.var y)))).imp φ)) (m₂ + 4) b) :
+    ∀ k : ℕ, MR (Function.update ρ x k) φ (m₂ + 2) (tiRecC φ b k) := by
+  intro k
+  refine oLt_wf.induction
+    (C := fun k => MR (Function.update ρ x k) φ (m₂ + 2) (tiRecC φ b k)) k ?_
+  intro k ih
+  rw [tiRecC_eq]
+  -- The premise at the code `k`, then its `→` clause: it wants a
+  -- realizer of progressiveness *at* `k`, which is what we build.
+  refine hb k _ ?_
+  intro j
+  rw [app₁_abs₁]
+  intro w hw
+  rw [app₁_abs₁]
+  -- Realizing the order premise *is* the descent `j ≺ k`.
+  have hjk : OLt j k := by
+    have hw' : Term.eval (Function.update (Function.update ρ x k) y j)
+        (.prec (.var y) (.var x))
+        = Term.eval (Function.update (Function.update ρ x k) y j)
+          (.succ .zero) := hw
+    show OLt j k
+    refine oltN_eq_one_iff.mp ?_
+    have hx : Function.update (Function.update ρ x k) y j x = k := by
+      simp [Function.update, hxy]
+    have hy : Function.update (Function.update ρ x k) y j y = j := by
+      simp [Function.update]
+    show oltN j k = 1
+    simpa [Term.eval, hx, hy] using hw'
+  rw [show natPT (m₂ + 2) j (defaultPT (m₂ + 1)) = j from rfl, if_pos hjk]
+  -- The recursive value, transported down the two ambient levels the
+  -- premise's nested binder pair costs.
+  have hrec := ih j hjk
+  have hd₁ : MR (Function.update ρ x j) φ (m₂ + 1) (dropR φ (tiRecC φ b j)) :=
+    (MR_liftR_dropR φ (Function.update ρ x j) (m₂ + 1) (by omega)).2 _ hrec
+  have hd₂ : MR (Function.update ρ x j) φ m₂
+      (dropR φ (dropR φ (tiRecC φ b j))) :=
+    (MR_liftR_dropR φ (Function.update ρ x j) m₂ hlvl).2 _ hd₁
+  -- `φ(y)` under the inner environment is `φ` under `x ↦ j`: the
+  -- substitution lemma, then environment congruence (`y` is not free).
+  rw [MR_subst φ hok _ m₂ _]
+  refine (MR_congr φ m₂ _ ?_).mp hd₂
+  intro z hz
+  by_cases hzx : z = x
+  · subst hzx
+    simp [Function.update, Term.eval]
+  · have hzy : z ≠ y := fun h => hfree (h ▸ hz)
+    show Function.update ρ x j z
+      = Function.update (Function.update (Function.update ρ x k) y j) x
+          (Term.eval (Function.update (Function.update ρ x k) y j) (.var y)) z
+    simp [Function.update, hzx, hzy]
 
 /-- **Soundness of extraction** for the fragment: derivable formulas are
 realized by their extracted families, above the derivation's bound. -/
@@ -433,6 +523,51 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
         intro x hx y hy
         show goodN (Term.eval ρ s₁) (Term.eval ρ s₂)
           = goodN (Term.eval ρ t₁) (Term.eval ρ t₂)
+        rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
+          (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+  -- Phase C: the transfinite-induction rule — unfold the `allIC`
+  -- packaging (as in the `ind` case) and hand everything to the small
+  -- induction `MR_tiRecC`.
+  | @tiEps0 Γ x y φ D hxy hok hfree ih =>
+    intro ρ env henv n hn
+    have hbnd : max (derivBound D) (lvl φ + 2) + 1 ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        cases m' with
+        | zero => omega
+        | succ m₂ =>
+          intro k
+          show MR (Function.update ρ x k) φ (m₂ + 2)
+            (app₁ (abs₁ fun z =>
+              tiFamAt φ (extract D ρ env) (z (defaultPT (m₂ + 2))) (m₂ + 2))
+              (natPT (m₂ + 3) k))
+          rw [app₁_abs₁,
+            show natPT (m₂ + 3) k (defaultPT (m₂ + 2)) = k from rfl]
+          exact MR_tiRecC hxy hok hfree (by omega)
+            (ih ρ env henv (m₂ + 4) (by omega)) k
+  -- Phase C: the order's numeral graph is its own graph, and its
+  -- congruence schema is one more true-equation case.
+  | precNum a b =>
+    intro ρ env henv n hn
+    show oltN ((numeral a).eval ρ) ((numeral b).eval ρ)
+      = (numeral (oltN a b)).eval ρ
+    rw [numeral_eval, numeral_eval, numeral_eval]
+  | eqCongPrec s₁ t₁ s₂ t₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show oltN (Term.eval ρ s₁) (Term.eval ρ s₂)
+          = oltN (Term.eval ρ t₁) (Term.eval ρ t₂)
         rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
           (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
 

@@ -14,3 +14,4 @@ import Realizability.GenericContinuity
 import Realizability.CollapseDemo
 import Realizability.Arithmetic
 import Realizability.Goodstein
+import Realizability.TransfiniteInduction

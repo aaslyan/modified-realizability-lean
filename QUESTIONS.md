@@ -63,10 +63,46 @@ recommendations.  Items get moved to "Resolved" when you answer them.
    through the exponent structure is not a first-order schema.  Full
    rationale in STATUS.md's Phase-B section.
 
+9. **Phase C: how `tiEps0`'s quantifiers range, and whether canonicity
+   of notations is load-bearing** (the brief delegated the first and
+   demanded a direct answer to the second).  *Resolved 2026-07-29.*
+   Quantifiers range over **natural-number codes** of Cantor-normal-form
+   trees — forced, since the fragment has one sort and only equations, so
+   `y ≺ x` is the equation `prec y x = 1` for a new function symbol.  The
+   tempting reuse of Phase B's hereditary base-2 representation as the
+   coding was rejected because it *trivializes* the rule (that coding is
+   order-isomorphic to `(ℕ, <)`, so `tiEps0` would follow from `ind`).
+   And canonicity **is** load-bearing, decisively: on arbitrary notations
+   the comparison has an infinite descending chain
+   `ω ≻ 1 + ω ≻ 1 + (1 + ω) ≻ …` of terms all denoting `ω`, so the order
+   is the comparison conjoined with a normal-form predicate — Phase B's
+   deferred `NF` layer, now built.  Full rationale, with the
+   machine-checked witnesses, in STATUS.md's Phase-C section.
+
+10. **Phase C: does the recursor need a well-foundedness theorem?**  The
+   brief said no (structural recursion on the notation's subterms) and
+   asked that the finding be recorded either way.  *Resolved
+   2026-07-29: it does* — `≺`-descent is not subterm descent (from `ω^ω`
+   one descends to the larger tree `ω^2·2 + ω·2 + 2`), so `Epsilon0.lean`
+   proves `oLt_wf` and `tiRecC` is `WellFounded.fix` on it.  The brief's
+   philosophical point survives in sharper form: that proof is
+   elementary and `Classical`-free (`[propext, Quot.sound]`, strictly
+   less than the realization theorems' budget).  Recorded in STATUS.md,
+   together with the two things this forced — a hand-rolled pairing
+   (Mathlib's `Nat.pair` theory is choice-dependent) and a ban on
+   `by_cases` in that module.
+
 ## Open
 
-3½. **The fragment has no `∃` — Phase C must decide how Goodstein's
-   theorem will be *stated*.**  Flagged during Phase B (2026-07-29):
+3½. **The fragment has no `∃` — now a Phase-D blocker.**  Flagged during
+   Phase B (2026-07-29); *Phase C deliberately did not fold it in*
+   (2026-07-29): the transfinite-induction work turned out to be
+   self-contained, while `∃` touches `Formula`, `MR`, both transports and
+   the tracking relation — a phase-sized change of its own that would
+   have been entangled with the notation/well-foundedness work for no
+   benefit.  It is now the **first** thing Phase D needs, before any
+   descent argument, since without it the target cannot be stated.  The
+   original analysis stands:
    the target `∀m ∃s. G(m, s) = 0` is Π₂, and the fragment's formulas
    have only `∀` (plus `∧∨→⊥` over equations).  Phase B is unaffected
    (its deliverables are equations and their certifications), but
@@ -75,10 +111,12 @@ recommendations.  Items get moved to "Resolved" when you answer them.
    project, since modified realizability of `∃` carries the witness,
    and *extracting the Goodstein stopping-time function is presumably
    the point of the roadmap* — or (b) a negative translation, which
-   would gut the extraction payoff.  Recommendation: fold `∃` into
-   Phase C alongside `TI(ε₀)` (its `MR` clause is the `orI` pattern:
-   pair a witness numeral with a realizer), rather than discovering
-   the gap mid-Phase-D.
+   would gut the extraction payoff.  Recommendation, updated for the
+   post-Phase-C state: make `∃` **Phase D's first deliverable**, before
+   the descent argument (its `MR` clause is the `orI` pattern — pair a
+   witness numeral with a realizer — and it needs a `liftR`/`dropR` case,
+   a `Tracked` case, and intro/elim rules with their four machinery
+   cases each).
 
 4. **Next chapter in `kleene-kreisel-lean`.**  Per the stated pipeline:
    Kreisel's density theorem is next (completing the Kleene-tree pairing
