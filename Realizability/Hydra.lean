@@ -568,6 +568,91 @@ theorem precB_insertExp_self (e : ℕ) :
         have h := precB_mkO_rem (oE c) (oC c) (ih (oR c) (oR_lt hc))
         rwa [hA] at h
 
+/-- **Monotonicity of insertion in the accumulator.**  See
+`NOTES_insertExp_monotonicity.md` for the grid this follows: row `Z`
+(`c₁ = 0`) settles with one constructor each; the equal-head rows collapse
+to the diagonal, because both accumulators compare `e` against the same
+head and so take the same branch, and only the both-recursed corner uses
+the induction hypothesis; the smaller-head rows need transitivity to place
+`c₁` from `c₂`'s branch condition. -/
+theorem precB_insertExp_mono {e : ℕ} (he : nfB e = true) :
+    ∀ c₂ c₁ : ℕ, nfB c₁ = true → nfB c₂ = true → precB c₁ c₂ = true →
+      precB (insertExp e c₁) (insertExp e c₂) = true := by
+  refine nat_strong_ind (fun c₂ ih => ?_)
+  intro c₁ hn₁ hn₂ h12
+  have hc₂ : c₂ ≠ 0 := by
+    intro h0
+    rw [h0, precB_zero_right] at h12
+    exact absurd h12 (by simp)
+  rw [insertExp_pos hc₂]
+  rcases decEm (c₁ = 0) with hc₁ | hc₁
+  · -- row Z
+    subst hc₁
+    rw [insertExp_zero]
+    rcases decEm (e = oE c₂) with hb | hb
+    · rw [if_pos hb]
+      conv => lhs; rw [hb]
+      exact precB_mkO_coeff _ _ _ (by omega)
+    · rw [if_neg hb]
+      rcases decEm (precB (oE c₂) e = true) with hp | hp
+      · rw [if_pos hp]
+        exact precB_mkO_rem _ _ (precB_zero_left hc₂)
+      · rw [if_neg hp]
+        exact precB_mkO_exp _ _ _ _
+          (precB_of_ne_of_not_precB he (nfB_exp hc₂ hn₂) hb (by simpa using hp))
+  · rw [insertExp_pos hc₁]
+    rcases precB_cases hc₁ hc₂ h12 with hexp | ⟨heq, hrest⟩
+    · -- smaller head exponent
+      rcases decEm (e = oE c₂) with hb | hb
+      · rw [if_pos hb]
+        have hp₁ : precB (oE c₁) e = true := by rw [hb]; exact hexp
+        have hne₁ : ¬ (e = oE c₁) := by
+          intro hEq
+          rw [← hEq, precB_irrefl] at hp₁
+          exact absurd hp₁ (by simp)
+        rw [if_neg hne₁, if_pos hp₁]
+        conv => lhs; rw [hb]
+        exact precB_mkO_coeff _ _ _ (by omega)
+      · rcases decEm (precB (oE c₂) e = true) with hp | hp
+        · rw [if_neg hb, if_pos hp]
+          have hp₁ : precB (oE c₁) e = true := precB_trans hexp hp
+          have hne₁ : ¬ (e = oE c₁) := by
+            intro hEq
+            rw [← hEq, precB_irrefl] at hp₁
+            exact absurd hp₁ (by simp)
+          rw [if_neg hne₁, if_pos hp₁]
+          exact precB_mkO_rem _ _ h12
+        · rw [if_neg hb, if_neg hp]
+          have hlt : precB e (oE c₂) = true :=
+            precB_of_ne_of_not_precB he (nfB_exp hc₂ hn₂) hb (by simpa using hp)
+          rcases decEm (e = oE c₁) with hb₁ | hb₁
+          · rw [if_pos hb₁]
+            exact precB_mkO_exp _ _ _ _ (hb₁ ▸ hlt)
+          · rw [if_neg hb₁]
+            rcases decEm (precB (oE c₁) e = true) with hp₁ | hp₁
+            · rw [if_pos hp₁]
+              exact precB_mkO_exp _ _ _ _ hlt
+            · rw [if_neg hp₁]
+              exact precB_mkO_exp _ _ _ _ hexp
+    · -- equal head exponents: both take the same branch
+      rw [heq]
+      rcases decEm (e = oE c₂) with hb | hb
+      · rw [if_pos hb, if_pos hb]
+        rcases hrest with hcc | ⟨hcc, hrr⟩
+        · exact precB_mkO_coeff _ _ _ (by omega)
+        · rw [hcc]
+          exact precB_mkO_rem _ _ hrr
+      · rw [if_neg hb, if_neg hb]
+        rcases decEm (precB (oE c₂) e = true) with hp | hp
+        · rw [if_pos hp, if_pos hp]
+          exact precB_mkO_rem _ _ h12
+        · rw [if_neg hp, if_neg hp]
+          rcases hrest with hcc | ⟨hcc, hrr⟩
+          · exact precB_mkO_coeff _ _ _ (by omega)
+          · rw [hcc]
+            exact precB_mkO_rem _ _
+              (ih (oR c₂) (oR_lt hc₂) (oR c₁) (nfB_rem hc₁ hn₁) (nfB_rem hc₂ hn₂) hrr)
+
 /-! ### The assignment -/
 
 mutual

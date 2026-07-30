@@ -961,6 +961,75 @@ theorem precB_trichotomy : ∀ (s a b : ℕ), a + b ≤ s → nfB a = true →
           rw [← hA, ← hB]
           exact precB_mkO_exp _ _ _ _ he
 
+/-- **Transitivity.**  The third order property this development turned
+out to need: Phase C proved `≺` well-founded and irreflexive, the Hydra
+layer added totality, and monotonicity of insertion needs to chain two
+comparisons.  Same three-way induction as the comparison itself, with the
+recursive calls at the three head exponents and at the three
+remainders. -/
+theorem precB_trans_aux : ∀ (s a b c : ℕ), a + b + c ≤ s →
+    precB a b = true → precB b c = true → precB a c = true
+  | 0, a, b, c, h, hab, _ => by
+    have ha : a = 0 := by omega
+    have hb : b = 0 := by omega
+    rw [ha, hb, precB_zero_right] at hab
+    exact absurd hab (by simp)
+  | s + 1, a, b, c, h, hab, hbc => by
+    have hb : b ≠ 0 := by
+      intro h0
+      rw [h0, precB_zero_right] at hab
+      exact absurd hab (by simp)
+    have hc : c ≠ 0 := by
+      intro h0
+      rw [h0, precB_zero_right] at hbc
+      exact absurd hbc (by simp)
+    rcases decEm (a = 0) with ha | ha
+    · rw [ha]
+      exact precB_zero_left hc
+    · have hA := mkO_oE_oC_oR ha
+      have hC := mkO_oE_oC_oR hc
+      have hEs : oE a + oE b + oE c ≤ s := by
+        have h1 := oE_lt ha
+        have h2 := oE_lt hb
+        have h3 := oE_lt hc
+        omega
+      have hRs : oR a + oR b + oR c ≤ s := by
+        have h1 := oR_lt ha
+        have h2 := oR_lt hb
+        have h3 := oR_lt hc
+        omega
+      rcases precB_cases ha hb hab with h1 | ⟨e1, r1⟩
+      · rcases precB_cases hb hc hbc with h2 | ⟨e2, r2⟩
+        · rw [← hA, ← hC]
+          exact precB_mkO_exp _ _ _ _ (precB_trans_aux s _ _ _ hEs h1 h2)
+        · rw [← hA, ← hC]
+          exact precB_mkO_exp _ _ _ _ (e2 ▸ h1)
+      · rcases precB_cases hb hc hbc with h2 | ⟨e2, r2⟩
+        · rw [← hA, ← hC]
+          exact precB_mkO_exp _ _ _ _ (e1 ▸ h2)
+        · rw [← hA, ← hC, e1, e2]
+          rcases r1 with hc1 | ⟨hc1, hs1⟩
+          · rcases r2 with hc2 | ⟨hc2, hs2⟩
+            · exact precB_mkO_coeff _ _ _ (by omega)
+            · exact precB_mkO_coeff _ _ _ (by omega)
+          · rcases r2 with hc2 | ⟨hc2, hs2⟩
+            · exact precB_mkO_coeff _ _ _ (by omega)
+            · rw [show oC a = oC c by omega]
+              exact precB_mkO_rem _ _ (precB_trans_aux s _ _ _ hRs hs1 hs2)
+
+/-- Transitivity, at the adequate bound. -/
+theorem precB_trans {a b c : ℕ} (hab : precB a b = true) (hbc : precB b c = true) :
+    precB a c = true :=
+  precB_trans_aux (a + b + c) a b c (Nat.le_refl _) hab hbc
+
+/-- **Asymmetry**, from transitivity and irreflexivity. -/
+theorem precB_asymm {a b : ℕ} (hab : precB a b = true) : precB b a = false := by
+  rcases decEm (precB b a = true) with hba | hba
+  · have := precB_trans hab hba
+    rw [precB_irrefl] at this
+    exact absurd this (by simp)
+  · simpa using hba
+
 /-- Totality, at the adequate bound. -/
 theorem precB_total {a b : ℕ} (hna : nfB a = true) (hnb : nfB b = true) :
     a = b ∨ precB a b = true ∨ precB b a = true :=

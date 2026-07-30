@@ -1609,6 +1609,18 @@ Remaining: monotonicity of `insertExp` in each argument (replacing a
 child by one of smaller ordinal lowers the parent's), and then the general
 descent by induction over `cutH`'s recursion.
 
+**Monotonicity: DONE** (third attempt), together with the prerequisite it
+exposed.  `precB_trans_aux`/`precB_trans` and `precB_asymm` were proved
+first — the same three-way induction as the comparison, with the recursive
+calls at the three head exponents and the three remainders — and then
+`precB_insertExp_mono` followed the grid exactly as written up, landing
+with one correction (an unreduced outer `if` on the right-hand side in two
+branches).  `≺` is now a full strict linear order on normal forms:
+well-founded, irreflexive, transitive, asymmetric, total.
+
+The history below is kept because the diagnosis is what made the third
+attempt work.
+
 **Monotonicity: attempted once, reverted, and what it will take.**  The
 statement is `c₁ ≺ c₂ → ω^e ⊕ c₁ ≺ ω^e ⊕ c₂` (for normal forms).  The
 proof is *not* a simple recursion: the case analysis is a square, because

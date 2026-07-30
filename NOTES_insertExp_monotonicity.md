@@ -1,5 +1,14 @@
 # Working notes: monotonicity of `insertExp`
 
+> **Outcome (resolved).**  Prerequisite 0 (`precB_trans`, `precB_asymm`)
+> was proved first and landed on the first attempt.  `precB_insertExp_mono`
+> then followed the grid below exactly, landing on the first attempt after
+> one correction: in two branches of the smaller-head row the *outer* `if`
+> on the right-hand side had not been reduced before applying a
+> constructor — the same class of mistake as attempt 1, and the reason the
+> grid has to be reduced on both sides before any constructor is applied.
+> The notes are kept as the record of how the blocker was found.
+
 Two attempts, neither landed, both worth keeping — the first because its
 failure mode is specific and repeatable, the second because it found the
 actual blocker.  Nothing here is committed Lean; the tree has never held
