@@ -1590,10 +1590,24 @@ node count went up; the measure came down.
   precondition for *any* descent statement, since `OLt` requires
   normality on both sides.
 
-Remaining: monotonicity of `insertExp`, the inequality
-`ω^a·(m+1) ≺ ω^b` for `a ≺ b` (what makes arbitrarily many copies
-harmless), and then the general descent by induction over `cutH`'s
-recursion.
+**Step 4, first half, and a simplification.**
+`precB_insertExp_self : c ≺ ω^e ⊕ c` — inserting strictly increases the
+ordinal, by the same four-case recursion (bigger coefficient, bigger head
+exponent, bigger remainder, then recurse).  At `e = 0` this *is* the
+descent's base case, and it is recorded in that form:
+`ordOfForest_cons_leaf_descends` — a node loses a head hanging off it and
+its ordinal drops, which is the Kirby–Paris clause where nothing regrows.
+
+The other half of step 4 turned out to be **already available**: the
+inequality that makes arbitrarily many copies harmless — `ω^a·(m+1) ≺ ω^b`
+whenever `a ≺ b` — is exactly Phase C's `precB_mkO_exp`, which says a
+smaller head exponent wins *regardless of coefficient and remainder*.  No
+new lemma is needed; the replication factor never appears in the
+comparison.
+
+Remaining: monotonicity of `insertExp` in each argument (replacing a
+child by one of smaller ordinal lowers the parent's), and then the general
+descent by induction over `cutH`'s recursion.
 
 ### The original note, superseded by step 1 above
 

@@ -538,6 +538,36 @@ theorem nfB_insertExp {e : ℕ} (he : nfB e = true) :
             · exact absurd h0 hr0
             · exact h0
 
+/-- **Inserting strictly increases the ordinal**: `c ≺ ω^e ⊕ c`.
+
+At `e = 0` this *is* the base case of the descent, read backwards:
+`ord(node (leaf :: rest)) = ω^0 ⊕ ord(rest) ≻ ord(rest)`, i.e. chopping a
+head whose parent is the root strictly lowers the ordinal.  The cases
+follow the three order constructors — bigger coefficient, bigger head
+exponent, bigger remainder — with the last recursing. -/
+theorem precB_insertExp_self (e : ℕ) :
+    ∀ c : ℕ, precB c (insertExp e c) = true := by
+  refine nat_strong_ind (fun c ih => ?_)
+  rcases decEm (c = 0) with hc | hc
+  · subst hc
+    rw [insertExp_zero]
+    exact precB_zero_mkO _ _ _
+  · have hA : mkO (oE c) (oC c) (oR c) = c := mkO_oE_oC_oR hc
+    rw [insertExp_pos hc]
+    rcases decEm (e = oE c) with heq | heq
+    · rw [if_pos heq]
+      have h := precB_mkO_coeff (oE c) (oR c) (oR c)
+        (show oC c < oC c + 1 by omega)
+      rwa [hA] at h
+    · rw [if_neg heq]
+      rcases decEm (precB (oE c) e = true) with hp | hp
+      · rw [if_pos hp]
+        have h := precB_mkO_exp (oC c) (oR c) 0 c hp
+        rwa [hA] at h
+      · rw [if_neg hp]
+        have h := precB_mkO_rem (oE c) (oC c) (ih (oR c) (oR_lt hc))
+        rwa [hA] at h
+
 /-! ### The assignment -/
 
 mutual
@@ -573,6 +603,13 @@ theorem nfB_ordOfForest : ∀ f : Forest, nfB (ordOfForest f) = true
   | .cons h f => nfB_insertExp (nfB_ordOfHydra h) _ (nfB_ordOfForest f)
 
 end
+
+/-- **The base case of the descent**: a node loses a head that hangs off
+it, and its ordinal strictly drops.  This is the "parent is the root"
+clause of the Kirby–Paris rule, where nothing regrows. -/
+theorem ordOfForest_cons_leaf_descends (f : Forest) :
+    precB (ordOfForest f) (ordOfForest (.cons Hydra.leaf f)) = true :=
+  precB_insertExp_self _ _
 
 /-- The assignment on codes — the value-level function the fragment's
 symbol will evaluate by in H4. -/
