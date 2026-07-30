@@ -653,6 +653,65 @@ theorem precB_insertExp_mono {e : ℕ} (he : nfB e = true) :
             exact precB_mkO_rem _ _
               (ih (oR c₂) (oR_lt hc₂) (oR c₁) (nfB_rem hc₁ hn₁) (nfB_rem hc₂ hn₂) hrr)
 
+/-- **Monotonicity of insertion in the exponent**: inserting a smaller
+exponent into the same normal form gives a smaller normal form.
+
+Grid, per the notes: `b`'s branch drives the case analysis.  If `b` merges
+(`b = oE X`) then `a ≺ oE X`, so `a` recurses, and the two sides differ by
+one in the coefficient.  If `b` prepends then all three of `a`'s branches
+give a head strictly below `b`, so each is one exponent comparison.  If
+`b` recurses then `a ≺ b ≺ oE X` forces `a` to recurse too, and the
+induction hypothesis finishes it. -/
+theorem precB_insertExp_mono_exp {a b : ℕ} (ha : nfB a = true)
+    (hb : nfB b = true) (hab : precB a b = true) :
+    ∀ X : ℕ, nfB X = true → precB (insertExp a X) (insertExp b X) = true := by
+  refine nat_strong_ind (fun X ih => ?_)
+  intro hnX
+  rcases decEm (X = 0) with hX | hX
+  · subst hX
+    rw [insertExp_zero, insertExp_zero]
+    exact precB_mkO_exp _ _ _ _ hab
+  · rw [insertExp_pos hX, insertExp_pos hX]
+    rcases decEm (b = oE X) with hbE | hbE
+    · rw [if_pos hbE]
+      have haX : precB a (oE X) = true := hbE ▸ hab
+      have hane : ¬ (a = oE X) := by
+        intro h
+        rw [h, precB_irrefl] at haX
+        exact absurd haX (by simp)
+      have hnp : ¬ (precB (oE X) a = true) := by
+        intro h
+        rw [precB_asymm haX] at h
+        exact absurd h (by simp)
+      rw [if_neg hane, if_neg hnp]
+      exact precB_mkO_coeff _ _ _ (by omega)
+    · rw [if_neg hbE]
+      rcases decEm (precB (oE X) b = true) with hpb | hpb
+      · rw [if_pos hpb]
+        rcases decEm (a = oE X) with haE | haE
+        · rw [if_pos haE]
+          exact precB_mkO_exp _ _ _ _ (haE ▸ hab)
+        · rw [if_neg haE]
+          rcases decEm (precB (oE X) a = true) with hpa | hpa
+          · rw [if_pos hpa]
+            exact precB_mkO_exp _ _ _ _ hab
+          · rw [if_neg hpa]
+            exact precB_mkO_exp _ _ _ _ hpb
+      · rw [if_neg hpb]
+        have hbX : precB b (oE X) = true :=
+          precB_of_ne_of_not_precB hb (nfB_exp hX hnX) hbE (by simpa using hpb)
+        have haX : precB a (oE X) = true := precB_trans hab hbX
+        have hane : ¬ (a = oE X) := by
+          intro h
+          rw [h, precB_irrefl] at haX
+          exact absurd haX (by simp)
+        have hnp : ¬ (precB (oE X) a = true) := by
+          intro h
+          rw [precB_asymm haX] at h
+          exact absurd h (by simp)
+        rw [if_neg hane, if_neg hnp]
+        exact precB_mkO_rem _ _ (ih (oR X) (oR_lt hX) (nfB_rem hX hnX))
+
 /-! ### The assignment -/
 
 mutual
