@@ -203,3 +203,40 @@ The induction hypothesis gives `a ≺ b`.  Two sub-cases:
 
 The lesson from the monotonicity round applies verbatim: reduce *both*
 sides of a goal to `mkO` form before applying any order constructor.
+
+
+## The merge fact: the obvious induction does not work
+
+Recorded before attempting it, because the natural first move fails and
+the failure is instructive.
+
+Write `insertIter a n X` for the `n`-fold insertion of `ω^a` into `X`, so
+that (by a routine structural lemma about `Forest.append`/`replicate`)
+the regrown node's ordinal is `insertIter a (n+1) (ord rest)`.  The goal
+is
+
+    a ≺ b  →  insertIter a n X  ≺  insertExp b X
+
+**The obvious induction on `n` fails.**  The base case is fine — it is
+exactly `precB_insertExp_self` (`X ≺ ω^b ⊕ X`).  The step wants to go from
+`insertIter a n X ≺ insertExp b X` to
+`insertExp a (insertIter a n X) ≺ insertExp b X`, and accumulator
+monotonicity only gives
+`insertExp a (insertIter a n X) ≺ insertExp a (insertExp b X)` — which is
+*larger* than `insertExp b X`, not smaller, since inserting always
+increases.  So the induction hypothesis is too weak: it says the
+accumulated value is below the bound, but not that it is below with room
+for another `ω^a`.
+
+**The invariant that should work.**  Strengthen to something like "every
+exponent in `insertIter a n X` above `X`'s own head is `≺ b`", or
+equivalently prove the merge shape directly: when `a ≻ oE X`, repeated
+insertion collapses to a single `mkO a (n-1) X`, and then
+`precB_mkO_exp` settles it in one step regardless of `n`.  The general
+case (`a` not above `oE X`) should reduce to that one by pushing the
+insertion into the remainder, which is exactly what `insertExp`'s
+recursive branch does.
+
+This is the last mathematical step of H3.  Everything it consumes —
+accumulator monotonicity, exponent monotonicity, `precB_insertExp_self`,
+`precB_mkO_exp`, transitivity, asymmetry, totality — is now proved.
