@@ -864,9 +864,59 @@ theorem ordOfForest_cons_leaf_descends (f : Forest) :
     precB (ordOfForest f) (ordOfForest (.cons Hydra.leaf f)) = true :=
   precB_insertExp_self _ _
 
+/-- The regrown copies, as an iterate: bookkeeping over `append`/
+`replicate`, no ordinal reasoning. -/
+theorem ordOfForest_append_replicate (c : Hydra) (f : Forest) : ∀ n : ℕ,
+    ordOfForest (Forest.append (Forest.replicate n c) f)
+      = insertIter (ordOfHydra c) n (ordOfForest f)
+  | 0 => rfl
+  | n + 1 => by
+    show ordOfForest (Forest.cons c (Forest.append (Forest.replicate n c) f)) = _
+    rw [ordOfForest_cons, ordOfForest_append_replicate c f n]
+    rfl
+
+/-- **The descent.**  Every legal move strictly decreases the assigned
+ordinal.  A bare head is excluded: `cutH` leaves it alone, and a dead
+hydra's ordinal does not drop.
+
+The three cases are `cutH`'s own: a head hanging off this node
+(`ordOfForest_cons_leaf_descends`); a deeper cut with no regrowth here
+(exponent monotonicity); and a deeper cut where this node is the
+grandparent and `n` copies grow (`precB_insertIter_lt`, which is
+insensitive to `n`). -/
+theorem cutH_descends (n : ℕ) : ∀ h : Hydra, h ≠ Hydra.leaf →
+    precB (ordOfHydra (cutH n h).1) (ordOfHydra h) = true
+  | .node .nil, hne => absurd rfl hne
+  | .node (.cons (.node .nil) rest), _ =>
+      ordOfForest_cons_leaf_descends rest
+  | .node (.cons (.node (.cons c₀ cs)) rest), _ => by
+    have hchild : (Hydra.node (.cons c₀ cs)) ≠ Hydra.leaf := by
+      intro hEq
+      exact absurd hEq (by simp [Hydra.leaf])
+    have IH := cutH_descends n (.node (.cons c₀ cs)) hchild
+    have hnf₁ := nfB_ordOfHydra (cutH n (Hydra.node (.cons c₀ cs))).1
+    have hnf₂ := nfB_ordOfHydra (Hydra.node (.cons c₀ cs))
+    have hnfR := nfB_ordOfForest rest
+    rcases decEm ((cutH n (Hydra.node (.cons c₀ cs))).2 = true) with hflag | hflag
+    · simp only [cutH, hflag, if_true, ordOfHydra_node, ordOfForest_cons,
+        ordOfForest_append_replicate]
+      exact precB_insertIter_lt hnf₁ hnf₂ IH _ hnfR (n + 1)
+    · simp only [Bool.not_eq_true] at hflag
+      simp only [cutH, hflag, if_false, ordOfHydra_node, ordOfForest_cons]
+      exact precB_insertExp_mono_exp hnf₁ hnf₂ IH _ hnfR
+
 /-- The assignment on codes — the value-level function the fragment's
 symbol will evaluate by in H4. -/
 def ordOfHydraN (code : ℕ) : ℕ := ordOfHydra (hydraOf code)
+
+/-- The descent on codes. -/
+theorem hydraStepN_descends (n code : ℕ) (h : hydraOf code ≠ Hydra.leaf) :
+    precB (ordOfHydraN (hydraStepN n code)) (ordOfHydraN code) = true := by
+  show precB (ordOfHydra (hydraOf (encodeH (hydraStep n (hydraOf code)))))
+    (ordOfHydra (hydraOf code)) = true
+  rw [hydraOf_encodeH]
+  exact cutH_descends n (hydraOf code) h
+
 
 /-! ### The first descent instances, kernel-checked
 
