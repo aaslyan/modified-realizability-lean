@@ -131,3 +131,75 @@ should be no further order property left to discover — this is the third
 time a "mechanical" step turned out to rest on an unproved structural
 fact (canonicity in Phase C, then totality, now transitivity), and the
 pattern has a natural end point.
+
+
+---
+
+# The general descent: analysis before the next attempt
+
+`cutH n h = (h', flag)`, and the theorem wanted is: if `h` is not a bare
+head, then `ordOfHydra h' ≺ ordOfHydra h`.  `cutH`'s three clauses give
+three cases, and they are very unequal.
+
+**Case 1 — `h = node nil` (a bare head).**  `cutH` returns `h`
+unchanged, so the ordinal does *not* drop.  The theorem must exclude it
+by hypothesis `h ≠ Hydra.leaf`.  This is not a defect: a bare head is a
+dead hydra, and the battle has stopped.
+
+**Case 2 — first child is a head (`h = node (cons (node nil) rest)`).**
+Result is `node rest`.  Already proved: `ordOfForest_cons_leaf_descends`,
+since `ord(node (leaf :: rest)) = ω^0 ⊕ ord rest ≻ ord rest`.  Nothing
+regrows, matching the "parent is the root" clause.
+
+**Case 3 — first child is not a head.**  Let `child` be that first child,
+`(child', flag) = cutH n child`, and `a = ord child'`, `b = ord child`.
+The induction hypothesis gives `a ≺ b`.  Two sub-cases:
+
+* `flag = false` — the chopped head was deeper, no regrowth here.  New
+  ordinal `ω^a ⊕ ord rest`, old `ω^b ⊕ ord rest`.  Needs **exponent
+  monotonicity**, which is *not* the lemma just proved (that one varies
+  the accumulator, this one varies the exponent):
+
+  ```lean
+  theorem precB_insertExp_mono_exp {a b : ℕ} (hab : precB a b = true) (X : ℕ) …
+      precB (insertExp a X) (insertExp b X) = true
+  ```
+
+* `flag = true` — this node is the grandparent, and `n` copies grow.  New
+  children are `child' :: (replicate n child' ++ rest)`, so the new
+  ordinal is the **`(n+1)`-fold insertion** of `ω^a` into `ord rest`,
+  against the old `ω^b ⊕ ord rest`.
+
+  The point to exploit: repeated insertion of the *same* exponent merges
+  into the coefficient, so when `a ≻ oE (ord rest)` the `(n+1)`-fold
+  insertion is literally `mkO a n (ord rest)` — one `mkO`, coefficient
+  `n`, not a tower.  Then the comparison is a *single* application of
+  `precB_mkO_exp`, which ignores coefficients entirely.  **That is the
+  formal reason arbitrarily many copies are harmless**, and why the free
+  battle terminates for adversarial `n`.
+
+  So the sub-lemma to prove is the merge fact, roughly
+
+  ```lean
+  theorem insertExp_replicate (a X : ℕ) (n : ℕ) … :
+      ordOfForest (Forest.append (Forest.replicate n c) f) = …
+  ```
+
+  stated so that it exposes the head exponent and coefficient; the
+  general case (`a` not above `ord rest`'s head) needs the same care the
+  monotonicity grid needed.
+
+## Order of work for the next attempt
+
+1. `precB_insertExp_mono_exp` — exponent monotonicity.  Expect another
+   grid: branches of `insertExp a X` against branches of `insertExp b X`,
+   with `a ≺ b` collapsing several corners.  Transitivity and asymmetry
+   are now available, which is what made the accumulator version routine.
+2. the replicate/merge fact, phrased to expose head exponent and
+   coefficient.
+3. the descent itself, by induction over `cutH`, with case 1 excluded by
+   hypothesis, case 2 discharged by `ordOfForest_cons_leaf_descends`, and
+   case 3 by 1 and 2 plus `precB_mkO_exp`.
+
+The lesson from the monotonicity round applies verbatim: reduce *both*
+sides of a goal to `mkO` form before applying any order constructor.
