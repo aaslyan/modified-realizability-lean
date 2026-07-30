@@ -1,4 +1,4 @@
-# Status: COMPLETE through Phase H6 — Goodstein's theorem *and* the Kirby–Paris Hydra theorem are proved inside the fragment, each with its witness function extracted, certified, and executed
+# Status: COMPLETE through Phase H7 — Goodstein's theorem *and* the Kirby–Paris Hydra theorem are proved inside the fragment, each with its witness function extracted, certified, and executed; and the Hydra theorem is proved again in the metatheory in its full strategy-free form
 
 Phases: milestone (modified realizability + extraction + soundness),
 generic continuity, induction (2), arithmetic (A), hereditary base-`k`
@@ -8,7 +8,8 @@ obligations (D1), Goodstein's theorem (D2), the extracted function
 (D3) — the derived descent (D5), and the Hydra project in six: tree
 coding (H1), the move (H2), the ordinal assignment and its descent
 theorem (H3), the game inside the fragment (H4), termination as a closed
-derivation (H5), and the extracted battle-length program (H6).
+derivation (H5), the extracted battle-length program (H6), and the
+general game — every strategy, every schedule — in the metatheory (H7).
 
 `lake build` succeeds, zero `sorry`/`admit`.  `#print axioms` on the
 soundness theorem (now covering the `ind` rule and the Phase-A rules),
@@ -1960,3 +1961,100 @@ Unchanged from every earlier phase, which is the point: adding three
 symbols and seven rules to the fragment cost nothing in axiom footprint,
 because the value-level functions are choice-free and the schemas are
 contentless.
+
+## Hydra Phase H7 (Hercules wins *whatever he does*): COMPLETE
+
+`HydraGeneral.lean`.  Phase H5 proves termination inside the fragment for
+the battle the fragment can *name*: leftmost head, `s + 1` copies at step
+`s`.  That is Kirby–Paris's own schedule, but it is one play.  This phase
+proves the general statement — every play, every head choice, every
+replication factor — in the metatheory, from the same ordinal assignment.
+
+### Why it is not in the fragment, and that is not a shortfall
+
+A strategy is a *function* `ℕ → (which head)`, and a schedule is a
+function `ℕ → ℕ`.  The fragment is first-order with one sort: it has no
+function variables, so "for every play" is **not expressible** in it, at
+any length.  This is a property of the object language chosen in the
+brief, not a gap in the proof — and it is the honest reason H5's theorem
+names one battle.  What H5 *does* show is that the derivation is uniform
+in the factor: `hordCutLt` quantifies over it, so the same proof term
+serves any battle symbol with the same recursion equation.
+
+### What is proved
+
+`Play n h h'` is the legal-move relation: some head of `h` — any head, at
+any position — is chopped, and if its parent is not the root, `n` copies
+of the modified parent grow at the grandparent.  Nothing selects which
+head.
+
+* `play_descends` — every legal move strictly decreases the assigned
+  ordinal.  H3's `cutH_descends` is the special case "leftmost head".
+* **`hercules_wins : WellFounded PlayRel`** — the move relation is
+  well-founded.  Every play from every hydra is finite, whatever Hercules
+  chops and however many heads grow back.  This is `oLt_wf` pulled back
+  along `ordOfHydra`; all the content is in `play_descends`.
+* `no_infinite_play` — the same in sequence form: no `F : ℕ → Hydra` has a
+  legal move at every index.
+* `play_stuck_iff_leaf` — the only position with no legal move is the dead
+  hydra.  This is what makes "the play is finite" mean "the hydra dies"
+  rather than "the play gets stuck".
+* `hydraStep_play` — **the fragment's battle is one of these plays**, so
+  H5's theorem is an instance of this one rather than a separate claim
+  about a differently-defined game.  Proved by relating `cutH`'s Boolean
+  flag to the relation's constructors (`cutH_flag_cut`,
+  `cutH_flag_move`).
+
+### What it cost: nothing new mathematically
+
+Each constructor maps to one lemma H3 already had:
+
+| constructor | what it does | lemma |
+|---|---|---|
+| `CutF.here` | a head hangs off this node | `precB_insertExp_self` |
+| `CutF.there` | …off a later sibling | `precB_insertExp_mono` |
+| `MoveF.grand` | this node is the grandparent; `n` copies grow | `precB_insertIter_lt` |
+| `MoveF.deep` | the move is deeper inside a child | `precB_insertExp_mono_exp` |
+| `MoveF.tail` | …inside a later child | `precB_insertExp_mono` |
+
+One observation this phase adds: the *second-argument* monotonicity
+`precB_insertExp_mono` — the hard lemma of H3, the one that needed
+transitivity and asymmetry first and that `cutH_descends` never used — is
+exactly what the two "later sibling" constructors consume.  **Chopping the
+leftmost head is the case where that lemma can be avoided.**  So the
+effort H3 spent on it was not incidental; it is what the general theorem
+runs on.
+
+### Non-vacuity, checked
+
+`play_two_choices` exhibits a hydra (a root with a head *and* a child
+carrying a head) from which two *different* legal moves lead to two
+*different* hydras at the same `n` — the second being one `cutH` would
+never make — and `play_two_choices_descend` runs both through
+`play_descends`.  Without this the relation could have described only the
+leftmost strategy, and `hercules_wins` would have been a restatement of
+H3 rather than a generalization.
+
+### Budget
+
+The whole phase is `Classical`-free:
+
+```
+'Realizability.play_two_choices'   … does not depend on any axioms
+'Realizability.play_descends'      … [propext, Quot.sound]
+'Realizability.hercules_wins'      … [propext, Quot.sound]
+'Realizability.no_infinite_play'   … [propext, Quot.sound]
+'Realizability.hydraStep_play'     … [propext]
+'Realizability.play_stuck_iff_leaf'… [propext]
+```
+
+`Subrelation.wf` is applied to a pattern-matched existential rather than
+to `Exists.choose`, and `play_stuck_iff_leaf` case-splits on the tree
+instead of using `by_contra`; both were `Classical.choice` in the first
+version and neither needed to be.
+
+### Still out of scope
+
+Independence from PA, exactly as in H5.  `hercules_wins` is the "every
+hydra dies" half of Kirby–Paris, now in its full strategy-free form; the
+unprovability-in-PA half is not formalized and is not claimed.

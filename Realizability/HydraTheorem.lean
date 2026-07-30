@@ -200,9 +200,16 @@ def hydraTerminatesDeriv : Deriv [] hydraTerminates := by
 /-- **Hercules wins**: `⊢ ∀h. ∃t. hydra(h, t) = 0`.
 
 Every hydra dies.  The quantifier is over *all* natural numbers, which by
-H1's bijection is all finite rooted trees; the witness is unbounded; the
-number of heads regrown at each move is whatever the move symbol's
-argument says, and the derivation never looks at it. -/
+H1's bijection is all finite rooted trees, and the witness is unbounded.
+
+`hydra` names one battle — leftmost head, `s + 1` copies at step `s`, the
+standard Kirby–Paris schedule — because a strategy or a schedule is a
+*function*, and the fragment has no function variables.  What is uniform
+here is the derivation, not the statement: `hordCutLt` quantifies over the
+replication factor, so nothing below inspects how far the hydra grew, and
+the same proof term would serve any battle symbol with the same recursion
+equation.  For the statement that quantifies over plays, see
+`HydraGeneral.lean` (Phase H7), which proves it in the metatheory. -/
 def hydraTheorem : Deriv [] hydraGoal :=
   Deriv.allI hydraTerminatesDeriv (by decide +kernel)
 

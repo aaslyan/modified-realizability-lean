@@ -18,6 +18,14 @@ evidence available here that the pipeline is general rather than tuned to
 Goodstein.  Neither *independence* result (unprovability in PA) is
 formalized, and neither is claimed.
 
+One scope point, stated up front because it is easy to read past.  The
+fragment names *one* battle — leftmost head, `s + 1` copies at step `s`
+— because a strategy is a function and the fragment has no function
+variables.  The strategy-free statement ("every play terminates, whatever
+Hercules chops and however many heads grow") is therefore proved in the
+metatheory, in `HydraGeneral.lean`, and `hydraStep_play` shows the
+fragment's battle is one of those plays.
+
 ---
 
 ## 1. Dependency-ordered theorem map
@@ -54,9 +62,9 @@ noted only where they help.
 
 | # | Declaration | File | What it gives you |
 |---|---|---|---|
-| 15 | `Term`, `Term.eval`, `numeral` | `Syntax.lean` | Terms over `{0, succ, +, ×, pred, exp, bump, good, prec, ord}`. |
+| 15 | `Term`, `Term.eval`, `numeral` | `Syntax.lean` | Terms over `{0, succ, +, ×, pred, exp, bump, good, prec, ord}`, and since H4 also `{hcut, hydra, hord}`. |
 | 16 | `Formula`, `FreeIn`, `subst`, `SubstOK`, `FreshIn` | `Syntax.lean` | Formulas (`∧∨→⊥`, `∀`, and since D0 `∃`) and the substitution bookkeeping. |
-| 17 | **`Deriv`** | `Syntax.lean` | The 48-rule natural-deduction family (39 before Phase C; `tiEps0`, `precNum`, `eqCongPrec`, then `eqCongOrd`, `exI`, `exE`, and D5's `ordBump`/`ordPredLt`/`bumpNeZero`).  Read the constructor list in order; the comments mark which phase added what. |
+| 17 | **`Deriv`** | `Syntax.lean` | The 55-rule natural-deduction family (39 before Phase C; `tiEps0`, `precNum`, `eqCongPrec`, then `eqCongOrd`, `exI`, `exE`, D5's `ordBump`/`ordPredLt`/`bumpNeZero`, and H4's seven).  Read the constructor list in order; the comments mark which phase added what. |
 
 ### 1.4 Realizability, extraction, soundness
 
@@ -105,6 +113,7 @@ noted only where they help.
 | 42 | `hydraDescentDeriv`, `hydraNamedIHDeriv`, `hydraProgressive` | `HydraTheorem.lean` | The pieces of the induction step; the same naming trick as `namedIHDeriv`. |
 | 43 | **`hydraTheorem`** | `HydraTheorem.lean` | `⊢ ∀h ∃t. hydra(h,t) = 0`. |
 | 44 | `hydraBattleLength`, **`hydraBattleLength_spec`**, `hydra_extract_continuous`, `hydraRealizesCtQ` | `HydraExtraction.lean` | The extracted battle-length function, correct at every tree, continuous, with its class in `CtQ 2`. |
+| 45 | `Play`, `play_descends`, **`hercules_wins`**, `no_infinite_play`, `play_stuck_iff_leaf`, `hydraStep_play` | `HydraGeneral.lean` | The general game (H7): *any* head, *any* replication factor at every step. Every play is finite and ends at the bare head, and the fragment's battle is one of these plays. Read `play_two_choices` — it is what rules out the relation secretly being the leftmost strategy. |
 
 ---
 

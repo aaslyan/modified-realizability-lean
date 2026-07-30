@@ -42,11 +42,18 @@ language.
 is a property of *one* function symbol (`hcut`) relative to *one* ordinal
 symbol (`hord`), and it says nothing whatever about the battle — no
 sequence, no step counter, no stage-indexed replication.  It quantifies
-over the number of regrown copies, so the fragment's proof works for
-every replication rule at once, adversarial ones included.  Everything
-Hydra-specific about the *battle* — gluing the descent to the recursion
-equation, the case split on death, the induction — is the fragment's own
-work in H5.
+over the number of regrown copies, so H5's derivation never inspects the
+replication factor.  Everything Hydra-specific about the *battle* —
+gluing the descent to the recursion equation, the case split on death,
+the induction — is the fragment's own work in H5.
+
+Read that carefully, though: it says the *derivation* is uniform in the
+factor, not that the *theorem* quantifies over schedules.  `hydra` names
+one battle — leftmost head, `s + 1` copies at step `s`, the standard
+Kirby–Paris one — because a schedule is a function and the fragment has
+no function variables.  The fully general statement ("every play
+terminates, whatever Hercules chops and however many heads grow") is
+proved in the metatheory instead, in `HydraGeneral.lean` (Phase H7).
 
 What is *not* claimed: that the fragment proves `hordCutLt` itself.  Like
 Goodstein's three schemas it is an axiom of the object theory justified
