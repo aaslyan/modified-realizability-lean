@@ -1097,8 +1097,8 @@ reduced set; see D3.)
 **The limitation, reported rather than papered over.**  `m = 2` did not
 finish.  Measured, all on this machine (24 cores, single-threaded
 evaluation): 110 s at the certified ambient 12 — terminated, no output;
-110 s at ambient 3 as a diagnostic (uncertified — the realization
-theorem needs ambient ≥ 12) — terminated, no output; 900 s at ambient 12
+110 s at ambient 3 (uncertified — see the Phase-D4 correction below,
+this run was not a scaled-down version of the same computation); 900 s at ambient 12
 — terminated, no output, with the evaluator's resident memory past
 1.7 GB and still climbing.  So the failure is not a slow constant, it is
 the space and time of an exponentially branching re-evaluation.  `m = 3`
@@ -1124,3 +1124,149 @@ defensive, not necessary — Lean compiles all of them, `PureType` values
 included — and without the change `#eval` on the extract is impossible
 ("no executable code").  No definition's content changed; only the
 modifier was deleted.
+
+## Phase D4 (making the extracted function fast): DIAGNOSED, NOT FIXED
+
+The brief asked for a profile first and a `@[csimp]`-based fix second.
+The profile came out clean and decisive; the fix does not exist under the
+brief's own constraint that every replacement be proof-backed.  Both
+halves are below, with the measurements that support them.
+
+**No Lean file changed in this phase.**  `goodsteinStopTime_spec`, its
+statement and its proof, `soundness`, and the extraction algorithm are
+byte-for-byte as they were at the end of D3 — `git diff` for D4 touches
+only this file and QUESTIONS.md.
+
+### The measurements
+
+All at ambient 12 (the derivation's own bound, i.e. the level at which
+the extract is certified), on this machine, by attaching tracing
+implementations to the primitives with `@[csimp]` lemmas proved by `rfl`
+(`dbg_trace` is definitionally transparent, so the traced pipeline is the
+same function).
+
+| | `m = 0` | `m = 1` |
+|---|---|---|
+| Goodstein steps to `0` | 0 | 1 |
+| `tiRecC` fix-body entries | 1 | **2377** |
+| distinct codes entered at | 1 | **2** |
+| entries at code `0` | — | **2376** |
+| `app₁` calls | 6 | **346 437** |
+
+Two further measurements:
+
+* **Ambient-independence.**  The same count at ambient 13: 2376 entries
+  at code `0`, identical.  So the multiplier is *not* the pure-type
+  transport towers, whose depth grows with the ambient level.
+* **Per-entry cost is constant**: 346 437 / 2377 ≈ 146 `app₁` calls per
+  entry.  Total work is therefore (entries) × (a constant), and the
+  entry count is the entire story.
+
+### Cause 1 (`WellFounded.fix`) — ruled out, with evidence
+
+The brief asked whether evaluating `tiRecC` re-derives accessibility
+proofs at every recursive call.  **It does not.**  In the generated C
+(`.lake/build/ir/Realizability/Extraction.c`) the recursion is compiled
+to a direct self-recursive function,
+`l_WellFounded_fixC___at___00Realizability_tiRecC_spec__0`, whose body
+calls itself, `l_Realizability_natPT`, `l_Realizability_app_u2081` and
+`l_Realizability_oltB` — and
+
+```
+grep -cE "lean_Acc|Acc_rec|WellFounded_apply" .lake/build/ir/Realizability/Extraction.c
+0
+```
+
+`Acc` is a `Prop`, so the accessibility argument is erased before code
+generation; the decidable test `oltB` is all that survives of it.
+
+Worth stating because it looks like a contradiction with Phase B: that
+phase avoided `WellFounded.fix` for `hlog`/`bumpN`/`goodN` for a
+*different* evaluator.  Kernel reduction (`rfl`, `decide`) does not erase
+proofs, so `WellFounded.fix` genuinely blocks there.  Compiled evaluation
+(`#eval`) does erase them.  Both statements are true; they are about
+different machines.
+
+### Cause 2 (unshared duplication) — confirmed, but not where the brief expected
+
+The blowup is re-evaluation of an **identical** recursive call: 2376 of
+the 2377 entries are at the same code `0`, requested over and over.  The
+per-step multiplier ≈ 2400 is the number of points at which the
+surrounding extract applies the recursor's abstraction — the extracted
+derivation consults its induction hypothesis that many times per
+Goodstein step.  Extrapolating: ≈ 1.4 × 10¹⁰ entries at `m = 2` (three
+steps) and ≈ 5 × 10¹⁶ at `m = 3` (five steps).
+
+But it is *not* redundant substitution inside a primitive, which is the
+form the brief anticipated and the form `csimp` could repair.  Three
+sharing variants were written and proved, then measured:
+
+* `orECFast` — reads the major premise's `d n` once instead of twice
+  (once for the tag, once for the payload);
+* `exECFast` — the same duplication in `∃`-elimination;
+* `tiRecCFast` — reads the notation code `ζ (defaultPT _)` once instead
+  of twice (once to decide `≺`, once to recurse), and binds the
+  recursive value before the inner abstraction so it is not rebuilt per
+  application point.
+
+All three are `let`-rebindings, hence definitionally equal, so
+`@[csimp] theorem … := rfl` type-checks for each; all three were
+compiled into the pipeline.  **Measured effect: none.**  `tiRecC`
+entries 2377 → 2377; `app₁` calls 346 437 → 346 437, exactly.  Lean's
+compiler was already sharing those subexpressions.  They were reverted
+rather than shipped: a `csimp` that changes nothing, documented as an
+optimization, would misrepresent the state of the code.
+
+### Why no proof-backed `csimp` can fix this
+
+The duplicated work is not *inside* any primitive; it is *how many times
+the surrounding term calls it*.  `csimp` replaces what a function
+computes, never how often its caller calls it — so no replacement of
+`app₁`, `abs₁`, `dropR` or `tiRecC`, however clever, can collapse 2376
+identical calls into one.
+
+Collapsing them requires memoization keyed by the notation code, i.e.
+state that survives across *independent evaluations of the same
+expression*.  In pure Lean that is not available as a function provably
+equal to the original: `Thunk` memoizes a single value, not a
+`ℕ`-indexed family of function values; a lazily-expanded infinite trie of
+`Thunk`s would need coinduction; and a `HashMap`/`IO.Ref` cache can only
+be attached with `@[implemented_by]`, which carries **no** proof
+obligation and would make every `#eval` in this development depend on
+unverified code.  Since the brief requires each replacement to be backed
+by a checked equality proof, that route was not taken.
+
+What *would* fix it, recorded and out of scope: reduce how often the
+extracted derivation consults its induction hypothesis (a change to the
+derivation), lower `derivBound` so fewer transports are built (likewise),
+or give `Fam` a memoizing representation (a change to the extraction
+algorithm).  All three change the extract itself, which this brief
+explicitly excludes.
+
+### `m = 2` and `m = 3`: a performance limit, not an astronomical answer
+
+The brief asks that these not be conflated.  They are not the same here,
+and the distinction is unambiguous: **the answers are tiny.**
+`G(2) = 2, 2, 1, 0`, so the stopping time is `3`; `G(3) = 3, 3, 3, 2, 1,
+0`, so it is `5`.  Both are computed instantly at the value level
+(`goodN`, kernel-verified in Phase B).  What is astronomical is only the
+*extract's re-evaluation count* at those inputs.  So this is entirely a
+performance limitation of the extracted term's evaluation, and the true
+answers are small and known.
+
+`#eval goodsteinStopTime 2` therefore still produces no output (measured
+again after the sharing variants: no output at 200 s).  `m = 3` was not
+attempted.  The certified content is unaffected:
+`goodsteinStopTime_spec` proves `goodN m (goodsteinStopTime m) = 0` for
+every `m`, including 2 and 3, and it needs no evaluation.
+
+### Correction to a Phase-D3 measurement
+
+D3 reported a 110 s run "at ambient 3 (uncertified, diagnostic only)" as
+if it were a smaller instance of the same computation.  **It is not**,
+and the D3 text has been amended.  Below the derivation's bound the
+extract's reads produce junk codes, and `oltB` on a junk code runs
+`unTri`'s linear search over a huge number — that run was measuring
+garbage arithmetic, not a scaled-down version of the certified
+computation.  The valid scaling evidence is the ambient-independence
+measurement above (12 versus 13, identical counts).

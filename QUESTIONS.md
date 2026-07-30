@@ -105,8 +105,22 @@ recommendations.  Items get moved to "Resolved" when you answer them.
 *(nothing blocking; the roadmap's phases are all delivered.  The
 remaining item is engineering, not mathematics.)*
 
-12. **The extracted program is correct but not efficient.**  Raised
-   2026-07-29 by Phase D3: `goodsteinStopTime` evaluates at `m = 0, 1`
+12. **The extracted program is correct but not efficient.**  *Diagnosed
+   2026-07-29 in Phase D4 and left unfixed, deliberately.*  The profile:
+   at `m = 1` the recursor's body is entered 2377 times at only **two**
+   distinct notation codes — 2376 of them at the same code — so the cost
+   is re-evaluation of an identical recursive call, ≈ 2400× per Goodstein
+   step, independent of the ambient level.  `WellFounded.fix` is *not* to
+   blame: the compiled code contains no `Acc` references at all (proofs
+   are erased for `#eval`, unlike for kernel reduction, which is what
+   Phase B was avoiding).  Three proof-backed `@[csimp]` sharing variants
+   were written, compiled and measured: **exactly zero effect**.  The
+   reason no `csimp` can help is structural — it changes what a function
+   computes, not how often the surrounding term calls it — and the fix
+   that would work (memoization keyed by the code) is not expressible as
+   a provably-equal pure function.  Full evidence in STATUS.md's Phase-D4
+   section.  Recommendation unchanged: leave it; the correctness theorem
+   carries the content at every input.  Original entry: `goodsteinStopTime` evaluates at `m = 0, 1`
    in under a second and does not finish at `m = 2`, because every
    recursive value passes through two `dropR` transports and `app₁`/
    `abs₁` duplicate their argument, so recursive calls are re-evaluated
