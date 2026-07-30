@@ -6,6 +6,7 @@ fragment includes the arithmetic induction rule, realized by the
 type-indexed primitive-recursion combinator (`indRecC`/`indC`).
 -/
 import Realizability.OrdinalAssignment
+import Realizability.Hydra
 import Realizability.Syntax
 import Realizability.ModifiedRealizes
 import Realizability.Transport

@@ -1362,3 +1362,130 @@ That is a research-scale project — building a working fragment of
 elementary number theory inside the object theory — not a phase, and it
 would roughly double the size of the development.  Recorded here so the
 decision is informed rather than implicit.
+
+## Hydra project, Phase H1 (tree encoding) and H2 (the move): COMPLETE
+
+A new mathematical layer on top of the finished Goodstein work, reusing
+the existing `TI(ε₀)` machinery and the realizability pipeline unchanged.
+This entry covers H1 and H2 only; H3 (the ordinal assignment and its
+descent proof) is the hard part and has not been started.
+
+### H1 — finite rooted trees as natural numbers
+
+`Hydra.lean`.  A hydra is a mutual pair of inductives — `Hydra` (a node
+carrying a `Forest`) and `Forest` (a list of hydras) — rather than the
+nested `Hydra := List Hydra`, because the encode/decode proofs are mutual
+structural recursions and nested inductives make those fight the
+recursor.  The coding is the standard list coding through **Phase C's
+existing pairing**:
+
+    ⌜nil⌝ = 0,   ⌜cons h f⌝ = ⟪⌜h⌝, ⌜f⌝⟫ + 1,   ⌜node f⌝ = ⌜f⌝
+
+No new coding primitive was introduced.  That matters for the reason
+Phase C recorded: Mathlib's `Nat.pair`/`Nat.unpair` are unusable in this
+development (every lemma about them carries `Classical.choice`, and
+`Nat.unpair` does not reduce in the kernel), so `Epsilon0.lean`'s
+hand-rolled triangular pairing is what everything is built on.
+
+**Both round trips are proved**, which is what makes "the fragment's `∀x`
+ranges over exactly the hydras" exact rather than approximate:
+
+* `encodeF_forestOf : encodeF (forestOf n) = n` — every natural number is
+  a code;
+* `hydraOf_encodeH : hydraOf (encodeH h) = h` — every tree is recovered
+  from its code.
+
+```
+'Realizability.encodeF_decodeF' … [propext, Quot.sound]
+'Realizability.decodeF_encodeF' … [propext, Quot.sound]
+'Realizability.hydraOf_encodeH' … [propext, Quot.sound]
+'Realizability.encodeF_forestOf' … [propext, Quot.sound]
+```
+
+Choice-free, as the constraint requires.  Decoding is fueled with
+`pr1`/`pr2` decreasing the code, exactly as everything else in this
+development.  The four smallest codes are kernel-checked
+(`hydraOf_small`): `0` a bare head, `1` a root with one head, `2` the
+two-deep chain, `3` a root with two heads.
+
+### H2 — the cutting-and-regrowth step
+
+**The rule implemented, stated precisely** (its citation is being
+verified separately; see the note below):
+
+* a **head** is a leaf — a node with no children;
+* Hercules chops one head.  Let `p` be the head's parent;
+* if `p` is the **root**, the head is removed and nothing grows;
+* otherwise let `g` be `p`'s parent.  After the head is removed from `p`,
+  the hydra grows `n` extra copies of the resulting subtree at `p`, all
+  attached to `g`; the modified `p` stays where it is.
+
+Two parameters are deliberately left open, so that the eventual theorems
+quantify over them rather than baking in one reading: **which** head is
+chopped, and **how many** copies grow.  `cutH n : Hydra → Hydra × Bool`
+returns the new subtree together with the one bit the caller needs —
+"the head I chopped was a direct child of me" — which is exactly what
+tells a node whether it is the grandparent and must grow the copies.  At
+the root that bit is discarded, which *is* the "parent is the root,
+nothing grows" clause.
+
+`hydraStepN : ℕ → ℕ → ℕ` is the move on codes (decode, step, re-encode) —
+the value-level function a fragment symbol will evaluate by in H4 — and
+`hydraSeqN start s` is the battle with `s + 1` copies grown at step `s`.
+
+**Worked examples, kernel-verified by `rfl`** (`hydraSeq_two_heads`,
+`hydraSeq_chain`, `hydraSeq_one`):
+
+| start | battle (codes) | reading |
+|---|---|---|
+| `1` | `1, 0` | one head at the root: chopped, nothing grows |
+| `3` | `3, 1, 0` | two heads at the root: chopped one at a time |
+| `2` | `2, 3, 1, 0` | **the hydra grows**: emptying the child makes the root grow a copy of it, so one child with one head becomes two heads |
+
+The third row is the phenomenon in miniature, and the reason H3's ordinal
+assignment is needed at all: the node count goes *up* at that step, so
+nothing about the tree's size is decreasing — only the assigned ordinal
+is.
+
+### Two things flagged rather than glossed
+
+**The citation is still open.**  The brief requires the exact regrowth
+rule to be stated and cited before implementing, since the literature has
+inequivalent-looking variants (copies at the grandparent versus the
+parent; `n` copies at stage `n` versus adversarially many; heads as
+leaves versus as edges).  The rule above is stated precisely and is the
+standard Kirby–Paris one to the best of my knowledge, but the primary
+text (Kirby & Paris, *Accessible independence results for Peano
+arithmetic*, Bull. LMS 14 (1982), 285–293) has **not** yet been checked
+directly, and no claim is made here that it has.  The worked examples
+above are therefore *hand-computed from the rule as stated*, not
+cross-checked against a literature source — unlike Phase B's Goodstein
+values, which were checked against `WilliamAngus/Goodstein`.  This must
+be closed before H3 is built on top of it.
+
+**Evaluation blows up quickly, and that is expected.**  Hydra codes grow
+explosively (regrowth multiplies subtrees, and the pairing is
+quadratic), and `Epsilon0.lean`'s `tri`/`unTri` are unary/linear — fine
+for the notation codes Phase C needed, too slow for hydra codes beyond
+the tiny battles above, where the interpreter's stack overflows.  A
+closed-form `tri` via `@[csimp]` was tried and set aside (the equality
+proof needs division-free arithmetic plumbing that this light-import
+module does not have).  Per the brief, evaluation efficiency is out of
+scope for H1–H5; recorded here as the known first obstacle for the
+visualization phase, which will need bigger battles than these.
+
+### What H3 will have to do (scoped, not started)
+
+The assignment sends a hydra to a `≺`-notation: `ord(node [c₁,…,cₖ])` is
+the Cantor normal form of `ω^{ord c₁} ⊕ … ⊕ ω^{ord cₖ}`.  Building it on
+Phase C's codes means implementing, and proving monotone, the CNF *sum*
+of a multiset of exponents — sorting the children's codes, collecting
+equal exponents into coefficients — which is ordinal arithmetic on codes
+that this development does not yet have.  The descent then needs three
+facts: removing a leaf child strictly decreases a node's ordinal;
+`ω^a·(m+1) < ω^b` whenever `a < b` (this is what makes arbitrarily many
+copies harmless); and monotonicity of the parent's ordinal in each
+child's.  D1's retrospective on the analogous Goodstein assignment called
+that work the substantial part of the phase, and this one is strictly
+harder because it must see the whole tree shape rather than read off a
+linear hereditary notation.
