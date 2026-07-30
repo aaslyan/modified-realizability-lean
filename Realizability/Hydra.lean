@@ -353,6 +353,136 @@ the phenomenon in miniature, and the reason the assigned ordinal, not the
 node count, is what decreases (Phase H3). -/
 theorem hydraSeq_one : (hydraSeqN 1 0, hydraSeqN 1 1) = (1, 0) := rfl
 
+/-! ## Phase H3 (in progress): the ordinal assignment
+
+The measure that decreases even when the tree grows.  A hydra is sent to
+a Cantor-normal-form notation of `Epsilon0.lean` — **no second ordinal
+encoding**, the same principle Phase C's `ordTerm` followed:
+
+    ord(node [c₁, …, cₖ])  =  ω^(ord c₁) ⊕ … ⊕ ω^(ord cₖ)
+
+the natural (Hessenberg) sum, built by inserting one exponent at a time
+into a normal form.  Insertion is where the ordinal arithmetic this
+development did not previously have lives: given an exponent `e` and a
+normal form `c`, produce the normal form of `ω^e ⊕ c` by comparing `e`
+against `c`'s head exponent — equal exponents merge into the
+coefficient, a larger one is prepended, a smaller one recurses into the
+remainder.
+
+`ordOfForest` is then a plain structural recursion over the tree, needing
+no fuel; only `insertExp` is fueled, on `oR c < c`. -/
+
+/-- `ω^e ⊕ c` in Cantor normal form (fueled on the remainder). -/
+def insertExpAux : ℕ → ℕ → ℕ → ℕ
+  | 0, e, _ => mkO e 0 0
+  | _ + 1, e, 0 => mkO e 0 0
+  | fuel + 1, e, c =>
+      if e = oE c then mkO (oE c) (oC c + 1) (oR c)
+      else if precB (oE c) e then mkO e 0 c
+      else mkO (oE c) (oC c) (insertExpAux fuel e (oR c))
+
+/-- `ω^e ⊕ c`, at the adequate fuel. -/
+def insertExp (e c : ℕ) : ℕ := insertExpAux c e c
+
+theorem insertExpAux_succ_eq (e : ℕ) : ∀ (fuel c : ℕ), c ≤ fuel →
+    insertExpAux (fuel + 1) e c = insertExpAux fuel e c
+  | 0, c, h => by
+    have hc : c = 0 := by omega
+    subst hc
+    rfl
+  | fuel + 1, c, h => by
+    cases c with
+    | zero => rfl
+    | succ m =>
+      have hr : oR (m + 1) ≤ fuel := by
+        have := oR_lt (n := m + 1) (by omega)
+        omega
+      show (if e = oE (m + 1) then _ else if precB (oE (m + 1)) e then _
+        else mkO (oE (m + 1)) (oC (m + 1)) (insertExpAux (fuel + 1) e (oR (m + 1)))) = _
+      rw [insertExpAux_succ_eq e fuel _ hr]
+      rfl
+
+theorem insertExpAux_eq_of_le (e : ℕ) : ∀ (fuel c : ℕ), c ≤ fuel →
+    insertExpAux fuel e c = insertExp e c
+  | 0, c, h => by
+    have hc : c = 0 := by omega
+    subst hc
+    rfl
+  | fuel + 1, c, h => by
+    rcases decEm (c = fuel + 1) with he | he
+    · rw [he]; rfl
+    · have hf : c ≤ fuel := by omega
+      rw [insertExpAux_succ_eq e fuel c hf, insertExpAux_eq_of_le e fuel c hf]
+
+@[simp] theorem insertExp_zero (e : ℕ) : insertExp e 0 = mkO e 0 0 := rfl
+
+/-- The defining equation of insertion at a nonzero normal form. -/
+theorem insertExp_pos {e c : ℕ} (hc : c ≠ 0) :
+    insertExp e c =
+      if e = oE c then mkO (oE c) (oC c + 1) (oR c)
+      else if precB (oE c) e then mkO e 0 c
+      else mkO (oE c) (oC c) (insertExp e (oR c)) := by
+  obtain ⟨m, hm⟩ : ∃ m, c = m + 1 := ⟨c - 1, by omega⟩
+  subst hm
+  have hr : oR (m + 1) ≤ m := by
+    have := oR_lt (n := m + 1) (by omega)
+    omega
+  show (if e = oE (m + 1) then _ else if precB (oE (m + 1)) e then _
+    else mkO (oE (m + 1)) (oC (m + 1)) (insertExpAux m e (oR (m + 1)))) = _
+  rw [insertExpAux_eq_of_le e m _ hr]
+
+/-! ### The assignment -/
+
+mutual
+
+/-- **The ordinal of a hydra**, as a notation code. -/
+def ordOfHydra : Hydra → ℕ
+  | .node f => ordOfForest f
+
+/-- The natural sum of `ω^(ord ·)` over a forest. -/
+def ordOfForest : Forest → ℕ
+  | .nil => 0
+  | .cons h f => insertExp (ordOfHydra h) (ordOfForest f)
+
+end
+
+@[simp] theorem ordOfHydra_node (f : Forest) :
+    ordOfHydra (.node f) = ordOfForest f := rfl
+
+@[simp] theorem ordOfForest_nil : ordOfForest .nil = 0 := rfl
+
+@[simp] theorem ordOfForest_cons (h : Hydra) (f : Forest) :
+    ordOfForest (.cons h f) = insertExp (ordOfHydra h) (ordOfForest f) := rfl
+
+/-- The assignment on codes — the value-level function the fragment's
+symbol will evaluate by in H4. -/
+def ordOfHydraN (code : ℕ) : ℕ := ordOfHydra (hydraOf code)
+
+/-! ### The first descent instances, kernel-checked
+
+The smallest battle where the tree *grows* is `2 → 3` (one child with one
+head becomes two heads).  Its ordinals are `ω` and `2`: the node count
+went up, the ordinal came down.  That is the whole point of the
+assignment, and here it is checked by computation. -/
+
+/-- A bare head has ordinal `0`; a root with one head has ordinal `1`;
+the two-deep chain has ordinal `ω` (code `2`); two heads has ordinal `2`
+(code `3`). -/
+theorem ordOfHydraN_small :
+    (ordOfHydraN 0, ordOfHydraN 1, ordOfHydraN 2, ordOfHydraN 3)
+      = (0, 1, omegaCode, 3) := rfl
+
+/-- **The measure decreases where the tree grows.**  `ω ≻ 2`, along the
+step `2 → 3` that made the hydra wider. -/
+theorem ordOfHydraN_descends_two :
+    OLt (ordOfHydraN (hydraSeqN 2 1)) (ordOfHydraN (hydraSeqN 2 0)) := by decide
+
+/-- And along the rest of that battle. -/
+theorem ordOfHydraN_descends_rest :
+    OLt (ordOfHydraN (hydraSeqN 2 2)) (ordOfHydraN (hydraSeqN 2 1)) ∧
+    OLt (ordOfHydraN (hydraSeqN 2 3)) (ordOfHydraN (hydraSeqN 2 2)) := by
+  refine ⟨by decide, by decide⟩
+
 #print axioms encodeF_decodeF
 #print axioms decodeF_encodeF
 #print axioms hydraOf_encodeH

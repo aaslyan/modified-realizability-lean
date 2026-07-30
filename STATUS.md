@@ -1474,7 +1474,29 @@ module does not have).  Per the brief, evaluation efficiency is out of
 scope for H1–H5; recorded here as the known first obstacle for the
 visualization phase, which will need bigger battles than these.
 
-### What H3 will have to do (scoped, not started)
+### H3, part one: the assignment exists and descends on the worked battle
+
+Added since the entry above.  `insertExp e c` is the Cantor normal form
+of `ω^e ⊕ c` — equal exponents merge into the coefficient, a larger one
+is prepended, a smaller one recurses into the remainder — fueled on
+`oR c < c`, with the usual adequacy pair (`insertExpAux_succ_eq`,
+`insertExpAux_eq_of_le`) and its defining equation `insertExp_pos`.  This
+is the ordinal arithmetic the development previously lacked.  On top of
+it, `ordOfHydra`/`ordOfForest` are a plain structural recursion needing
+no fuel, and `ordOfHydraN` is the assignment on codes.
+
+Kernel-checked (`ordOfHydraN_small`): the four smallest hydras get
+ordinals `0`, `1`, `ω`, `2` — note the two-deep chain gets `ω` while two
+heads get `2`.
+
+And the point of the whole construction, also kernel-checked
+(`ordOfHydraN_descends_two`, `ordOfHydraN_descends_rest`): along the
+battle `2 → 3 → 1 → 0`, the assigned ordinals are `ω ≻ 2 ≻ 1 ≻ 0`.  The
+first step is the one where the **tree grows** — one child with one head
+becomes two heads — and it is exactly there that `ω` drops to `2`.  The
+node count went up; the measure came down.
+
+### What the rest of H3 needs (scoped, not started)
 
 The assignment sends a hydra to a `≺`-notation: `ord(node [c₁,…,cₖ])` is
 the Cantor normal form of `ω^{ord c₁} ⊕ … ⊕ ω^{ord cₖ}`.  Building it on
