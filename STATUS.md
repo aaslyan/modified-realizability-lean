@@ -1617,10 +1617,34 @@ and the two accumulators may branch differently.  So the cases are
 `(branch taken for c₁) × (branch taken for c₂)` — nine, of which some are
 impossible and must be excluded by totality and irreflexivity — and only
 the both-recursed corner is an induction step.  A first attempt got four
-of them wrong and was reverted rather than left half-proved.  Worth doing
-next with the square written out explicitly before any Lean is typed;
-the `precB_cases`/`precB_of_ne_of_not_precB` pair is what settles each
-corner.
+of them wrong and was reverted rather than left half-proved.  **Doing the square on paper first found the actual blocker, and it is not
+the square.**  Writing out the nine corners:
+
+* `c₁ = 0` against `c₂`'s three branches — all three settle immediately
+  (coefficient `0 < oC c₂ + 1`; remainder `0 ≺ c₂`; head `e ≺ oE c₂`);
+* `oE c₁ = oE c₂` with `c₁, c₂ ≠ 0` — both accumulators take the *same*
+  branch, and each corner is one order constructor, with only the
+  both-recursed corner an induction step;
+* `oE c₁ ≺ oE c₂` — **this is where it breaks.**  To know which branch
+  `c₁` takes one must chain `oE c₁ ≺ oE c₂` with the branch condition on
+  `c₂`, e.g. from `oE c₂ ≺ e` conclude `oE c₁ ≺ e`.  That is
+  **transitivity** of `≺`.  Excluding the impossible corners needs
+  **asymmetry** (not both `a ≺ b` and `b ≺ a`).
+
+Phase C proved the order well-founded, irreflexive, and — in the Hydra
+work above — total, but **never transitive or asymmetric**: nothing before
+now compared three notations at once.  So the prerequisite list grew by
+one entry, and it sits before monotonicity:
+
+0. `precB` is transitive on normal forms, and asymmetric (the latter
+   follows from transitivity plus irreflexivity, both already available).
+   Same nested induction as trichotomy — head exponents, coefficients,
+   remainders — and comparable in size.
+
+That is a genuine gap in the notation layer, not a Hydra-specific one:
+`Epsilon0.lean` has carried a strict order all along without ever proving
+it transitive, because Goodstein's descent only ever compared two
+notations related by construction.
 
 ### The original note, superseded by step 1 above
 
