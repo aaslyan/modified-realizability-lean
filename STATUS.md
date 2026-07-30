@@ -1641,6 +1641,11 @@ one entry, and it sits before monotonicity:
    Same nested induction as trichotomy — head exponents, coefficients,
    remainders — and comparable in size.
 
+Both attempts are written up in full in `NOTES_insertExp_monotonicity.md`
+— the Lean skeleton and its four rejected corners, then the grid on
+paper with rows Z and "equal head exponents" already worked out, so the
+next attempt starts from a plan rather than from scratch.
+
 That is a genuine gap in the notation layer, not a Hydra-specific one:
 `Epsilon0.lean` has carried a strict order all along without ever proving
 it transitive, because Goodstein's descent only ever compared two
