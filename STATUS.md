@@ -1609,6 +1609,19 @@ Remaining: monotonicity of `insertExp` in each argument (replacing a
 child by one of smaller ordinal lowers the parent's), and then the general
 descent by induction over `cutH`'s recursion.
 
+**Monotonicity: attempted once, reverted, and what it will take.**  The
+statement is `c₁ ≺ c₂ → ω^e ⊕ c₁ ≺ ω^e ⊕ c₂` (for normal forms).  The
+proof is *not* a simple recursion: the case analysis is a square, because
+insertion branches on how `e` compares with the head of its accumulator,
+and the two accumulators may branch differently.  So the cases are
+`(branch taken for c₁) × (branch taken for c₂)` — nine, of which some are
+impossible and must be excluded by totality and irreflexivity — and only
+the both-recursed corner is an induction step.  A first attempt got four
+of them wrong and was reverted rather than left half-proved.  Worth doing
+next with the square written out explicitly before any Lean is typed;
+the `precB_cases`/`precB_of_ne_of_not_precB` pair is what settles each
+corner.
+
 ### The original note, superseded by step 1 above
 
 Worth recording because it would otherwise be found mid-proof.  Before
