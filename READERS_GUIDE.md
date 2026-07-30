@@ -120,6 +120,22 @@ below is the dependency-ordered reading list.
 | 46 | `battleLenH`, **`battleLen_eq_battleLenH`**, `battleTrace`, `sizeTrace`, `descendsAlong` | `HydraDisplay.lean` | The battle run on trees rather than codes (98 s → <1 s, proved to be the same battle), so `Hydra(3) = 37` is `#guard`ed at every build; and the trace that shows the tree growing while the ordinal falls. **Start here if you want to see the theorem rather than read it.** |
 | 47 | `cutRightF`, `rightStep_play`, **`rightStep_descends`** | `HydraStrategies.lean` | A second strategy (rightmost head), whose descent and termination follow from H7 in one line each — the test that the general theorem is usable. Both strategies give `1, 3, 37`, `#guard`ed, through different intermediate states. |
 
+### 1.8 The Hanoi layer (E1–E5) — the third theorem, on the *simplest* machinery
+
+The point of this one is what it does **not** use: no `TI(ε₀)`, no
+ordinals, only `ind`, `∃` and Phase A's arithmetic.  What it exercises
+instead is a *branching* recursion — two sub-calls per level, where
+Goodstein's and Hydra's were linear chains.
+
+| # | Declaration | File | What it gives you |
+|---|---|---|---|
+| 48 | `mvN`, `hconsN`, `hanoiAux`, `hanoiN` | `Hanoi.lean` | Moves as `src*3+dst`; sequences in the *same* cons coding as the Hydra layer; the solver in difference-list form, which is what keeps the module free of list theory. |
+| 49 | `hcheck`, `solvesN`, **`solvesN_succ`** | `Hanoi.lean` | `Solves` as a **parser** — it validates an arbitrary `k` rather than comparing against the canonical answer, which is what makes the existence theorem say something. The `#guard`s check it rejects non-solutions. |
+| 50 | **`solvesN_unique`**, `solvesN_length` | `Hanoi.lean` | The relation admits exactly one sequence, of length `2^n − 1` — the precise sense in which the result is optimal. Read the section header for what this is *not* (classical minimality over arbitrary legal sequences). |
+| 51 | `expDoubleDeriv`, **`ihRenamed`** | `HanoiTheorem.lean` | `2^x + 2^x = 2^(x+1)` from Phase A, no induction; and the α-renaming device — a permuting recursion cannot instantiate its induction hypothesis at a permutation of the goal's own bound variables, and this is the fix. |
+| 52 | **`hanoiTheorem`** | `HanoiTheorem.lean` | `⊢ ∀n∀f∀t∀v ∃k. Solves(n,f,t,v,k) ∧ MoveCount k = 2^n − 1`, by ordinary `ind`. |
+| 53 | `hanoiSolution`, **`hanoiSolution_spec`**, `hanoiMoves` | `HanoiExtraction.lean` | The extracted solver, correct and optimal at every input, and its output decoded into readable `(src,dst)` pairs — the classical sequences, `#eval`ed at n=1..4. |
+
 ---
 
 ## 2. The four sub-phases in plain language

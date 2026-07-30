@@ -300,6 +300,62 @@ theorem solvesN_succ {n f t v k₁ k₂ : ℕ}
   simp only [happN_nil, hcons_ne_zero, if_neg, hhead_hcons, if_pos, htail_hcons, e₂]
   simp
 
+/-! ## Uniqueness — what "optimal" does and does not mean here
+
+`solvesN` accepts exactly one sequence, and it is the canonical solution.
+That is worth proving rather than assuming, because it is what turns the
+existence theorem's "`MoveCount k = 2^n − 1`" into a statement about
+*every* solution the relation admits, not just the one the derivation
+happens to produce.
+
+What it does **not** give is classical minimality — "no legal sequence of
+moves solves the puzzle in fewer steps".  That would need a different
+`Solves`: a legality relation on arbitrary sequences, with a tower-state
+semantics (a disk may only move onto a larger one), of which the
+recursive shape here is one particular family.  The classical `2^n − 1`
+lower bound over *that* relation is not formalized and is not claimed;
+see STATUS.md's Phase-E section. -/
+
+/-- **The parser accepts only what the solver produces.**  Induction on
+`n`, with the remainder generalized, mirroring `hcheck_hanoiAux` in the
+other direction. -/
+theorem hcheck_eq_hanoiAux : ∀ (n f t v k s : ℕ), hcheck n f t v k = some s →
+    k = hanoiAux n f t v s
+  | 0, _, _, _, k, s, h => by
+    have : s = k := by injection h with h'; exact h'.symm
+    subst this
+    rfl
+  | n + 1, f, t, v, k, s, h => by
+    cases hk : hcheck n f v t k with
+    | none => rw [hcheck_succ_none n f t v k hk] at h; exact absurd h (by simp)
+    | some k' =>
+      rw [hcheck_succ_some n f t v k k' hk] at h
+      rcases decEm (k' = 0) with h0 | h0
+      · rw [if_pos h0] at h; exact absurd h (by simp)
+      · rw [if_neg h0] at h
+        rcases decEm (hhead k' = mvN f t) with hh | hh
+        · rw [if_pos hh] at h
+          have e₁ : k = hanoiAux n f v t k' := hcheck_eq_hanoiAux n f v t k k' hk
+          have e₂ : htail k' = hanoiAux n v t f s :=
+            hcheck_eq_hanoiAux n v t f (htail k') s h
+          obtain ⟨m, w, hmw⟩ : ∃ m w, k' = hconsN m w :=
+            ⟨hhead k', htail k', (hcons_eta h0).symm⟩
+          rw [hmw, hhead_hcons] at hh
+          rw [hmw, htail_hcons] at e₂
+          show k = hanoiAux n f v t (hconsN (mvN f t) (hanoiAux n v t f s))
+          rw [e₁, hmw, hh, e₂]
+        · rw [if_neg hh] at h; exact absurd h (by simp)
+
+/-- **The solution is unique**: anything `solvesN` accepts *is* the
+canonical solution. -/
+theorem solvesN_unique {n f t v k : ℕ} (h : solvesN n f t v k = 1) :
+    k = hanoiN n f t v := by
+  have e : hcheck n f t v k = some 0 := by
+    by_contra hne
+    rw [show solvesN n f t v k = 0 from if_neg hne] at h
+    exact absurd h (by simp)
+  exact hcheck_eq_hanoiAux n f t v k 0 e
+
 /-! ## The move count -/
 
 def hlenAux : ℕ → ℕ → ℕ
@@ -391,6 +447,14 @@ theorem hlen_hanoiAux : ∀ (n f t v r : ℕ),
 theorem hlen_hanoiN (n f t v : ℕ) : hlen (hanoiN n f t v) + 1 = 2 ^ n := by
   have := hlen_hanoiAux n f t v 0
   simpa using this
+
+/-- **Every solution has exactly `2^n − 1` moves** — not just the one the
+derivation produces.  Immediate from uniqueness, and the precise sense in
+which the extracted solution is optimal *for this relation*. -/
+theorem solvesN_length {n f t v k : ℕ} (h : solvesN n f t v k = 1) :
+    hlen k + 1 = 2 ^ n := by
+  rw [solvesN_unique h]
+  exact hlen_hanoiN n f t v
 
 /-! ### Small instances, kernel-checked
 

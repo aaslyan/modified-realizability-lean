@@ -2537,8 +2537,38 @@ The expected pattern, matching every prior phase.  Full regression: every
 diffed — **no pre-existing line changed**; the only differences are the
 additions above.
 
+### E5 — uniqueness, and exactly what "optimal" means here
+
+The brief's prose says the goal is not just "produce a solution" but
+"produce the shortest one, and prove it's shortest".  The formal goal it
+states — `∃k. Solves ∧ MoveCount k = 2^n − 1` — is proved.  Two further
+theorems make precise how much of "shortest" that is, and how much it is
+not:
+
+* **`solvesN_unique`** — `solvesN n f t v k = 1 → k = hanoiN n f t v`.
+  The parser accepts *exactly one* sequence, and it is the canonical
+  solution.  Induction on `n` with the remainder generalized, mirroring
+  `hcheck_hanoiAux` in the other direction.
+* **`solvesN_length`** — hence every accepted sequence has exactly
+  `2^n − 1` moves, not merely the one the derivation produces.
+
+So "optimal" here is exact *relative to this `Solves`*: the relation
+admits one sequence, of the classical optimal length.
+
+**What is still not proved, and is not claimed**: classical minimality —
+"no legal sequence of moves solves the puzzle in fewer steps".  That
+needs a *different* `Solves`: a legality relation on arbitrary move
+sequences with a tower-state semantics (a disk may move only onto a
+larger one), of which the recursive shape used here is one particular
+family.  The `2^n − 1` lower bound over that relation is a different
+theorem — it needs the state semantics and a counting argument, not just
+the recursion — and is out of scope for this phase.  Recorded rather than
+left ambiguous, because the brief's prose and its formal goal differ on
+exactly this point.
+
 ### Out of scope, as stated
 
 Only the classical three-peg problem; no claim about four-peg or
 restricted variants.  No general list theory beyond what this encoding
-needs.
+needs.  Classical minimality over arbitrary legal move sequences, as
+above.

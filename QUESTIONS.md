@@ -103,8 +103,22 @@ recommendations.  Items get moved to "Resolved" when you answer them.
 ## Open
 
 *(nothing blocking; the roadmap's phases and the Hydra project's six are
-all delivered.  Item 12 is engineering, not mathematics; item 13 is a
-genuine mathematical fork, recorded rather than silently chosen.)*
+all delivered, as is Phase E.  Item 12 is engineering, not mathematics;
+items 13 and 14 are genuine mathematical forks, recorded rather than
+silently chosen.)*
+
+14. **Hanoi: is "optimal" the same as "shortest"?**  *Raised and
+   answered 2026-07-30, at the close of Phase E.*  The brief's formal
+   goal (`∃k. Solves ∧ MoveCount k = 2^n − 1`) is proved, and E5 adds
+   that the relation admits **exactly one** sequence (`solvesN_unique`),
+   so every solution it accepts has that length.  But the brief's prose
+   ("prove it's shortest") reads as classical minimality — no *legal*
+   sequence is shorter — and that is a different theorem over a
+   different relation: legality on arbitrary sequences with a
+   tower-state semantics, plus a counting argument for the lower bound.
+   **Recommendation: leave it, and keep saying so.**  Adding the state
+   semantics is a phase of its own; STATUS.md's E5 section states the gap
+   in the same words as this entry, so the two claims cannot drift apart.
 
 13. **Should the Hydra descent be *derived* the way D5 derived the
    Goodstein one?**  *Raised 2026-07-30, at the close of H4/H5.*
