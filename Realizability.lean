@@ -26,3 +26,4 @@ import Realizability.HydraTheorem
 import Realizability.HydraExtraction
 import Realizability.HydraGeneral
 import Realizability.HydraDisplay
+import Realizability.HydraStrategies

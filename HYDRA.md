@@ -1,6 +1,6 @@
 # The Hydra project
 
-A self-contained account of Phases H1–H8: the Kirby–Paris Hydra theorem,
+A self-contained account of Phases H1–H9: the Kirby–Paris Hydra theorem,
 proved twice — once inside the fragment, once in the metatheory — with a
 program extracted from the first proof and a trace you can read.
 
@@ -123,6 +123,7 @@ number, and the `f_α` growth-rate bounds.
 | H6 | `HydraExtraction.lean` | The extracted battle-length program, certified and running |
 | H7 | `HydraGeneral.lean` | **`hercules_wins`** — every play, every strategy, every schedule |
 | H8 | `HydraDisplay.lean` | The battle on trees (98 s → <1 s), and the trace |
+| H9 | `HydraStrategies.lean` | A second strategy (rightmost head), covered by H7 for free |
 
 ### H1 — trees as numbers
 
@@ -271,6 +272,34 @@ squares the magnitude) and this battle reaches 20-node trees.
 with `battleLen_eq_battleLenH` proving the two agree at every fuel, stage
 and code.  So all three published lengths are `#guard`ed at every build.
 
+### H9 — a second strategy, for free
+
+The test of whether H7 bought anything: a general theorem that cannot be
+applied to a second instance without redoing the work is not general.
+
+`cutRightF` chops the **rightmost** head instead of the leftmost, same
+grandparent regrowth, same replication parameter.  `rightStep_play` shows
+each of its moves is one of H7's plays, and then
+
+    rightStep_descends := play_descends (rightStep_play …)
+
+is the whole descent proof — one line, against H3's three-case induction
+over the tree consuming three separate ordinal lemmas.  Termination
+follows the same way, from `no_infinite_play`.
+
+The two strategies are genuinely different: after three moves on the
+4-node path the leftmost is at `(o o o o (o) (o))` and the rightmost at
+`((o) (o) o o o o)` (`#guard`ed to differ).  The path hydras are the right
+test precisely because they *start* as chains, where the strategies agree;
+they diverge as soon as the first regrowth branches the tree — and both
+still reach the bare head after exactly 37 moves, also `#guard`ed.
+
+Stated carefully: strategy-independence of the battle *length* is a known
+result and is **not proved here**.  What is proved is that both strategies
+terminate; what is checked is that their lengths agree at the three
+published instances.  STATUS.md previously reported that agreement on the
+authority of a research pass — the build now checks it.
+
 ---
 
 ## 5. The picture
@@ -334,6 +363,9 @@ Checked at every build by embedded `#print axioms`.
 'Realizability.hydraStep_play'                   … [propext]
 'Realizability.battleLen_eq_battleLenH'          … [propext, Quot.sound]
 'Realizability.play_two_choices'                 … does not depend on any axioms
+'Realizability.rightStep_play'                   … [propext]
+'Realizability.rightStep_descends'               … [propext, Quot.sound]
+'Realizability.no_infinite_right_battle'         … [propext, Quot.sound]
 ```
 
 Adding three symbols and seven rules to the fragment cost **nothing** in

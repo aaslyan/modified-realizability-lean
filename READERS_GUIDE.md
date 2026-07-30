@@ -101,7 +101,7 @@ noted only where they help.
 | 35 | **`goodsteinTheorem`** | `GoodsteinTheorem.lean` | `⊢ ∀m ∃t. good(m,t) = 0`. |
 | 36 | `goodsteinStopTime`, **`goodsteinStopTime_spec`**, `goodstein_extract_continuous`, `goodsteinRealizesCtQ` | `GoodsteinExtraction.lean` | The extracted function, its correctness at every input, its continuity, and its class in `CtQ 2`. |
 
-### 1.7 The Hydra layer (H1–H8) — the second theorem, on the same machinery
+### 1.7 The Hydra layer (H1–H9) — the second theorem, on the same machinery
 
 **`HYDRA.md` is the self-contained account of this layer**; the table
 below is the dependency-ordered reading list.
@@ -118,6 +118,7 @@ below is the dependency-ordered reading list.
 | 44 | `hydraBattleLength`, **`hydraBattleLength_spec`**, `hydra_extract_continuous`, `hydraRealizesCtQ` | `HydraExtraction.lean` | The extracted battle-length function, correct at every tree, continuous, with its class in `CtQ 2`. |
 | 45 | `Play`, `play_descends`, **`hercules_wins`**, `no_infinite_play`, `play_stuck_iff_leaf`, `hydraStep_play` | `HydraGeneral.lean` | The general game (H7): *any* head, *any* replication factor at every step. Every play is finite and ends at the bare head, and the fragment's battle is one of these plays. Read `play_two_choices` — it is what rules out the relation secretly being the leftmost strategy. |
 | 46 | `battleLenH`, **`battleLen_eq_battleLenH`**, `battleTrace`, `sizeTrace`, `descendsAlong` | `HydraDisplay.lean` | The battle run on trees rather than codes (98 s → <1 s, proved to be the same battle), so `Hydra(3) = 37` is `#guard`ed at every build; and the trace that shows the tree growing while the ordinal falls. **Start here if you want to see the theorem rather than read it.** |
+| 47 | `cutRightF`, `rightStep_play`, **`rightStep_descends`** | `HydraStrategies.lean` | A second strategy (rightmost head), whose descent and termination follow from H7 in one line each — the test that the general theorem is usable. Both strategies give `1, 3, 37`, `#guard`ed, through different intermediate states. |
 
 ---
 

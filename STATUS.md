@@ -1,4 +1,4 @@
-# Status: COMPLETE through Phase H7 — Goodstein's theorem *and* the Kirby–Paris Hydra theorem are proved inside the fragment, each with its witness function extracted, certified, and executed; and the Hydra theorem is proved again in the metatheory in its full strategy-free form
+# Status: COMPLETE through Phase H9 — Goodstein's theorem *and* the Kirby–Paris Hydra theorem are proved inside the fragment, each with its witness function extracted, certified, and executed; and the Hydra theorem is proved again in the metatheory in its full strategy-free form
 
 Phases: milestone (modified realizability + extraction + soundness),
 generic continuity, induction (2), arithmetic (A), hereditary base-`k`
@@ -10,7 +10,8 @@ coding (H1), the move (H2), the ordinal assignment and its descent
 theorem (H3), the game inside the fragment (H4), termination as a closed
 derivation (H5), the extracted battle-length program (H6), and the
 general game — every strategy, every schedule — in the metatheory (H7),
-and the fast tree-level evaluator with the battle trace (H8).
+the fast tree-level evaluator with the battle trace (H8), and a second
+strategy covered by H7 for free (H9).
 
 `lake build` succeeds, zero `sorry`/`admit`.  `#print axioms` on the
 soundness theorem (now covering the `ind` rule and the Phase-A rules),
@@ -2158,4 +2159,58 @@ battle big enough to be interesting.
 ```
 'Realizability.battleLen_eq_battleLenH' … [propext, Quot.sound]
 'Realizability.isLeaf_iff'              … [propext]
+```
+
+## Hydra Phase H9 (a second strategy, for free): COMPLETE
+
+`HydraStrategies.lean`.  The test of whether H7 bought anything: a general
+theorem that cannot be applied to a second instance without redoing the
+work is not general.
+
+`cutRightF` chops the **rightmost** head instead of the leftmost — same
+grandparent regrowth, same replication parameter — and is defined on
+forests, walking to the last member instead of the first.  (The first
+attempt defined it on hydras and recursed at `.node (tail)`, which is not
+a subterm, so Lean compiled it by well-founded recursion and nothing
+unfolded definitionally.  Restructuring on forests fixed that; the
+equation lemmas are used explicitly where the overlapping patterns still
+block `rfl`.)
+
+`rightStep_play` exhibits each rightmost move as one of H7's plays.  Then
+
+    rightStep_descends := play_descends (rightStep_play …)
+
+is the entire descent proof — one line, against H3's `cutH_descends`,
+which is a three-case induction over the tree consuming
+`precB_insertExp_self`, `precB_insertExp_mono_exp` and
+`precB_insertIter_lt`.  None of that is repeated.  Termination follows the
+same way through `no_infinite_play` (`no_infinite_right_battle`, at an
+arbitrary replication schedule).
+
+### What the build now checks that it previously assumed
+
+`#guard`: the rightmost strategy gives the published lengths `1, 3, 37` on
+the path hydras, and the two strategies pass through **different** states
+(after three moves on the 4-node path, `(o o o o (o) (o))` against
+`((o) (o) o o o o)`).  The path hydras are the right test precisely
+because they *start* as chains, where the strategies agree; they diverge
+as soon as the first regrowth branches the tree, and still land on the
+same length.
+
+The earlier entry above reported that agreement on the authority of a
+research pass ("the research pass independently reports the same 37 under
+the rightmost strategy with different intermediate states").  That is now
+checked by the build, under our own definitions.
+
+**Stated carefully**: strategy-independence of the battle *length* is a
+known result and is **not proved here**.  What is proved is that both
+strategies terminate (via H7); what is checked is that their lengths agree
+at the three published instances.
+
+### Budget
+
+```
+'Realizability.rightStep_play'           … [propext]
+'Realizability.rightStep_descends'       … [propext, Quot.sound]
+'Realizability.no_infinite_right_battle' … [propext, Quot.sound]
 ```
