@@ -28,3 +28,5 @@ import Realizability.HydraExtraction
 import Realizability.HydraGeneral
 import Realizability.HydraDisplay
 import Realizability.HydraStrategies
+import Realizability.HanoiTheorem
+import Realizability.HanoiExtraction

@@ -1,4 +1,4 @@
-# Status: COMPLETE through Phase H9 — Goodstein's theorem *and* the Kirby–Paris Hydra theorem are proved inside the fragment, each with its witness function extracted, certified, and executed; and the Hydra theorem is proved again in the metatheory in its full strategy-free form
+# Status: COMPLETE through Phase H9 and Phase E (Hanoi) — Goodstein's theorem *and* the Kirby–Paris Hydra theorem are proved inside the fragment, each with its witness function extracted, certified, and executed; and the Hydra theorem is proved again in the metatheory in its full strategy-free form
 
 Phases: milestone (modified realizability + extraction + soundness),
 generic continuity, induction (2), arithmetic (A), hereditary base-`k`
@@ -2362,3 +2362,183 @@ Closing it would need one of: sharing at the level of *applications*
 consults its induction hypothesis fewer times (D4's option 1, out of
 scope for this brief); or an extraction whose realizers are first-order
 data rather than closures.  None is attempted here, and none is claimed.
+
+## Phase E (Tower of Hanoi): COMPLETE — correctness, optimality, and the extracted solver
+
+The third showpiece, and deliberately the *easiest* infrastructure: Hanoi
+is an ordinary PA theorem, so this phase uses **no `TI(ε₀)` and no
+ordinals at all** — only `ind` (Phase 2), `∃` (D0), and the arithmetic of
+Phase A.  What it exercises that neither Goodstein nor Hydra did is a
+**branching** recursion: two sub-calls per level.
+
+### E1 — the value layer (`Hanoi.lean`, before `Syntax.lean`)
+
+Moves are arithmetic: `mvN src dst = src * 3 + dst`, so the *fragment*
+can write a move with `×` and `+` and needs no symbol for one.  Sequences
+use the cons coding `Hydra.lean` already uses for forests, over
+`Epsilon0.lean`'s triangular pairing — third client of that one pairing,
+second of this list convention, no new scheme.
+
+Two design choices worth recording:
+
+* **The solver is written in difference-list form**,
+  `hanoiAux n f t v r` = "the `n`-disk solution followed by `r`".  That
+  is what keeps this module free of general list theory: correctness
+  needs only the two `hanoiAux` equations, never associativity of append.
+  `happN` exists solely because the *fragment's* step case receives its
+  two sub-solutions as opaque values and must join them; `hanoiN_succ`
+  connects the two forms.
+* **`Solves` is a parser, not an equality test.**  `hcheck n f t v k`
+  reads an `n`-disk solution off the front of `k` and returns the rest,
+  and `solvesN … = 1` when the whole of `k` is consumed.  So it validates
+  an arbitrary `k` rather than comparing it against the canonical answer
+  — which is what makes the existence theorem say something.  The
+  `#guard`s check both directions: the solver's output validates, and
+  three non-solutions are rejected.
+
+### E2 — the fragment layer
+
+Four symbols (`hcons`, `happ`, `mvcount`, and the five-place `solves`)
+and four schemas, each discharged by exactly one E1 theorem:
+
+| schema | ↔ | E1 theorem |
+|---|---|---|
+| `solvesZero` | | `solvesN` at `n = 0` |
+| `solvesSucc` | | `solvesN_succ` (the branching step) |
+| `mvcountNil` | | `hlen_nil` |
+| `mvcountApp` | | `hlen_happN` with `hlen_cons` |
+
+Unlike Goodstein's and Hydra's imports, **both `solves` schemas are
+ordinary statements of PA**, and the induction that consumes them is
+`ind`.  Continuity needed one new closure lemma, `continuous2_comp₅`, for
+the five-place symbol.
+
+### E3 — the theorem
+
+```
+hanoiTheorem : Deriv [] (∀n ∀f ∀t ∀v. ∃k. Solves(n,f,t,v,k) ∧ MoveCount k = 2^n − 1)
+```
+
+**Both conjuncts are carried by the same induction** — the decision the
+brief asked to be recorded.  Separately would mean proving existence and
+then re-running the same induction to count the witness it produced,
+which needs that witness *named*, i.e. a second existential elimination
+inside a second induction.  Together, the step gets both facts about each
+sub-solution from one `∃`-elimination and pays one `andI`.
+
+The count is carried subtraction-free as `succ (MoveCount k) = 2^n`,
+because the fragment has `pred` but no order relation; `2^n − 1` is
+recovered at the end by `predSucc`.  The arithmetic the step needs —
+`2^x + 2^x = 2^(x+1)` — is derived, not imported: `expSucc` plus Phase
+A's `×` theorems, no induction of its own (`expDoubleDeriv`).
+
+**The substitution obstacle, and a new device.**  Hanoi's recursion
+*permutes its pegs*: solving `f → t via v` needs `f → v via t` and
+`v → t via f`.  So the induction hypothesis `∀f∀t∀v` must be instantiated
+at a permutation of the variables the goal has just bound — and with
+naive substitution **every such instantiation captures**, because
+instantiating the second binder at the third variable happens while the
+third is still bound.  Both permutations the recursion needs hit it, and
+no ordering of the binders avoids it.  This is a *different* instance of
+the problem from D2's, and a sharper one: D2's was one term mentioning a
+bound variable, this is unavoidable in principle for any permuting
+recursion.
+
+The fix is cheaper than D2's naming trick: **α-rename the induction
+hypothesis first** (`ihRenamed`).  Instantiating `∀f∀t∀v` at three
+*fresh* variables is capture-free; re-generalizing gives the same
+statement over binders disjoint from the goal's; instantiating *that* at
+the permutation is capture-free in turn.  Six lines, reusable for any
+recursion that permutes its parameters.  A smaller instance of the same
+issue: both sub-solutions must be in scope at once, so the second
+existential's witness variable is renamed `5 → 9` before elimination.
+
+### E4 — the extracted solver, and the artifact
+
+`derivBound hanoiTheorem = 26`.  `hanoiSolution n f t v` reads the
+witness off the realizer; `hanoiSolution_spec` certifies it at **every**
+input from `soundness`:
+
+```
+solvesN n f t v (hanoiSolution n f t v) = 1  ∧  hlen (hanoiSolution n f t v) = 2^n − 1
+```
+
+Decoded with `hanoiMoves`, verbatim from the build log (peg `0` source,
+`2` target, `1` spare):
+
+```
+n = 1   [(0,2)]
+n = 2   [(0,1), (0,2), (1,2)]
+n = 3   [(0,2), (0,1), (2,1), (0,2), (1,0), (1,2), (0,2)]
+n = 4   [(0,1), (0,2), (1,2), (0,1), (2,0), (2,1), (0,1),
+         (0,2), (1,2), (1,0), (2,0), (1,2), (0,1), (0,2), (1,2)]
+```
+
+These are the classical optimal solutions.  `#guard`s check the lengths
+(`0, 1, 3, 7, 15`) and that the *extracted* witness is the same number as
+the value-level solver's output at `n ≤ 4` — agreement that soundness by
+itself does not assert.
+
+### The branching question, answered with numbers
+
+The brief asked to confirm explicitly whether the extracted program's
+recursion branches or whether extraction linearizes it.  **It branches.**
+Instrumented counts, at ambient 26:
+
+| `n` | recursor body entries | `app₁` calls | moves |
+|---|---|---|---|
+| 1 | 2 | 90 | 1 |
+| 2 | 16 | 594 | 3 |
+| 3 | 114 | 4 122 | 7 |
+| 4 | 800 | 28 818 | 15 |
+
+Both columns grow by a factor of **≈ 7.0 per disk** (8, 7.1, 7.0 and
+6.6, 6.9, 7.0), not linearly — a linearized extract would enter the
+recursor `n` times.  So the induction hypothesis really is consulted
+twice per level and both consultations are re-evaluated rather than
+shared: the same "applications are not shared" phenomenon Phase D6
+isolated, now visible as a *branching* factor rather than a flat
+multiplier.  Of the ≈ 7, a factor of 2 is the branching itself; the rest
+is the per-level realizer machinery.
+
+### The evaluation wall is the *encoding*, not the extraction
+
+`n = 5` does not finish — but neither does the **value-level** solver, so
+this is not an extraction problem.  Measured code sizes:
+
+| `n` | moves | code bit-length |
+|---|---|---|
+| 1 | 1 | 3 |
+| 2 | 3 | 15 |
+| 3 | 7 | 154 |
+| 4 | 15 | 53 855 |
+
+The cons coding squares the magnitude at every move, so the bit-length is
+*doubly* exponential in `n`; at `n = 5` a single code needs ≈ 5.8 × 10⁹
+bits.  This is the same phenomenon Phase H8 recorded for hydra codes, and
+it is a property of the pairing-based list encoding the brief specified
+(deliberately, to avoid a second scheme), not of the pipeline.  At `n ≤ 4`
+the extract and the value-level function are both sub-millisecond and
+indistinguishable.
+
+### Budget
+
+```
+'Realizability.solvesN_hanoiN'         … [propext, Quot.sound]
+'Realizability.solvesN_succ'           … [propext, Quot.sound]
+'Realizability.hlen_hanoiN'            … [propext, Quot.sound]
+'Realizability.hanoi_realized'         … [propext, Classical.choice, Quot.sound]
+'Realizability.hanoiSolution_spec'     … [propext, Classical.choice, Quot.sound]
+'Realizability.hanoi_extract_continuous' … [propext, Quot.sound]
+```
+
+The expected pattern, matching every prior phase.  Full regression: every
+`#print axioms` line in the repository was captured before and after and
+diffed — **no pre-existing line changed**; the only differences are the
+additions above.
+
+### Out of scope, as stated
+
+Only the classical three-peg problem; no claim about four-peg or
+restricted variants.  No general list theory beyond what this encoding
+needs.
