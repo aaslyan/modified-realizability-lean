@@ -9,7 +9,8 @@ obligations (D1), Goodstein's theorem (D2), the extracted function
 coding (H1), the move (H2), the ordinal assignment and its descent
 theorem (H3), the game inside the fragment (H4), termination as a closed
 derivation (H5), the extracted battle-length program (H6), and the
-general game — every strategy, every schedule — in the metatheory (H7).
+general game — every strategy, every schedule — in the metatheory (H7),
+and the fast tree-level evaluator with the battle trace (H8).
 
 `lake build` succeeds, zero `sorry`/`admit`.  `#print axioms` on the
 soundness theorem (now covering the `ind` rule and the Phase-A rules),
@@ -1488,7 +1489,9 @@ path 1 (2 nodes) → 1      path 2 (3 nodes) → 3      path 3 (4 nodes) → 37
 — the published Kirby–Paris values, `37` included.  Paths 1 and 2 are
 `rfl`-checked at build time (`battleLen_small`); path 3 takes ≈ 98 s, so
 it is run out of band (`#eval battleLen 200 1 (encodeH (path 3))`, output
-`37`) and recorded here rather than on every build.  The research pass
+`37`) and recorded here rather than on every build.  **Superseded by
+Phase H8**: the tree-level evaluator does the same battle in under a
+second, and all three values are `#guard`ed at every build.  The research pass
 independently reports the same 37 under the *rightmost* strategy with
 different intermediate states, which is a further check: our strategy is
 leftmost, and the length is strategy-independent.
@@ -2058,3 +2061,93 @@ version and neither needed to be.
 Independence from PA, exactly as in H5.  `hercules_wins` is the "every
 hydra dies" half of Kirby–Paris, now in its full strategy-free form; the
 unprovability-in-PA half is not formalized and is not claimed.
+
+## Hydra Phase H8 (running the battle, and seeing it): COMPLETE
+
+`HydraDisplay.lean`.  No new mathematics; two things the earlier phases
+wanted.
+
+### The battle was a hundred times slower than it needed to be
+
+`battleLen` (H2) runs on **codes**: every move decodes a natural number
+into a tree, cuts, re-encodes.  That is what made `Hydra(3) = 37` take
+≈ 98 s and forced the discriminating cross-check out of the build.
+
+The cost was never the pairing — H2 had already made `tri` constant-time
+and `unTri` logarithmic, and this was recorded at the time as the
+suspected bottleneck.  **That diagnosis was wrong.**  Hydra codes grow
+*doubly* exponentially: `⟪a,b⟫ ≈ (a+b)²/2`, so each level of nesting
+squares the magnitude, and the path-3 battle reaches 20-node trees.  Every
+step was doing arithmetic on numbers with astronomically many digits to
+compute something the tree answers instantly.
+
+`battleLenH` runs the same battle directly on `Hydra` and never encodes.
+Measured on this machine: **98 s → under 1 s.**  And it is not a different
+measurement — `battleLen_eq_battleLenH` proves the two agree at every
+fuel, stage and code, from `hydraOf_encodeH` and `hydraOf_eq_leaf_iff`.
+
+Consequence: the three published Kirby–Paris lengths are now `#guard`ed at
+**every build**, `37` included.  That number is the discriminating one —
+the other game in circulation (copies as bare leaves at the parent) gives
+`1, 3, 11` — so the build now checks that the implemented rule is
+Kirby–Paris rather than its neighbour.  It was previously a hand-checked
+claim in this file, run out of band; the STATUS entry above is superseded
+on that point.
+
+(`#guard` was verified to do real work: the deliberate false variant
+`battleLenH 200 1 (path 3) == 38` fails the build, and it evaluates with
+the compiled code, so it picks up the `csimp` closed forms that kernel
+`rfl` does not.  That is why `battleLen_path_small` stops at paths 1 and
+2 — kernel reduction still runs the unary `tri`.)
+
+### The trace: the tree grows, the ordinal falls
+
+`battleTrace` prints each state in bracket notation with its ordinal
+beside it.  The first ten of the thirty-eight states of the 4-node path,
+verbatim from the build log:
+
+```
+(((o)))                    [ω^ω]
+((o o))                    [ω^2]
+((o) (o) (o))              [ω·3]
+(o o o o (o) (o))          [ω·2 + 4]
+(o o o (o) (o))            [ω·2 + 3]
+(o o (o) (o))              [ω·2 + 2]
+(o (o) (o))                [ω·2 + 1]
+((o) (o))                  [ω·2]
+(o o o o o o o o o (o))    [ω + 9]
+(o o o o o o o o (o))      [ω + 8]
+```
+
+Read the two columns against each other: the bracket string gets longer,
+the ordinal gets smaller, on every line.  `sizeTrace` is the same battle
+as node counts —
+
+```
+4, 4, 7, 9, 8, 7, 6, 5, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 20, 19, …, 2, 1
+```
+
+— peaking at 20, five times the starting size, before it dies.
+
+`ordStr` reads a notation code back as Cantor normal form through
+`oE`/`oC`/`oR`, fueled on `oE n < n` and `oR n < n`.  Worth noting that
+the ordinal codes stay *small* even as the tree explodes: `ω^ω` is a
+three-node code, so the printing costs nothing.  Only the tree codes blow
+up, which is the whole point of the previous section.
+
+### The descent, watched rather than proved
+
+`descendsAlong` checks `ord(next) ≺ ord(current)` at every step of the
+real battle and is `#guard`ed on the 37-move path-3 battle.  This is a
+**demonstration, not a proof** — the proof is `cutH_descends` (H3), which
+covers every hydra and every replication factor, and `hercules_wins`
+(H7), which covers every play.  What the `#guard` adds is that the thing
+proved and the thing computed are visibly the same thing, on the one
+battle big enough to be interesting.
+
+### Budget
+
+```
+'Realizability.battleLen_eq_battleLenH' … [propext, Quot.sound]
+'Realizability.isLeaf_iff'              … [propext]
+```

@@ -114,6 +114,7 @@ noted only where they help.
 | 43 | **`hydraTheorem`** | `HydraTheorem.lean` | `⊢ ∀h ∃t. hydra(h,t) = 0`. |
 | 44 | `hydraBattleLength`, **`hydraBattleLength_spec`**, `hydra_extract_continuous`, `hydraRealizesCtQ` | `HydraExtraction.lean` | The extracted battle-length function, correct at every tree, continuous, with its class in `CtQ 2`. |
 | 45 | `Play`, `play_descends`, **`hercules_wins`**, `no_infinite_play`, `play_stuck_iff_leaf`, `hydraStep_play` | `HydraGeneral.lean` | The general game (H7): *any* head, *any* replication factor at every step. Every play is finite and ends at the bare head, and the fragment's battle is one of these plays. Read `play_two_choices` — it is what rules out the relation secretly being the leftmost strategy. |
+| 46 | `battleLenH`, **`battleLen_eq_battleLenH`**, `battleTrace`, `sizeTrace`, `descendsAlong` | `HydraDisplay.lean` | The battle run on trees rather than codes (98 s → <1 s, proved to be the same battle), so `Hydra(3) = 37` is `#guard`ed at every build; and the trace that shows the tree growing while the ordinal falls. **Start here if you want to see the theorem rather than read it.** |
 
 ---
 

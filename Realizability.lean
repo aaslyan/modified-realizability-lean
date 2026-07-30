@@ -25,3 +25,4 @@ import Realizability.HydraFragment
 import Realizability.HydraTheorem
 import Realizability.HydraExtraction
 import Realizability.HydraGeneral
+import Realizability.HydraDisplay
