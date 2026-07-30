@@ -1496,6 +1496,34 @@ first step is the one where the **tree grows** — one child with one head
 becomes two heads — and it is exactly there that `ω` drops to `2`.  The
 node count went up; the measure came down.
 
+### A missing lemma discovered while attempting normality
+
+Worth recording because it would otherwise be found mid-proof.  Before
+any *general* descent theorem can even be stated, the assignment must be
+shown to land in normal form (`OLt` requires normality of both sides), and
+that reduces to: `insertExp` preserves `nfB`.  Three of its four cases go
+through directly from `nfB_exp`/`nfB_rem`/`nfB_below`.  The fourth — where
+the inserted exponent recurses into the remainder — needs to know that if
+`e ≠ oE c` and `oE c ⊀ e` then `e ≺ oE c`.
+
+That is **trichotomy of `precB` on normal forms**, and `Epsilon0.lean`
+does not have it: Phase C proved irreflexivity and the three
+constructors, but never needed the comparison to be *total*.  So the
+dependency order for the rest of H3 is:
+
+1. `precB` is trichotomous on normal forms (a new `Epsilon0.lean` lemma,
+   by the same strong induction that `precB_ordOf_of_lt` used —
+   compare head exponents, then coefficients, then remainders);
+2. `insertExp` preserves normal form (needs 1);
+3. `nfB (ordOfHydra h)` (mutual induction over the tree, needs 2);
+4. monotonicity of `insertExp` in the inserted exponent, and
+   `ω^a·(m+1) ≺ ω^b` for `a ≺ b` — the fact that makes arbitrarily many
+   copies harmless;
+5. the general descent theorem, by induction over `cutH`'s recursion.
+
+`oE_insertExp` (the head of an insertion is either the inserted exponent
+or the old head) is proved and is what step 2 will consume.
+
 ### What the rest of H3 needs (scoped, not started)
 
 The assignment sends a hydra to a `≺`-notation: `ord(node [c₁,…,cₖ])` is

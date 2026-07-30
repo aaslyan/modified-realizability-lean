@@ -431,6 +431,27 @@ theorem insertExp_pos {e c : ℕ} (hc : c ≠ 0) :
     else mkO (oE (m + 1)) (oC (m + 1)) (insertExpAux m e (oR (m + 1)))) = _
   rw [insertExpAux_eq_of_le e m _ hr]
 
+/-- The head exponent of an insertion is one of the two candidates: the
+inserted exponent (when it is prepended, or when it merges with an equal
+head) or the old head (when it recurses into the remainder).  Needed for
+normality: the new remainder's head must still sit below the old head. -/
+theorem oE_insertExp (e c : ℕ) :
+    oE (insertExp e c) = e ∨ oE (insertExp e c) = oE c := by
+  rcases decEm (c = 0) with hc | hc
+  · subst hc
+    left
+    rw [insertExp_zero, oE_mkO]
+  · rw [insertExp_pos hc]
+    rcases decEm (e = oE c) with he | he
+    · rw [if_pos he, oE_mkO]
+      exact Or.inr rfl
+    · rw [if_neg he]
+      rcases decEm (precB (oE c) e = true) with hp | hp
+      · rw [if_pos hp, oE_mkO]
+        exact Or.inl rfl
+      · rw [if_neg hp, oE_mkO]
+        exact Or.inr rfl
+
 /-! ### The assignment -/
 
 mutual
