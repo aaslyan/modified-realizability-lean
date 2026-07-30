@@ -92,7 +92,33 @@ recommendations.  Items get moved to "Resolved" when you answer them.
    (Mathlib's `Nat.pair` theory is choice-dependent) and a ban on
    `by_cases` in that module.
 
+11. **The fragment has no `∃`** (item 3½, raised in Phase B, deferred by
+   Phase C).  *Resolved 2026-07-29 as Phase D0*: added, and it needed no
+   new machinery — its realizability clause is `∨`'s with the tag
+   generalized to a numeral, so `exIC`/`exEC` reuse the existing pairing
+   devices and `lvl (∃y φ) = lvl φ`.  Goodstein's theorem is now stated
+   and proved (`goodsteinTheorem`).  The original item is preserved
+   below for the record.
+
 ## Open
+
+*(nothing blocking; the roadmap's phases are all delivered.  The
+remaining item is engineering, not mathematics.)*
+
+12. **The extracted program is correct but not efficient.**  Raised
+   2026-07-29 by Phase D3: `goodsteinStopTime` evaluates at `m = 0, 1`
+   in under a second and does not finish at `m = 2`, because every
+   recursive value passes through two `dropR` transports and `app₁`/
+   `abs₁` duplicate their argument, so recursive calls are re-evaluated
+   exponentially often in the number of Goodstein steps.  Nothing is
+   memoized.  Options if this is ever worth pursuing: sharing in the
+   combinators, a transport-free realizer for this derivation shape, or
+   a compiled evaluator for `PureType`.  Recommendation: leave it —
+   `goodsteinStopTime_spec` carries the mathematical content at every
+   input, and efficiency was never a roadmap goal.  Flagged rather than
+   fixed.
+
+### Historical record of item 3½
 
 3½. **The fragment has no `∃` — now a Phase-D blocker.**  Flagged during
    Phase B (2026-07-29); *Phase C deliberately did not fold it in*

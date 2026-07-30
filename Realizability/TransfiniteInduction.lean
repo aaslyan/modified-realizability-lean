@@ -123,26 +123,13 @@ theorem ordTerm_hterm (c : ℕ) : HTerm (ordTerm c) :=
 
 /-! ## The ordinal assignment for the Goodstein sequence
 
-`ordOf k n` is the code of the ordinal obtained from `n`'s hereditary
-base-`k` representation by reading the base as `ω` — clause for clause
-the mirror of Phase B's `hrepAux`, with `mkO` in place of the term
-constructors.  This is the assignment Phase D descends along; the two
-general theorems it will need are stated but **not proved here** (see
-below), while concrete instances are kernel-verified. -/
-
-/-- The ordinal code of `n` in hereditary base `k` (fueled, mirroring
-`hrepAux`). -/
-def ordOfAux (k : ℕ) : ℕ → ℕ → ℕ
-  | 0, _ => 0
-  | _ + 1, 0 => 0
-  | f + 1, n + 1 =>
-      mkO (ordOfAux k f (hlog k (n + 1)))
-        ((n + 1) / k ^ hlog k (n + 1) - 1)
-        (ordOfAux k f ((n + 1) % k ^ hlog k (n + 1)))
-
-/-- The ordinal code of `n` in hereditary base `k`, at the adequate
-fuel. -/
-def ordOf (k n : ℕ) : ℕ := ordOfAux k n n
+`ordOf k n` (`OrdinalAssignment.lean`) is the code of the ordinal
+obtained from `n`'s hereditary base-`k` representation by reading the
+base as `ω` — clause for clause the mirror of Phase B's `hrepAux`, with
+`mkO` in place of the term constructors.  Phase C verified concrete
+instances here; Phase D proved the general theorems (`nfB_ordOf`,
+`ordOf_bumpN`, `ordOf_descent`), and moved the definition next to
+them. -/
 
 /-! ### Kernel-verified instances of the Phase-D descent
 

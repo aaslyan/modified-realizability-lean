@@ -556,6 +556,74 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
     show oltN ((numeral a).eval ρ) ((numeral b).eval ρ)
       = (numeral (oltN a b)).eval ρ
     rw [numeral_eval, numeral_eval, numeral_eval]
+  -- Phase D2: the descent axiom.  Its realizer is contentless (an
+  -- implication into an equation), and its soundness case *is* D1's
+  -- `ordOf_descent` — the one place the metatheory's arithmetic enters
+  -- the fragment.  The negated premise is unpacked the way `succNeZero`'s
+  -- is: a realizer of `¬(n = 0)` cannot exist when `n` evaluates to `0`.
+  | ordDescent b n =>
+    intro ρ env henv nn hn
+    have hb : (2 : ℕ) ≤ nn := hn
+    cases nn with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx
+        have hne : Term.eval ρ n ≠ 0 := by
+          intro h0
+          exact (hx (defaultPT (m' + 1)) h0).elim
+        show oltN (ordOf (Term.eval ρ b + 1 + 1 + 1)
+            (bumpN (Term.eval ρ b + 1 + 1) (Term.eval ρ n) - 1))
+          (ordOf (Term.eval ρ b + 1 + 1) (Term.eval ρ n)) = 0 + 1
+        exact oltN_eq_one_iff.mpr (ordOf_descent (by omega) hne)
+  | eqCongOrd s₁ t₁ s₂ t₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show ordOf (Term.eval ρ s₁) (Term.eval ρ s₂)
+          = ordOf (Term.eval ρ t₁) (Term.eval ρ t₂)
+        rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
+          (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+  -- Phase D0: `∃`-introduction pairs the witness with the payload …
+  | @exI Γ x φ u D hok ih =>
+    intro ρ env henv n hn
+    show MR (Function.update ρ x
+        (fstPT (pairPT (natPT (n + 1) (u.eval ρ)) (extract D ρ env n))
+          (defaultPT n))) φ n
+      (sndPT (pairPT (natPT (n + 1) (u.eval ρ)) (extract D ρ env n)))
+    rw [fstPT_pairPT, sndPT_pairPT]
+    show MR (Function.update ρ x (u.eval ρ)) φ n (extract D ρ env n)
+    exact (MR_subst φ hok ρ n _).mp (ih ρ env henv n hn)
+  -- … and `∃`-elimination consumes it: the witness goes into the
+  -- environment, the payload becomes the hypothesis family (`FR_famOf`,
+  -- exactly as in the `orE` case), freshness moves the context across the
+  -- environment change (`CtxR_congr`), and non-occurrence in the
+  -- conclusion moves the result back (`MR_congr`).
+  | @exE Γ x φ ψ D₁ D₂ hfresh hnf ih₁ ih₂ =>
+    intro ρ env henv n hn
+    have hb : max (max (derivBound D₁) (lvl φ)) (derivBound D₂) ≤ n := hn
+    have hmaj := ih₁ ρ env henv n (by omega)
+    show MR ρ ψ n
+      (extract D₂ (Function.update ρ x
+        (fstPT (extract D₁ ρ env n) (defaultPT n)))
+        (famOf φ (sndPT (extract D₁ ρ env n)) :: env) n)
+    refine (MR_congr ψ n _ (fun z hz => ?_)).mp
+      (ih₂ (Function.update ρ x (fstPT (extract D₁ ρ env n) (defaultPT n)))
+        (famOf φ (sndPT (extract D₁ ρ env n)) :: env)
+        ⟨FR_famOf φ _ (by omega) _ hmaj,
+          CtxR_congr Γ env (fun χ hχ z hz => ?_) henv⟩ n (by omega))
+    · have hzx : z ≠ x := fun h => hnf (h ▸ hz)
+      simp [Function.update, hzx]
+    · have hzx : z ≠ x := fun h => absurd (h ▸ hz) (hfresh χ hχ)
+      simp [Function.update, hzx]
   | eqCongPrec s₁ t₁ s₂ t₂ =>
     intro ρ env henv n hn
     have hb : (2 : ℕ) ≤ n := hn

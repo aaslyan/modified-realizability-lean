@@ -1,4 +1,11 @@
-# Status: milestone COMPLETE, generic continuity COMPLETE, induction (Phase 2) COMPLETE, arithmetic (Phase A) COMPLETE, hereditary base-k / Goodstein sequence (Phase B) COMPLETE, transfinite induction to ε₀ (Phase C) COMPLETE
+# Status: COMPLETE through Phase D — Goodstein's theorem is proved inside the fragment and its stopping-time function extracted, certified, and executed
+
+Phases: milestone (modified realizability + extraction + soundness),
+generic continuity, induction (2), arithmetic (A), hereditary base-`k`
+and the Goodstein sequence (B), transfinite induction to `ε₀` (C), and
+Phase D in four checkpoints — `∃` (D0), the ordinal-assignment
+obligations (D1), Goodstein's theorem (D2), the extracted function
+(D3).
 
 `lake build` succeeds, zero `sorry`/`admit`.  `#print axioms` on the
 soundness theorem (now covering the `ind` rule and the Phase-A rules),
@@ -888,3 +895,232 @@ respectively, and are therefore *not* recorded as verified.
 Kirby–Paris and Gentzen are cited here only for the *framing* (that the
 fragment cannot derive the rule), which this development does not prove
 and does not claim.
+
+## Phase D (Goodstein's theorem and its extracted function): COMPLETE
+
+Four checkpoints, each built and axiom-checked separately, as the brief
+required.  The results, in order.
+
+### D0 — `∃` added to the fragment: COMPLETE
+
+**The flagged design question, answered: `∃` needed two new rules but no
+new devices.**  Its realizability clause is
+
+    MR ρ (∃y φ) n x  ↔  MR ρ[y ↦ fstPT x (defaultPT n)] φ n (sndPT x)
+
+— the first component read at the canonical point *is* the witness — so
+it is literally the `∨` clause with the two-valued tag generalized to a
+numeral.  Consequences, all of them reuse rather than new machinery:
+
+* `exIC` is `orI₁C` with the witness numeral in place of the constant
+  tag; `exEC` is `orEC` with the tag split replaced by passing the
+  witness into the environment.  The same `pairPT`/`fstPT`/`sndPT` — no
+  second pairing mechanism, as the brief required;
+* the transports gain one case each (`liftR_ex`/`dropR_ex`), shaped like
+  `∨`'s; tracking gains `exIC_tracked`/`exEC_tracked`, which are
+  `orI₁C_tracked`/`orEC_tracked` with the case split deleted;
+* **`∃` costs no ambient level**: `lvl (∃y φ) = lvl φ`.  Worth recording
+  as the invariant behind the level discipline: binders that *consume*
+  realizers (`→`, `∀`) cost a level, binders that merely *package* them
+  do not.  No `derivBound` anywhere grew.
+
+The one place `∃` is not just `∨`: elimination's side conditions
+(`FreshIn x Γ`, `¬ ψ.FreeIn x`) keep the witness from escaping its
+scope.  In the soundness proof they are exactly what let `CtxR_congr`
+carry the context across the environment update and `MR_congr` carry the
+conclusion back.
+
+Checkpoint (`Exists.lean`, run at every build): the fragment's first
+existential theorem, `⊢ ∃s. good(3,s) = 0` with witness `5`, together
+with an `exE` round trip so the elimination rule is exercised too.
+
+```
+'Realizability.good_three_ex_realized'                    … [propext, Classical.choice, Quot.sound]
+'Realizability.good_three_ex_round_trip_realized'         … [propext, Classical.choice, Quot.sound]
+'Realizability.good_three_ex_extract_continuous'          … [propext, Quot.sound]
+'Realizability.good_three_ex_round_trip_extract_continuous' … [propext, Quot.sound]
+```
+
+`extract_continuous`'s induction gained both new cases — confirmed, not
+skipped: they are `exIC_tracked` and `exEC_tracked`, and the `exE` case
+threads `trackedEnv_update` because the witness enters the *environment*.
+
+### D1 — the three named obligations: COMPLETE
+
+All three proved (`OrdinalAssignment.lean`), and the brief's question
+"did (1) and (2) turn out to be ordinary work as predicted?" is answered
+**no — they were the substantial part of Phase D**:
+
+1. `nfB_ordOf` (normality of the assignment) needed logarithm theory
+   Phase B never built.  Phase B used exactly two facts about `hlog`
+   (`hlog_lt`, `pow_hlog_le`); canonicity needs the *maximality* half —
+   `lt_pow_hlog_succ` — and from it the digit bounds (`one_le_digit`,
+   `digit_lt`), the exponent ordering (`hlog_rem_lt`), monotonicity
+   (`hlog_le_hlog`), and a uniqueness lemma (`hlog_of_digits`).  It also
+   needed the assignment's **monotonicity** (`precB_ordOf_of_lt`), which
+   is a three-case digit comparison mirroring the three order
+   constructors of Phase C.
+2. `ordOf_bumpN` (base change preserves the ordinal) needed, as Phase C
+   predicted, a fuel-adequacy lemma first — in fact three
+   (`hlogAux_eq_of_le`, `bumpNAux_eq_of_le`, `ordOfAux_eq_of_le`), each
+   with its own `_succ_eq` step, since all three recursions are fueled.
+   It also needed **`bumpN` to be a well-behaved function**, which Phase
+   B never established: `bumpN_mono_bound` proves strict monotonicity and
+   the digit bound `r < k^e → bump r < (k+1)^(bump e)` *together*, by one
+   strong induction, because each case of either half consumes the other
+   at a smaller argument.  That lemma is the largest single proof in the
+   phase.
+3. `ordOf_descent` (the Goodstein step descends) was, as predicted, short
+   — given 2, it is monotonicity applied to `bumpN k n - 1 < bumpN k n`.
+
+**A correction to Phase C's prediction, which the brief asked to be
+checked rather than assumed**: Phase C guessed that (3) would be "the one
+that actually uses `tiEps0`'s machinery".  It does not.  All three
+obligations are value-level arithmetic about `ℕ`, with no reference to
+`Deriv`, `MR`, or the recursor; `tiEps0` enters only in D2, where the
+*induction* is performed.  What (3) actually needs is (2) plus
+monotonicity — and monotonicity is the same digit-comparison work as
+(1), so (1) and (3) share their hard core rather than being independent.
+
+One hypothesis had to be added: obligations 2 and 3 hold for `2 ≤ k`
+only.  At `k = 1` base change is not ordinal-preserving (`bumpN 1 4 = 4`,
+whose base-2 ordinal is `ω^ω` but whose base-1 ordinal is the finite
+`4`).  Harmless — Goodstein bases are `s + 2` — but it is a real side
+condition, unlike Phase B's unconditional statements.
+
+```
+'Realizability.nfB_ordOf'         … [propext, Quot.sound]
+'Realizability.ordOf_bumpN'       … [propext, Classical.choice, Quot.sound]
+'Realizability.ordOf_descent'     … [propext, Classical.choice, Quot.sound]
+'Realizability.bumpN_mono_bound'  … [propext, Classical.choice, Quot.sound]
+```
+
+**File placement changed** (a structural move, no content change,
+reported because it touches Phase-B and Phase-C files): `hlog`, `bumpN`,
+`goodN` moved out of `Syntax.lean`, their Phase-B facts out of
+`Goodstein.lean`, and `ordOf` out of `TransfiniteInduction.lean`, all
+into the new `OrdinalAssignment.lean`, which sits *before* `Syntax.lean`.
+Forced: `Term.eval` must consume `ordOf` (Phase D adds the `ord` symbol),
+and `Soundness.lean` must consume D1's theorems (the `ordDescent` case).
+
+### D2 — Goodstein's theorem: COMPLETE
+
+```
+goodsteinTheorem : Deriv [] (Formula.all 2 (Formula.ex 4
+  (Formula.eq (Term.good (Term.var 2) (Term.var 4)) Term.zero)))
+```
+
+`⊢ ∀m ∃t. good(m,t) = 0` — the genuine statement, universally quantified
+over the start value and existentially over the number of steps, with no
+restriction to concrete values and no bound on either quantifier.  The
+`#check` of that exact type runs at every build.
+
+The proof is the classical ordinal descent, on the induction formula
+
+    φ(x) := ∀s. ord(s+2, good(m,s)) = x → ∃t. good(m,t) = 0
+
+with `m` a parameter, generalized only at the end.  Progressiveness
+splits on `good(m,s) = 0` (`eqDec`): if it holds, `s` is the witness; if
+not, `goodSucc` rewrites the next state into `pred (bump (s+2) …)`, the
+`ordDescent` axiom gives that its ordinal is `≺ x`, and the induction
+hypothesis at that ordinal — instantiated at the state `s+1` — returns
+the witness.
+
+**Two things about this derivation deserve a reviewer's attention.**
+
+*First, the one imported fact.*  `ordDescent` is an axiom schema of the
+fragment whose truth is D1's `ordOf_descent`, discharged in the
+`ordDescent` case of `soundness`.  This follows the precedent of Phase
+B's `bumpNum` and Phase C's `precNum`, and for the same reason: the
+content is course-of-values recursion through the hereditary structure,
+which is not a first-order equation schema over the fragment's terms.
+What the fragment *derives* is everything else — the case split, the
+gluing of `goodSucc` with the descent, the transfinite induction, and the
+witness.  Stated plainly: the arithmetic of the ordinal assignment is
+metatheory (proved in Lean, D1); the logic is the fragment's.
+
+*Second, a substitution obstacle and the technique that resolves it.*
+The fragment's substitution is naive, with `SubstOK` forbidding capture
+outright rather than renaming.  The step wants to instantiate the
+induction hypothesis `∀y. y ≺ x → φ(y)` at `ord(s+3, good(m,s+1))`,
+which mentions `s` — and `s` is bound in φ.  That is a **genuine**
+capture, not a spurious side condition: the substituted occurrence sits
+inside φ's own `∀s`.  The derivation therefore **names the ordinal**: it
+proves `∀z. (z = ord(s+3,good(m,s+1))) → ∃t. good(m,t) = 0`, instantiating
+the induction hypothesis at the *variable* `z` (which captures nothing),
+and then instantiates *that* at the term, with `eqRefl`.  One extra `∀`
+in the derivation, nothing in the extract's structure.  This is the
+general technique for naive-substitution calculi, and it is the reason
+the fragment never needed α-renaming machinery.
+
+```
+'Realizability.goodstein_realized' … [propext, Classical.choice, Quot.sound]
+```
+
+The standard three, as expected — `oLt_wf`'s reduced set does *not*
+propagate here, because realization goes through `soundness`, which uses
+`Classical.choice` in many earlier cases.  (Continuity does keep the
+reduced set; see D3.)
+
+### D3 — the extracted function: COMPLETE, with one honest limitation
+
+1. **Continuity applies with no modification.**
+   `goodstein_extract_continuous` is a one-line corollary of
+   `extract_continuous`; the generic-continuity discipline covered
+   `tiEps0`, `exI`/`exE` and `ordDescent` without a per-derivation
+   certificate, exactly as designed.  `[propext, Quot.sound]` — the
+   reduced set survives all of Phase D.
+2. **`RealizesCtQ` gives a genuine class**: `goodsteinRealizesCtQ`, the
+   theorem's program as an element of `CtQ 2`.
+3. **The extracted function is correct and it runs.**
+   `goodsteinStopTime m` reads the witness off the realizer at ambient
+   12 (the derivation's own bound).  Two separate claims, deliberately
+   kept apart:
+
+   * `goodsteinStopTime_spec : ∀ m, goodN m (goodsteinStopTime m) = 0` —
+     proved from `soundness`, **for every** `m`.  This is the real
+     payoff: the extracted number is a stopping time at values no
+     evaluator will ever reach.
+   * The evaluator's output, verbatim from the build log of
+     `GoodsteinExtraction.lean`:
+
+     ```
+     info: Realizability/GoodsteinExtraction.lean:99:0: 0
+     info: Realizability/GoodsteinExtraction.lean:100:0: 1
+     ```
+
+     i.e. `#eval goodsteinStopTime 0` prints `0` and
+     `#eval goodsteinStopTime 1` prints `1`, both correct
+     (`goodN 1 1 = 0`, kernel-checked as `goodN_one_at_one`).  Each takes
+     under a second.
+
+**The limitation, reported rather than papered over.**  `m = 2` did not
+finish.  Measured, all on this machine (24 cores, single-threaded
+evaluation): 110 s at the certified ambient 12 — terminated, no output;
+110 s at ambient 3 as a diagnostic (uncertified — the realization
+theorem needs ambient ≥ 12) — terminated, no output; 900 s at ambient 12
+— terminated, no output, with the evaluator's resident memory past
+1.7 GB and still climbing.  So the failure is not a slow constant, it is
+the space and time of an exponentially branching re-evaluation.  `m = 3`
+was not attempted.  For contrast, the *value-level* sequence is trivial
+here: `G(2) = 2, 2, 1, 0` (`#eval` returns instantly), so the stopping
+time being computed is `3`.  The cause is not the Goodstein numbers, which are tiny here
+(`G(2) = 2, 2, 1, 0`), but the *extract's* shape: every recursive value
+is wrapped in two `dropR` transports, and `app₁`/`abs₁` duplicate their
+argument at each application, so the realizer re-evaluates its own
+recursive calls exponentially often in the number of Goodstein steps.
+Nothing memoizes.  So the honest summary is: the extraction pipeline is
+**executable, and executes correctly at 0 and 1**, but is not an
+efficient program — the certified correctness statement
+(`goodsteinStopTime_spec`) is what carries the content at larger inputs.
+Making the extract efficient (sharing, or a transport-free realizer for
+this derivation shape) is a genuine open engineering problem and is not
+claimed to be solved here.
+
+**One change to earlier phases was needed for D3**, and is flagged:
+`noncomputable` was removed from the transports (`Transport.lean`) and
+the extraction combinators (`Extraction.lean`).  Those markers were
+defensive, not necessary — Lean compiles all of them, `PureType` values
+included — and without the change `#eval` on the extract is impossible
+("no executable code").  No definition's content changed; only the
+modifier was deleted.

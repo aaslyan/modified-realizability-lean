@@ -117,6 +117,7 @@ def lvl : Formula → ℕ
   | .or φ ψ => max (lvl φ) (lvl ψ)
   | .imp φ ψ => max (lvl φ) (lvl ψ) + 1
   | .all _ φ => lvl φ + 1
+  | .ex _ φ => lvl φ
 
 /-- **Modified realizability at ambient level `n`** (Kreisel's modified
 realizability, transposed to the pure-type hierarchy of the
@@ -131,7 +132,13 @@ Kleene–Kreisel development).  `MR ρ φ n x`:
 * `φ → ψ`: every realizer of `φ` one level down is sent by `app₁` to a
   realizer of `ψ` — the `Assoc`-clause shape at functional level;
 * `∀ y φ`: every numeral instance is realized (`app₁` at the numeral),
-  with the environment updated. -/
+  with the environment updated;
+* `∃ y φ`: the first component, read at the canonical point, is the
+  **witness**, and the second realizes `φ` there — the standard
+  existential clause, and structurally the `∨` clause with a numeral in
+  place of a two-valued tag.  So it needs no new device and no new
+  ambient level (`lvl (∃y φ) = lvl φ`): binders that *consume* realizers
+  (`→`, `∀`) cost a level, binders that *package* them do not. -/
 def MR (ρ : ℕ → ℕ) : (φ : Formula) → (n : ℕ) → PureType (n + 1) → Prop
   | .bot, _, _ => False
   | .eq s t, _, _ => s.eval ρ = t.eval ρ
@@ -147,6 +154,8 @@ def MR (ρ : ℕ → ℕ) : (φ : Formula) → (n : ℕ) → PureType (n + 1) �
       match n with
       | 0 => False
       | m + 1 => ∀ k : ℕ, MR (Function.update ρ y k) φ m (app₁ F (natPT (m + 1) k))
+  | .ex y φ, n, x =>
+      MR (Function.update ρ y (fstPT x (defaultPT n))) φ n (sndPT x)
 
 /-! ## Stability lemmas -/
 
@@ -203,6 +212,15 @@ theorem MR_congr :
         exact (ih m _ (hupd k)).mp (hF k)
       · intro hF k
         exact (ih m _ (hupd k)).mpr (hF k)
+  | ex y φ ih =>
+    intro ρ ρ' n x h
+    show MR (Function.update ρ y (fstPT x (defaultPT n))) φ n (sndPT x) ↔
+      MR (Function.update ρ' y (fstPT x (defaultPT n))) φ n (sndPT x)
+    refine ih n _ (fun z hz => ?_)
+    by_cases hzy : z = y
+    · subst hzy; simp [Function.update]
+    · simp only [Function.update, dif_neg hzy]
+      exact h z ⟨hzy, hz⟩
 
 /-- **The substitution lemma**: realizing a substituted formula is
 realizing the formula in the updated environment (no capture, per
@@ -256,6 +274,30 @@ theorem MR_subst {x : ℕ} {u : Term} :
       · intro hF z hz
         rw [ihψ hψ ρ m _]
         exact hF z ((ihφ hφ ρ m z).mp hz)
+  | ex y φ ih =>
+    intro hok ρ n a
+    by_cases hyx : y = x
+    · subst hyx
+      rw [show Formula.subst y u (.ex y φ) = .ex y φ from by
+        simp [Formula.subst]]
+      show MR (Function.update ρ y _) φ n _ ↔
+        MR (Function.update (Function.update ρ y (u.eval ρ)) y _) φ n _
+      rw [Function.update_idem]
+    · have hok' : Formula.SubstOK u φ := fun z hz hb =>
+        hok z hz (List.mem_cons_of_mem _ hb)
+      have hyu : y ∉ u.vars := fun hy =>
+        hok y hy (List.mem_cons_self ..)
+      rw [show Formula.subst x u (.ex y φ) = .ex y (φ.subst x u) from by
+        simp [Formula.subst, hyx]]
+      show MR (Function.update ρ y _) (φ.subst x u) n _ ↔
+        MR (Function.update (Function.update ρ x (u.eval ρ)) y _) φ n _
+      rw [ih hok' (Function.update ρ y (fstPT a (defaultPT n))) n (sndPT a)]
+      have h1 : u.eval (Function.update ρ y (fstPT a (defaultPT n)))
+          = u.eval ρ :=
+        Term.eval_congr fun z hz => by
+          have : z ≠ y := fun h => hyu (h ▸ hz)
+          simp [Function.update, this]
+      rw [h1, Function.update_comm (fun h => hyx h.symm)]
   | all y φ ih =>
     intro hok ρ n a
     by_cases hyx : y = x

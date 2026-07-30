@@ -325,6 +325,28 @@ theorem liftR_dropR_tracked (φ : Formula) :
       | zero => exact defaultPT_tracked 1
       | succ m' =>
         exact abs₁_tracked fun W hW => ihψ.2 (app₁_tracked hY (ihφ.1 hW))
+  | ex y φ ih =>
+    constructor
+    · intro m X hX
+      have he : (fun α => liftR (.ex y φ) (X α))
+          = fun α => pairPT (natPT (m + 2) (fstPT (X α) (defaultPT m)))
+              (liftR φ (sndPT (X α))) := by
+        funext α
+        exact liftR_ex y φ (X α)
+      rw [he]
+      exact pairPT_tracked
+        (natPT_tracked (fstPT_tracked hX _ (defaultPT_tracked m)))
+        (ih.1 (sndPT_tracked hX))
+    · intro m Y hY
+      have he : (fun α => dropR (.ex y φ) (Y α))
+          = fun α => pairPT (natPT (m + 1) (fstPT (Y α) (defaultPT (m + 1))))
+              (dropR φ (sndPT (Y α))) := by
+        funext α
+        exact dropR_ex y φ (Y α)
+      rw [he]
+      exact pairPT_tracked
+        (natPT_tracked (fstPT_tracked hY _ (defaultPT_tracked (m + 1))))
+        (ih.2 (sndPT_tracked hY))
   | all y φ ih =>
     constructor
     · intro m X hX
@@ -433,6 +455,8 @@ theorem termEval_continuous {R : (ℕ → ℕ) → ℕ → ℕ} (hR : TrackedEnv
   | .good s t => continuous2_comp₂ goodN
       (termEval_continuous hR s) (termEval_continuous hR t)
   | .prec s t => continuous2_comp₂ oltN
+      (termEval_continuous hR s) (termEval_continuous hR t)
+  | .ord s t => continuous2_comp₂ ordOf
       (termEval_continuous hR s) (termEval_continuous hR t)
 
 /-- Updating a tracked environment at a fixed variable with a
@@ -673,6 +697,32 @@ theorem tiC_tracked (φ : Formula) {b : (ℕ → ℕ) → Fam} (hb : TrackedFam 
       show Tracked (m₂ + 3) fun α => tiRecC φ (b α (m₂ + 4)) (k α)
       exact tracked_apply_nat hk fun j => tiRecC_tracked φ (hb (m₂ + 4)) j
 
+/-- `exIC` preserves tracking (rule `exI`): the witness is a continuous
+read, the payload is tracked, and pairing preserves tracking — the same
+three facts `orI₁C_tracked` uses. -/
+theorem exIC_tracked {k : (ℕ → ℕ) → ℕ} {f : (ℕ → ℕ) → Fam}
+    (hk : Continuous2 k) (hf : TrackedFam f) :
+    TrackedFam fun α => exIC (k α) (f α) :=
+  fun n => pairPT_tracked (natPT_tracked hk) (hf n)
+
+/-- `exEC` preserves tracking (rule `exE`): the witness read off the major
+premise is continuous (so the body's *environment* stays tracked, via
+`trackedEnv_update` at the use site), and the payload's `famOf` family is
+tracked — `orEC_tracked` without the case split. -/
+theorem exEC_tracked (φ : Formula) {d : (ℕ → ℕ) → Fam}
+    {body : (ℕ → ℕ) → ℕ → Fam → Fam} (hd : TrackedFam d)
+    (hbody : ∀ w : (ℕ → ℕ) → ℕ, Continuous2 w →
+      ∀ p : (ℕ → ℕ) → Fam, TrackedFam p →
+        TrackedFam fun α => body α (w α) (p α)) :
+    TrackedFam fun α => exEC φ (d α) (body α) := by
+  intro n
+  show Tracked (n + 1) fun α =>
+    body α (fstPT (d α n) (defaultPT n)) (famOf φ (sndPT (d α n))) n
+  exact hbody (fun α => fstPT (d α n) (defaultPT n))
+    (fstPT_tracked (hd n) _ (defaultPT_tracked n))
+    (fun α => famOf φ (sndPT (d α n)))
+    (famOf_tracked φ (sndPT_tracked (hd n))) n
+
 /-- `eqDecC` preserves tracking (rule `eqDec`): the decision tag of two
 continuously computed values is a pointwise case split between two
 constant tracked families. -/
@@ -810,6 +860,16 @@ theorem axiomC_precNum_tracked : TrackedFam fun _ => axiomC :=
 /-- `axiomC` preserves tracking, `eqCongPrec` instance (rule
 `eqCongPrec`). -/
 theorem axiomC_eqCongPrec_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `ordDescent` instance (rule
+`ordDescent`). -/
+theorem axiomC_ordDescent_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `eqCongOrd` instance (rule
+`eqCongOrd`). -/
+theorem axiomC_eqCongOrd_tracked : TrackedFam fun _ => axiomC :=
   defaultFam_tracked
 
 /-! ## The main induction and the capstone -/
@@ -966,6 +1026,32 @@ theorem extract_tracked {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
     intro R hR E hE
     show TrackedFam fun α => tiC φ (extract D (R α) (E.map (· α)))
     exact tiC_tracked φ (ih R hR E hE)
+  | ordDescent b n =>
+    intro R hR E hE
+    exact axiomC_ordDescent_tracked
+  | eqCongOrd s₁ t₁ s₂ t₂ =>
+    intro R hR E hE
+    exact axiomC_eqCongOrd_tracked
+  | @exI Γ x φ u D hok ih =>
+    intro R hR E hE
+    have he : (fun α => extract (Deriv.exI u D hok) (R α) (E.map (· α)))
+        = fun α => exIC (u.eval (R α)) (extract D (R α) (E.map (· α))) := by
+      funext α
+      exact extract_exI u D hok (R α) _
+    rw [he]
+    exact exIC_tracked (termEval_continuous hR u) (ih R hR E hE)
+  | @exE Γ x φ ψ D₁ D₂ hfresh hnf ih₁ ih₂ =>
+    intro R hR E hE
+    have he : (fun α => extract (Deriv.exE D₁ D₂ hfresh hnf) (R α) (E.map (· α)))
+        = fun α => exEC φ (extract D₁ (R α) (E.map (· α)))
+            (fun w p =>
+              extract D₂ (Function.update (R α) x w) (p :: E.map (· α))) := by
+      funext α
+      exact extract_exE D₁ D₂ hfresh hnf (R α) _
+    rw [he]
+    exact exEC_tracked φ (ih₁ R hR E hE)
+      (fun w hw p hp => ih₂ (fun α => Function.update (R α) x (w α))
+        (trackedEnv_update hR hw) (p :: E) (TrackedCtx.cons hp hE))
   | precNum a b =>
     intro R hR E hE
     exact axiomC_precNum_tracked

@@ -56,66 +56,12 @@ namespace Realizability
 
 open ContinuousFunctionals
 
-/-! ## The fueled logarithm: the two facts used
+/-! ## The fueled logarithm
 
-`hlog` (`Syntax.lean`) is structural in its fuel so the kernel can
-compute it; fuel `= n` is adequate.  Only two facts about it are ever
-needed: the leading exponent is *small* (`hlog_lt`, which powers every
-fuel-adequacy argument below) and *correct enough* (`pow_hlog_le`,
-which bounds the digit remainder).  No further logarithm theory is
-built. -/
-
-/-- The fueled logarithm is strictly below its (positive) argument, at
-every fuel. -/
-theorem hlogAux_lt (b : ℕ) : ∀ (fuel m : ℕ), 1 ≤ m → hlogAux b fuel m < m
-  | 0, _, hm => hm
-  | fuel + 1, m, hm => by
-    simp only [hlogAux]
-    split
-    · next h =>
-      have hdiv : m / b < m := Nat.div_lt_self (by omega) h.1
-      have hdiv1 : 1 ≤ m / b := (Nat.one_le_div_iff (by omega)).mpr h.2
-      have := hlogAux_lt b fuel (m / b) hdiv1
-      omega
-    · omega
-
-/-- `b ^ hlog b m ≤ m` for positive `m`, at every fuel: the leading
-digit's power does not overshoot. -/
-theorem pow_hlogAux_le (b : ℕ) : ∀ (fuel m : ℕ), 1 ≤ m →
-    b ^ hlogAux b fuel m ≤ m
-  | 0, _, hm => hm
-  | fuel + 1, m, hm => by
-    simp only [hlogAux]
-    split
-    · next h =>
-      have hdiv1 : 1 ≤ m / b := (Nat.one_le_div_iff (by omega)).mpr h.2
-      have ih := pow_hlogAux_le b fuel (m / b) hdiv1
-      calc b ^ (hlogAux b fuel (m / b) + 1)
-          = b ^ hlogAux b fuel (m / b) * b := Nat.pow_succ ..
-        _ ≤ m / b * b := Nat.mul_le_mul_right b ih
-        _ ≤ m := Nat.div_mul_le_self m b
-    · exact hm
-
-/-- The self-fueled logarithm is strictly below its positive argument. -/
-theorem hlog_lt (b m : ℕ) (hm : 1 ≤ m) : hlog b m < m :=
-  hlogAux_lt b m m hm
-
-/-- `b ^ hlog b m ≤ m` for positive `m`. -/
-theorem pow_hlog_le (b m : ℕ) (hm : 1 ≤ m) : b ^ hlog b m ≤ m :=
-  pow_hlogAux_le b m m hm
-
-/-- The leading power is never zero (degenerate bases give exponent
-`0`, and `0 ^ 0 = 1`). -/
-theorem pow_hlog_pos (b m : ℕ) : 0 < b ^ hlog b m := by
-  cases b with
-  | zero =>
-    have h0 : hlog 0 m = 0 := by
-      cases m with
-      | zero => rfl
-      | succ m => simp [hlog, hlogAux]
-    rw [h0]
-    exact Nat.one_pos
-  | succ b => exact Nat.pow_pos (Nat.succ_pos b)
+`hlog` and its basic facts (`hlog_lt`, `pow_hlog_le`, `pow_hlog_pos`)
+moved to `OrdinalAssignment.lean` in Phase D1, which needed them — and
+much more logarithm theory — before `Soundness.lean`.  Nothing about them
+changed. -/
 
 /-! ## The hereditary representation as a fragment term -/
 

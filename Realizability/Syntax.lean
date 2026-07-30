@@ -22,6 +22,12 @@ and the **recursion equations defining `+` and `×`** — recursing on the
 second-argument equations (`x + 0 = x`, …) are genuine theorems proved
 by `ind` in `Arithmetic.lean`.
 
+The value-level functions the Phase-B symbols evaluate by (`hlog`,
+`bumpN`, `goodN`) live in `OrdinalAssignment.lean`, together with the
+ordinal assignment `ordOf` that Phase D's `ord` symbol evaluates by:
+they must be available before `Term.eval`, and `Soundness.lean` needs
+the theorems about them (Phase D1) for the `ordDescent` case.
+
 Since the Phase-B extension the signature further includes `pred`,
 `exp`, hereditary base change `bump`, and the Goodstein sequence
 `good`, with their recursion-equation schemas, the numeral graph of
@@ -41,68 +47,9 @@ formula (no capture), `∀`-intro the usual freshness condition for
 the context, and `ind` the same no-capture condition as `∀`-elim for
 `succ x` — the term its step case substitutes.
 -/
-import Realizability.Epsilon0
+import Realizability.OrdinalAssignment
 
 namespace Realizability
-
-/-! ## The value-level Goodstein functions (Phase B)
-
-The semantics of the Phase-B function symbols `bump` and `good`, as
-plain `ℕ`-functions defined *before* `Term` so `Term.eval` can consume
-them.  All recursions are **fuel-structural** (fuel `= n` is adequate,
-`Goodstein.lean` proves it) rather than well-founded: `WellFounded.fix`
-does not reduce in the kernel, and the certifying derivations of
-`Goodstein.lean` need concrete Goodstein values to compute by
-`rfl`/`decide`.  For the same reason the base-`b` logarithm is a local
-fueled definition rather than Mathlib's well-founded `Nat.log`. -/
-
-/-- Fueled base-`b` logarithm: the number of times `b` divides into `n`
-(zero when `b ≤ 1` or `n < b`).  Structural in the fuel. -/
-def hlogAux (b : ℕ) : ℕ → ℕ → ℕ
-  | 0, _ => 0
-  | fuel + 1, n => if 1 < b ∧ b ≤ n then hlogAux b fuel (n / b) + 1 else 0
-
-/-- The base-`b` logarithm, self-fueled: `hlog b n` is the largest `e`
-with `b ^ e ≤ n` (for `1 < b ≤ n`; zero in the degenerate cases) —
-`Goodstein.lean` proves the two facts used (`hlog_lt`,
-`pow_hlog_le`). -/
-def hlog (b n : ℕ) : ℕ :=
-  hlogAux b n n
-
-/-- **Hereditary base change, value level** (fueled): `bumpNAux k fuel n`
-peels the leading base-`k` digit `n = k^e·c + r` (`e = hlog k n`,
-`c = n / k^e`, `r = n % k^e`) and rewrites it at base `k + 1` with the
-exponent *itself* hereditarily rewritten:
-`(k+1)^(bump e)·c + bump r`.  Corresponds to
-`WilliamAngus/Goodstein`'s `(HBase.f k · (k+1)).eval ∘ HBase.ofNat k`
-(the structural base-replacement `f` on the `ofNat` representation);
-checked concretely: `bumpN 2 4 = 3 ^ 3 ^ 3 ^ 0 = 27`, both here and
-there (`4 = 2^2^2^0`).  Degenerate bases are the identity
-(`bumpN 0 n = bumpN 1 n = n`), so no `2 ≤ k` side condition is ever
-needed for soundness. -/
-def bumpNAux (k : ℕ) : ℕ → ℕ → ℕ
-  | _, 0 => 0
-  | 0, _ + 1 => 0
-  | fuel + 1, n + 1 =>
-      (k + 1) ^ bumpNAux k fuel (hlog k (n + 1)) * ((n + 1) / k ^ hlog k (n + 1))
-        + bumpNAux k fuel ((n + 1) % k ^ hlog k (n + 1))
-
-/-- Hereditary base change at the adequate fuel (`Goodstein.lean`,
-`hrep_eval_bump`, connects it to the syntactic representation read at
-base `k + 1`). -/
-def bumpN (k n : ℕ) : ℕ :=
-  bumpNAux k n n
-
-/-- **The Goodstein sequence, value level**: `goodN m 0 = m`, and one
-step bumps the base `s + 2` hereditarily and subtracts one.  This is
-`WilliamAngus/Goodstein`'s `goodsteinSequence start h n i` at
-`start = 2`: their step `i → i + 1` applies the base-change `G` at base
-`start + i = 2 + i`, exactly this `bumpN (s + 2)` at `i = s` (indexing
-convention checked against their `g`/`G`; values checked:
-`goodN 4 = 4, 26, 41, 60, …`, `goodN 3 = 3, 3, 3, 2, 1, 0, 0, …`). -/
-def goodN (m : ℕ) : ℕ → ℕ
-  | 0 => m
-  | s + 1 => bumpN (s + 2) (goodN m s) - 1
 
 /-- Terms: variables (named by numbers), zero, successor; since the
 Phase-A extension, sum and product; since the Phase-B extension,
@@ -119,6 +66,7 @@ inductive Term : Type where
   | bump : Term → Term → Term
   | good : Term → Term → Term
   | prec : Term → Term → Term
+  | ord : Term → Term → Term
 deriving DecidableEq, Repr
 
 namespace Term
@@ -137,6 +85,7 @@ def eval (ρ : ℕ → ℕ) : Term → ℕ
   | bump s t => bumpN (s.eval ρ) (t.eval ρ)
   | good s t => goodN (s.eval ρ) (t.eval ρ)
   | prec s t => oltN (s.eval ρ) (t.eval ρ)
+  | ord s t => ordOf (s.eval ρ) (t.eval ρ)
 
 /-- The variables occurring in a term. -/
 def vars : Term → List ℕ
@@ -150,6 +99,7 @@ def vars : Term → List ℕ
   | bump s t => s.vars ++ t.vars
   | good s t => s.vars ++ t.vars
   | prec s t => s.vars ++ t.vars
+  | ord s t => s.vars ++ t.vars
 
 /-- Substitution of a term for a variable. -/
 def subst (x : ℕ) (u : Term) : Term → Term
@@ -163,6 +113,7 @@ def subst (x : ℕ) (u : Term) : Term → Term
   | bump s t => bump (subst x u s) (subst x u t)
   | good s t => good (subst x u s) (subst x u t)
   | prec s t => prec (subst x u s) (subst x u t)
+  | ord s t => ord (subst x u s) (subst x u t)
 
 /-- Evaluation after substitution is evaluation in the updated
 environment. -/
@@ -185,6 +136,7 @@ theorem eval_subst (ρ : ℕ → ℕ) (x : ℕ) (u : Term) :
   | bump s t ihs iht => simp [subst, eval, ihs, iht]
   | good s t ihs iht => simp [subst, eval, ihs, iht]
   | prec s t ihs iht => simp [subst, eval, ihs, iht]
+  | ord s t ihs iht => simp [subst, eval, ihs, iht]
 
 /-- Evaluation only depends on the values of the occurring variables. -/
 theorem eval_congr {ρ ρ' : ℕ → ℕ} :
@@ -225,6 +177,11 @@ theorem eval_congr {ρ ρ' : ℕ → ℕ} :
     simp only [eval]
     rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
       iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+  | ord s t ihs iht =>
+    intro h
+    simp only [eval]
+    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
 
 end Term
 
@@ -246,6 +203,7 @@ inductive Formula : Type where
   | or : Formula → Formula → Formula
   | imp : Formula → Formula → Formula
   | all : ℕ → Formula → Formula
+  | ex : ℕ → Formula → Formula
 deriving DecidableEq, Repr
 
 namespace Formula
@@ -261,6 +219,7 @@ def FreeIn (x : ℕ) : Formula → Prop
   | or φ ψ => FreeIn x φ ∨ FreeIn x ψ
   | imp φ ψ => FreeIn x φ ∨ FreeIn x ψ
   | all y φ => x ≠ y ∧ FreeIn x φ
+  | ex y φ => x ≠ y ∧ FreeIn x φ
 
 /-- The variables bound somewhere in a formula. -/
 def binders : Formula → List ℕ
@@ -270,6 +229,7 @@ def binders : Formula → List ℕ
   | or φ ψ => φ.binders ++ ψ.binders
   | imp φ ψ => φ.binders ++ ψ.binders
   | all y φ => y :: φ.binders
+  | ex y φ => y :: φ.binders
 
 /-- Substitution of a term for a variable (stops at a rebinding of the
 same variable; capture is excluded by the `SubstOK` side condition). -/
@@ -280,6 +240,7 @@ def subst (x : ℕ) (u : Term) : Formula → Formula
   | or φ ψ => or (subst x u φ) (subst x u ψ)
   | imp φ ψ => imp (subst x u φ) (subst x u ψ)
   | all y φ => if y = x then all y φ else all y (subst x u φ)
+  | ex y φ => if y = x then ex y φ else ex y (subst x u φ)
 
 /-- Side condition for `∀`-elimination: no variable of the substituted
 term is bound in the formula. -/
@@ -429,5 +390,35 @@ inductive Deriv : List Formula → Formula → Type where
   | eqCongPrec {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
       Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
         (eq (.prec s₁ s₂) (.prec t₁ t₂))))
+  -- Phase D0: the **existential quantifier**.  Its two rules are the
+  -- standard ones; the side conditions are `∀`-elim's no-capture
+  -- condition for introduction, and for elimination the usual freshness
+  -- of the bound variable in the context and in the conclusion (without
+  -- which the witness could leak out of the scope it was introduced in).
+  -- Phase D2: the **ordinal assignment** `ord` (base, value), evaluated by
+  -- `ordOf`, and the one fact about it the fragment needs: **the Goodstein
+  -- step descends**.  This is the fragment-side import of D1's
+  -- `ordOf_descent`, and it is an axiom schema for the same reason
+  -- Phase B's `bumpNum` is: the recursion is course-of-values through the
+  -- hereditary structure, not a first-order equation schema, so the
+  -- fragment cannot derive it — the *metatheory* proves it, and the
+  -- soundness case discharges it (`Soundness.lean`).  What the fragment
+  -- does derive from it is the gluing: `goodSucc` turns the bump-and-pred
+  -- into `good m (s+1)`, so the descent applies to the sequence itself.
+  | ordDescent {Γ : List Formula} (b n : Term) :
+      Deriv Γ ((eq n .zero).neg.imp
+        (eq (.prec
+              (.ord (.succ (.succ (.succ b)))
+                (.pred (.bump (.succ (.succ b)) n)))
+              (.ord (.succ (.succ b)) n))
+          (.succ .zero)))
+  | eqCongOrd {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
+      Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
+        (eq (.ord s₁ s₂) (.ord t₁ t₂))))
+  | exI {Γ : List Formula} {x : ℕ} {φ : Formula} (u : Term) :
+      Deriv Γ (φ.subst x u) → Formula.SubstOK u φ → Deriv Γ (.ex x φ)
+  | exE {Γ : List Formula} {x : ℕ} {φ ψ : Formula} :
+      Deriv Γ (.ex x φ) → Deriv (φ :: Γ) ψ →
+      FreshIn x Γ → ¬ ψ.FreeIn x → Deriv Γ ψ
 
 end Realizability
