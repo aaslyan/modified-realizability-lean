@@ -556,12 +556,17 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
     show oltN ((numeral a).eval ρ) ((numeral b).eval ρ)
       = (numeral (oltN a b)).eval ρ
     rw [numeral_eval, numeral_eval, numeral_eval]
-  -- Phase D2: the descent axiom.  Its realizer is contentless (an
-  -- implication into an equation), and its soundness case *is* D1's
-  -- `ordOf_descent` — the one place the metatheory's arithmetic enters
-  -- the fragment.  The negated premise is unpacked the way `succNeZero`'s
-  -- is: a realizer of `¬(n = 0)` cannot exist when `n` evaluates to `0`.
-  | ordDescent b n =>
+  -- Phase D5: the three properties of the ordinal assignment the fragment
+  -- imports.  Each soundness case is exactly one Phase-D1 theorem — the
+  -- composite descent that D2 imported is now *derived* in the fragment
+  -- (`OrdinalDescent.lean`), so `ordOf_descent` no longer appears here.
+  | ordBump b n =>
+    intro ρ env henv nn hn
+    show ordOf (Term.eval ρ b + 1 + 1 + 1)
+        (bumpN (Term.eval ρ b + 1 + 1) (Term.eval ρ n))
+      = ordOf (Term.eval ρ b + 1 + 1) (Term.eval ρ n)
+    exact ordOf_bumpN (by omega) _
+  | ordPredLt b n =>
     intro ρ env henv nn hn
     have hb : (2 : ℕ) ≤ nn := hn
     cases nn with
@@ -574,10 +579,24 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
         have hne : Term.eval ρ n ≠ 0 := by
           intro h0
           exact (hx (defaultPT (m' + 1)) h0).elim
-        show oltN (ordOf (Term.eval ρ b + 1 + 1 + 1)
-            (bumpN (Term.eval ρ b + 1 + 1) (Term.eval ρ n) - 1))
+        show oltN (ordOf (Term.eval ρ b + 1 + 1) (Term.eval ρ n - 1))
           (ordOf (Term.eval ρ b + 1 + 1) (Term.eval ρ n)) = 0 + 1
-        exact oltN_eq_one_iff.mpr (ordOf_descent (by omega) hne)
+        exact oltN_eq_one_iff.mpr (olt_ordOf_of_lt (by omega) (by omega))
+  | bumpNeZero b n =>
+    intro ρ env henv nn hn
+    have hb : (2 : ℕ) ≤ nn := hn
+    cases nn with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        have hne : Term.eval ρ n ≠ 0 := by
+          intro h0
+          exact (hx (defaultPT (m' + 1)) h0).elim
+        have hy' : bumpN (Term.eval ρ b + 1 + 1) (Term.eval ρ n) = 0 := hy
+        exact absurd hy' (bumpN_ne_zero (by omega) hne)
   | eqCongOrd s₁ t₁ s₂ t₂ =>
     intro ρ env henv n hn
     have hb : (2 : ℕ) ≤ n := hn

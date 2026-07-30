@@ -395,23 +395,34 @@ inductive Deriv : List Formula → Formula → Type where
   -- condition for introduction, and for elimination the usual freshness
   -- of the bound variable in the context and in the conclusion (without
   -- which the witness could leak out of the scope it was introduced in).
-  -- Phase D2: the **ordinal assignment** `ord` (base, value), evaluated by
-  -- `ordOf`, and the one fact about it the fragment needs: **the Goodstein
-  -- step descends**.  This is the fragment-side import of D1's
-  -- `ordOf_descent`, and it is an axiom schema for the same reason
-  -- Phase B's `bumpNum` is: the recursion is course-of-values through the
-  -- hereditary structure, not a first-order equation schema, so the
-  -- fragment cannot derive it — the *metatheory* proves it, and the
-  -- soundness case discharges it (`Soundness.lean`).  What the fragment
-  -- does derive from it is the gluing: `goodSucc` turns the bump-and-pred
-  -- into `good m (s+1)`, so the descent applies to the sequence itself.
-  | ordDescent {Γ : List Formula} (b n : Term) :
+  -- Phase D2/D5: the **ordinal assignment** `ord` (base, value), evaluated
+  -- by `ordOf`, and the three facts about it the fragment imports.  D2
+  -- imported their *composite* — "one Goodstein step descends" — as a
+  -- single schema; D5 split it into the three separate properties below
+  -- and derives the composite inside the fragment
+  -- (`OrdinalDescent.lean`).  Each of the three corresponds to exactly one
+  -- theorem of Phase D1, and none of them mentions the Goodstein sequence:
+  --
+  --   `ordBump`      ↔  `ordOf_bumpN`       (base change preserves it)
+  --   `ordPredLt`    ↔  `olt_ordOf_of_lt`   (it is strictly monotone)
+  --   `bumpNeZero`   ↔  `bumpN_ne_zero`     (bump is non-degenerate)
+  --
+  -- They are schemas for the reason Phase B's `bumpNum` is: their content
+  -- is course-of-values recursion through the hereditary structure, which
+  -- is not a first-order equation schema over the fragment's terms.  The
+  -- bases are written `succ (succ b)` because base change is false at
+  -- base 1 (see STATUS.md).
+  | ordBump {Γ : List Formula} (b n : Term) :
+      Deriv Γ (eq (.ord (.succ (.succ (.succ b))) (.bump (.succ (.succ b)) n))
+        (.ord (.succ (.succ b)) n))
+  | ordPredLt {Γ : List Formula} (b n : Term) :
       Deriv Γ ((eq n .zero).neg.imp
-        (eq (.prec
-              (.ord (.succ (.succ (.succ b)))
-                (.pred (.bump (.succ (.succ b)) n)))
+        (eq (.prec (.ord (.succ (.succ b)) (.pred n))
               (.ord (.succ (.succ b)) n))
           (.succ .zero)))
+  | bumpNeZero {Γ : List Formula} (b n : Term) :
+      Deriv Γ ((eq n .zero).neg.imp
+        (eq (.bump (.succ (.succ b)) n) .zero).neg)
   | eqCongOrd {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
       Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
         (eq (.ord s₁ s₂) (.ord t₁ t₂))))

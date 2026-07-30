@@ -47,18 +47,17 @@ and nothing in the extract's structure.
 
 ## What is imported rather than derived
 
-One arithmetic fact enters as an axiom schema: `ordDescent`, which says
-that bumping the base and subtracting one strictly decreases the ordinal.
-Its truth is D1's `ordOf_descent`, proved in Lean, and it is what the
-`ordDescent` soundness case discharges.  This follows the precedent set
-in Phase B for `bumpNum` and Phase C for `precNum`: facts whose content
-is course-of-values recursion through the hereditary structure are not
-first-order schemas over the fragment's terms, so the metatheory proves
-them and the fragment imports them.  Everything else here — the case
-split, the gluing of `goodSucc` with the descent, the induction itself,
-and the extraction of the witness — is derived.
+The descent used below — bump the base, subtract one, and the ordinal
+strictly decreases — was an imported axiom schema in D2 and is **derived**
+since D5 (`OrdinalDescent.lean`), from three separate properties of the
+ordinal assignment.  What the fragment still imports is those three, none
+of which mentions the Goodstein sequence; see that module's header for the
+exact accounting of what remains metatheoretic.  Everything here — the
+case split, the gluing of `goodSucc` with the descent, the induction
+itself, and the extraction of the witness — is the fragment's own.
 -/
 import Realizability.Exists
+import Realizability.OrdinalDescent
 
 namespace Realizability
 
@@ -90,12 +89,6 @@ instance decidableSubstOK (u : Term) (φ : Formula) :
 /-- Freshness for a context is then decidable too. -/
 instance decidableFreshIn (x : ℕ) (Γ : List Formula) : Decidable (FreshIn x Γ) :=
   inferInstanceAs (Decidable (∀ φ ∈ Γ, ¬ φ.FreeIn x))
-
-/-- Congruence of the ordinal assignment, as a derivation-former. -/
-def Deriv.congOrdE {Γ : List Formula} {s₁ t₁ s₂ t₂ : Term}
-    (D₁ : Deriv Γ (.eq s₁ t₁)) (D₂ : Deriv Γ (.eq s₂ t₂)) :
-    Deriv Γ (.eq (.ord s₁ s₂) (.ord t₁ t₂)) :=
-  .impE (.impE (.eqCongOrd s₁ t₁ s₂ t₂) D₁) D₂
 
 /-! ## The formulas
 

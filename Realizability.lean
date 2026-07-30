@@ -17,5 +17,6 @@ import Realizability.Arithmetic
 import Realizability.Goodstein
 import Realizability.TransfiniteInduction
 import Realizability.Exists
+import Realizability.OrdinalDescent
 import Realizability.GoodsteinTheorem
 import Realizability.GoodsteinExtraction

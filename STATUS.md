@@ -1,4 +1,4 @@
-# Status: COMPLETE through Phase D — Goodstein's theorem is proved inside the fragment and its stopping-time function extracted, certified, and executed
+# Status: COMPLETE through Phase D5 — Goodstein's theorem is proved inside the fragment and its stopping-time function extracted, certified, and executed
 
 Phases: milestone (modified realizability + extraction + soundness),
 generic continuity, induction (2), arithmetic (A), hereditary base-`k`
@@ -1270,3 +1270,95 @@ extract's reads produce junk codes, and `oltB` on a junk code runs
 garbage arithmetic, not a scaled-down version of the certified
 computation.  The valid scaling evidence is the ambient-independence
 measurement above (12 versus 13, identical counts).
+
+## Phase D5 (closing the `ordDescent` gap): the composite is now DERIVED
+
+D2 proved Goodstein's theorem in the fragment but imported its core step
+— *bump the base, subtract one, the ordinal strictly decreases* — as a
+single axiom schema.  That was the honest weak point: the fragment proved
+the theorem relative to the very fact that makes it true.  This phase
+removes that import.
+
+### What changed
+
+The schema `ordDescent` is **deleted**.  In its place the fragment has
+three schemas, each a property of one function symbol, and each
+corresponding to exactly one Phase-D1 theorem:
+
+| schema | says | discharged by |
+|---|---|---|
+| `ordBump` | base change leaves the ordinal alone | `ordOf_bumpN` |
+| `ordPredLt` | the assignment strictly decreases at `pred` | `olt_ordOf_of_lt` |
+| `bumpNeZero` | bumping a nonzero number gives a nonzero number | `bumpN_ne_zero` |
+
+and the composite is **derived inside the fragment**
+(`OrdinalDescent.lean`, `Deriv.ordDescent`): from `n ≠ 0`, `bumpNeZero`
+gives that the bumped value is nonzero, `ordPredLt` at the bumped base
+gives the strict decrease, and `ordBump` rewrites the right-hand side
+back to the original base — the rewriting step being congruence of
+`prec`.  D1's obligation 3, `ordOf_descent`, is no longer assumed
+anywhere; it survives in `OrdinalAssignment.lean` as the semantic twin of
+what the fragment now proves.
+
+Rule count 46 → 48 (one removed, three added).
+
+### The derivation is not vacuous, and that is checked
+
+`ord_descent_via_fragment` reads the *derived* descent back through
+`soundness` and recovers the semantic statement
+
+    2 ≤ k → n ≠ 0 → OLt (ordOf (k+1) (bumpN k n - 1)) (ordOf k n)
+
+using only the three component schemas — not `ordOf_descent`, which is
+proved independently.  Fragment-side derivation and metatheorem now agree
+without either being defined in terms of the other, which is the check
+that the syntactic proof has real content.
+
+```
+'Realizability.ord_descent_realized'           … [propext, Classical.choice, Quot.sound]
+'Realizability.ord_descent_via_fragment'       … [propext, Classical.choice, Quot.sound]
+'Realizability.ord_descent_extract_continuous' … [propext, Quot.sound]
+```
+
+`goodsteinTheorem` is **untouched**: the derived former has the same name
+and signature as the deleted constructor, so `GoodsteinTheorem.lean`'s
+derivation text is unchanged, the theorem's type is unchanged (the
+spelled-out `#check` still runs at every build), and
+`goodsteinStopTime`'s `#eval` still prints `0` and `1`.
+
+### What this does *not* achieve — stated plainly
+
+The three schemas remain **axioms of the fragment**, justified by
+theorems proved in Lean rather than by derivations in the object theory.
+The metatheoretic dependence is the same size as before in logical
+strength; what changed is its *shape*: no imported fact is now about the
+Goodstein sequence, or about a step of anything.  Each is one general
+property of the ordinal assignment or of `bump`, and the Goodstein
+reasoning — the case split, the descent's composition, the transfinite
+induction, the witness — is entirely the fragment's own.
+
+So: the gap is narrowed from "the theorem's core lemma is assumed" to
+"three general properties of the assignment are assumed".  It is not
+eliminated, and this file does not claim it is.
+
+### What full internalization would take (scoped, not attempted)
+
+To derive the three schemas *inside* the fragment rather than import
+them, the fragment would need to become a usable arithmetic theory:
+
+1. **New symbols with recursion equations**: `hlog`, `div`, `mod` — the
+   digit decomposition is not expressible without them.
+2. **An order relation.**  The fragment's atomic formulas are equations
+   only.  Since D0 there is `∃`, so `m ≤ n` can be encoded as
+   `∃c. m + c = n`, but every arithmetic law about it (transitivity,
+   antisymmetry, compatibility with `+`/`×`/`exp`) then has to be derived.
+3. **Course-of-values induction**, derived from `ind` by the standard
+   bounded-quantifier trick — which needs 2 first.
+4. **Phase D1 redone syntactically**: `lt_pow_hlog_succ`, the digit
+   bounds, `hlog_of_digits`, `bumpN_mono_bound` (a nested strong
+   induction over powers and division), `ordOf_bumpN`, monotonicity.
+
+That is a research-scale project — building a working fragment of
+elementary number theory inside the object theory — not a phase, and it
+would roughly double the size of the development.  Recorded here so the
+decision is informed rather than implicit.

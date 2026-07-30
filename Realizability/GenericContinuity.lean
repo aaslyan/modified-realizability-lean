@@ -862,9 +862,18 @@ theorem axiomC_precNum_tracked : TrackedFam fun _ => axiomC :=
 theorem axiomC_eqCongPrec_tracked : TrackedFam fun _ => axiomC :=
   defaultFam_tracked
 
-/-- `axiomC` preserves tracking, `ordDescent` instance (rule
-`ordDescent`). -/
-theorem axiomC_ordDescent_tracked : TrackedFam fun _ => axiomC :=
+/-- `axiomC` preserves tracking, `ordBump` instance (rule `ordBump`). -/
+theorem axiomC_ordBump_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `ordPredLt` instance (rule
+`ordPredLt`). -/
+theorem axiomC_ordPredLt_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `bumpNeZero` instance (rule
+`bumpNeZero`). -/
+theorem axiomC_bumpNeZero_tracked : TrackedFam fun _ => axiomC :=
   defaultFam_tracked
 
 /-- `axiomC` preserves tracking, `eqCongOrd` instance (rule
@@ -1026,9 +1035,15 @@ theorem extract_tracked {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
     intro R hR E hE
     show TrackedFam fun α => tiC φ (extract D (R α) (E.map (· α)))
     exact tiC_tracked φ (ih R hR E hE)
-  | ordDescent b n =>
+  | ordBump b n =>
     intro R hR E hE
-    exact axiomC_ordDescent_tracked
+    exact axiomC_ordBump_tracked
+  | ordPredLt b n =>
+    intro R hR E hE
+    exact axiomC_ordPredLt_tracked
+  | bumpNeZero b n =>
+    intro R hR E hE
+    exact axiomC_bumpNeZero_tracked
   | eqCongOrd s₁ t₁ s₂ t₂ =>
     intro R hR E hE
     exact axiomC_eqCongOrd_tracked

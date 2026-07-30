@@ -285,7 +285,9 @@ def extract : {Γ : List Formula} → {φ : Formula} →
   | _, _, @Deriv.tiEps0 _ _ _ φ D _ _ _, ρ, env => tiC φ (extract D ρ env)
   | _, _, .precNum _ _, _, _ => axiomC
   | _, _, .eqCongPrec _ _ _ _, _, _ => axiomC
-  | _, _, .ordDescent _ _, _, _ => axiomC
+  | _, _, .ordBump _ _, _, _ => axiomC
+  | _, _, .ordPredLt _ _, _, _ => axiomC
+  | _, _, .bumpNeZero _ _, _, _ => axiomC
   | _, _, .eqCongOrd _ _ _ _, _, _ => axiomC
   | _, _, .exI u D _, ρ, env => exIC (u.eval ρ) (extract D ρ env)
   | _, _, @Deriv.exE _ x φ _ D₁ D₂ _ _, ρ, env =>
@@ -372,7 +374,9 @@ def derivBound : {Γ : List Formula} → {φ : Formula} → Deriv Γ φ → ℕ
   | _, _, .eqCongPrec _ _ _ _ => 2
   -- Phase D0: `∃` costs no ambient level of its own (its clause packages
   -- rather than consumes), so the bounds are `∨`'s.
-  | _, _, .ordDescent _ _ => 2
+  | _, _, .ordBump _ _ => 0
+  | _, _, .ordPredLt _ _ => 2
+  | _, _, .bumpNeZero _ _ => 2
   | _, _, .eqCongOrd _ _ _ _ => 2
   | _, _, .exI _ D _ => derivBound D
   | _, _, @Deriv.exE _ _ φ _ D₁ D₂ _ _ =>

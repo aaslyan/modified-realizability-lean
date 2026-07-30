@@ -47,7 +47,7 @@ noted only where they help.
 |---|---|---|---|
 | 15 | `Term`, `Term.eval`, `numeral` | `Syntax.lean` | Terms over `{0, succ, +, ×, pred, exp, bump, good, prec, ord}`. |
 | 16 | `Formula`, `FreeIn`, `subst`, `SubstOK`, `FreshIn` | `Syntax.lean` | Formulas (`∧∨→⊥`, `∀`, and since D0 `∃`) and the substitution bookkeeping. |
-| 17 | **`Deriv`** | `Syntax.lean` | The 46-rule natural-deduction family (39 before Phase C; `tiEps0`, `precNum`, `eqCongPrec`, then `ordDescent`, `eqCongOrd`, `exI`, `exE`).  Read the constructor list in order; the comments mark which phase added what. |
+| 17 | **`Deriv`** | `Syntax.lean` | The 48-rule natural-deduction family (39 before Phase C; `tiEps0`, `precNum`, `eqCongPrec`, then `eqCongOrd`, `exI`, `exE`, and D5's `ordBump`/`ordPredLt`/`bumpNeZero`).  Read the constructor list in order; the comments mark which phase added what. |
 
 ### 1.4 Realizability, extraction, soundness
 
@@ -79,6 +79,7 @@ noted only where they help.
 | 31 | `ordTerm_hterm`, `ordOf_goodstein_three`, `ordOf_goodstein_three_descends` | `TransfiniteInduction.lean` | The notations *are* Phase B's `HTerm` grammar read at base `ω`; and the kernel-verified descent `9 ≻ 2 ≻ 10 ≻ 3 ≻ 1 ≻ 0` along `G(3)` — note it is not numerically decreasing. |
 | 32 | `tiDemoDeriv` | `TransfiniteInduction.lean` | `tiEps0` exercised end to end. |
 | 33 | `goodThreeExDeriv`, `good_three_ex_witness` | `Exists.lean` | The fragment's first existential theorem, and the witness read off its realizer. |
+| 33½ | **`Deriv.ordDescent`**, `ord_descent_via_fragment` | `OrdinalDescent.lean` | The Goodstein descent **derived** in the fragment from three single-symbol schemas (D5), and the round trip showing the derivation recovers the semantic descent through `soundness`. Read this before the theorem — it is where the phrase "the fragment proves Goodstein" is cashed out or qualified. |
 | 34 | `descentDeriv`, `namedIHDeriv`, `stepBranch`, `goodProgressive` | `GoodsteinTheorem.lean` | The four pieces of the induction step.  `namedIHDeriv` is the substitution trick — read its docstring. |
 | 35 | **`goodsteinTheorem`** | `GoodsteinTheorem.lean` | `⊢ ∀m ∃t. good(m,t) = 0`. |
 | 36 | `goodsteinStopTime`, **`goodsteinStopTime_spec`**, `goodstein_extract_continuous`, `goodsteinRealizesCtQ` | `GoodsteinExtraction.lean` | The extracted function, its correctness at every input, its continuity, and its class in `CtQ 2`. |
@@ -106,6 +107,15 @@ decrease) and a proof that `bumpN` is strictly monotone and bound-
 respecting, which Phase B had never needed.  The third is then short: given
 base-change invariance, the descent is just monotonicity applied to
 "subtract one".
+
+**D5 — closing the descent gap.**  D2's proof imported its core step as
+an axiom; D5 splits that into three properties of individual symbols and
+has the fragment derive the step itself.  The imported facts no longer
+mention the Goodstein sequence, and reading the derived step back through
+soundness recovers the semantic theorem, so the derivation is not
+vacuous.  What remains imported is three general facts about the ordinal
+assignment, which the fragment cannot yet prove because it has no
+division, logarithm, or order relation.
 
 **D2 — Goodstein's theorem.**  Transfinite induction along `≺` on the
 formula "every state of the sequence whose ordinal is `x` eventually
@@ -148,13 +158,14 @@ quietly weakened.
    equations between terms, so the assignment had to become a function
    symbol.  Check: does anything in the theorem depend on `ord` having
    properties beyond the one axiom below?
-4. **`ordDescent` as an axiom schema, and only that one.**  I considered
-   splitting it into `ordBump` + `ordPredLt` + `bumpNeZero` and deriving
-   the composite, which would have been more granular; I kept one schema
-   because it is exactly D1's theorem, so the soundness case is a single
-   application with nothing hidden in the gluing.  Check: is the schema
-   *true* as stated (base `≥ 2` is built into its shape), and is its
-   soundness case really `ordOf_descent`?
+4. **The descent: three schemas, composite derived** (revised in D5; D2
+   had it as one imported schema).  `ordBump`, `ordPredLt`, `bumpNeZero`
+   are imported — each discharged by exactly one D1 theorem — and
+   `Deriv.ordDescent` derives their composite inside the fragment.  Check
+   three things: that each schema is *true* as stated (base `≥ 2` is
+   built into its shape); that none of them is secretly the descent
+   itself; and that `ord_descent_via_fragment` really goes through
+   `soundness` rather than quietly invoking `ordOf_descent`.
 5. **The "name the ordinal" trick** instead of adding α-renaming to the
    fragment.  This is the subtlest choice in Phase D.  Check that the
    capture it avoids is genuine (it is: the substituted term mentions `s`,
