@@ -64,7 +64,7 @@ noted only where they help.
 |---|---|---|---|
 | 15 | `Term`, `Term.eval`, `numeral` | `Syntax.lean` | Terms over `{0, succ, +, ×, pred, exp, bump, good, prec, ord}`, and since H4 also `{hcut, hydra, hord}`. |
 | 16 | `Formula`, `FreeIn`, `subst`, `SubstOK`, `FreshIn` | `Syntax.lean` | Formulas (`∧∨→⊥`, `∀`, and since D0 `∃`) and the substitution bookkeeping. |
-| 17 | **`Deriv`** | `Syntax.lean` | The 55-rule natural-deduction family (39 before Phase C; `tiEps0`, `precNum`, `eqCongPrec`, then `eqCongOrd`, `exI`, `exE`, D5's `ordBump`/`ordPredLt`/`bumpNeZero`, and H4's seven).  Read the constructor list in order; the comments mark which phase added what. |
+| 17 | **`Deriv`** | `Syntax.lean` | The **70-rule** natural-deduction family (39 before Phase C; then `tiEps0`, `precNum`, `eqCongPrec`, `eqCongOrd`, `exI`, `exE`, D5's three, H4's seven, E2's eight and F2's seven).  Read the constructor list in order; the comments mark which phase added what. |
 
 ### 1.4 Realizability, extraction, soundness
 

@@ -82,7 +82,7 @@ and on the Phase-B certification theorems (`#print axioms` in
   `numeral` embedding), the fragment's formulas, capture-safe
   substitution, the decidability instances for the quantifier rules' side
   conditions (moved here from `GoodsteinTheorem.lean` in H5, since both
-  theorem phases discharge them by `decide +kernel`), and the 55-rule
+  theorem phases discharge them by `decide +kernel`), and the 70-rule
   natural-deduction family — since the
   Phase-2 extension including the arithmetic induction rule `ind`
   (from `φ(0)` and `∀x (φ(x) → φ(succ x))`, conclude `∀x φ(x)`; side
