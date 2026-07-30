@@ -1,4 +1,4 @@
-# Status: COMPLETE through Phase H9, Phase E (Hanoi) and Phase F (Pascal mod 2) — Goodstein's theorem *and* the Kirby–Paris Hydra theorem are proved inside the fragment, each with its witness function extracted, certified, and executed; and the Hydra theorem is proved again in the metatheory in its full strategy-free form
+# Status: COMPLETE through Phase H9, Phase E (Hanoi), Phase F (Pascal mod 2) and Phase G (Kummer/Lucas) — Goodstein's theorem *and* the Kirby–Paris Hydra theorem are proved inside the fragment, each with its witness function extracted, certified, and executed; and the Hydra theorem is proved again in the metatheory in its full strategy-free form
 
 Phases: milestone (modified realizability + extraction + soundness),
 generic continuity, induction (2), arithmetic (A), hereditary base-`k`
@@ -2746,3 +2746,100 @@ B's `hrep` technique, and is a genuinely stronger theorem than anything
 here — this phase's content is `pas`'s own recursive characterization.
 No general binomial-coefficient theory, factorials or division enter
 anywhere.
+
+## Phase G (Kummer/Lucas at `p = 2`): COMPLETE in the metatheory
+
+Phase F's stretch goal, and — unlike everything in F — **not** an
+internal consistency check of `pas`'s own definition:
+
+```
+pasN_eq_one_iff      : pasN n k = 1 ↔ ∀ i, digit k i ≤ digit n i
+pasN_eq_one_iff_land : pasN n k = 1 ↔ k &&& n = k
+```
+
+`C(n,k)` is odd exactly when `k`'s binary digits are a submask of `n`'s
+(Kummer 1852 / Lucas 1878, at `p = 2`).  This is what makes the
+Sierpiński picture *inevitable* rather than merely observed: the mask
+condition is self-similar under doubling, which is the gasket.
+
+### The route: the binary step identities
+
+Everything goes through four identities proved from Pascal's recursion
+alone, by one induction:
+
+```
+pas(2n,   2k)   = pas(n,k)       pas(2n,   2k+1) = 0
+pas(2n+1, 2k)   = pas(n,k)       pas(2n+1, 2k+1) = pas(n,k)
+```
+
+The proof's shape is the interesting part and is worth recording: the two
+odd-row clauses follow from the two even-row clauses **at the same `n`**,
+and the even-row clauses at `n+1` follow from the odd-row clauses at `n`.
+So the induction *alternates* between even and odd rows — which is
+exactly the alternation the gasket's self-similarity expresses.  Read
+together they give `pasN_lucas_step`: `pas(n,k) = pas(n/2, k/2)` when
+`k`'s low bit is at most `n`'s, and `0` otherwise.  Iterating that down
+the bits, by strong induction on `n`, is the theorem.
+
+### Digit extraction needed no new mechanism — and no `hrep`
+
+The brief asked that digits reuse Phase B's hereditary-base-`k`
+technique rather than introduce a second scheme.  **Neither was needed.**
+The `i`-th binary digit is `(m / 2^i) % 2`, ordinary arithmetic, and
+that is all the proof uses.  The reason is worth stating, because it is a
+real difference between the two problems: Phase B's `hrep` exists because
+`bump` must look at a digit's *own hereditary structure* and rewrite it
+at a new base.  Lucas needs only a digit's **value**, which is `0` or
+`1`.  Nothing hereditary is involved, so the heavier machinery would have
+bought nothing.
+
+The `&&&` form is derived from the digit form through `Nat.testBit`
+(`testBit_eq_digit`, `land_eq_self_iff`) — a repackaging, not a second
+proof.
+
+### Cross-check
+
+`#guard` at every build: `pasN n k = 1 ↔ k &&& n = k` over the whole
+triangle to row 16.  (Compiled, the same check clears 19 rows in 1.5 s;
+`#guard` runs interpreted, so 16 is what fits comfortably.  A cell in row
+`n` costs about `C(n,k)` calls — `pasN` is the unmemoised Pascal
+recursion — and the theorem is what covers the rest.)  Plus the two named
+rows: row 8 is `1 0 0 0 0 0 0 0 1`, because the only submasks of `1000₂`
+are `0` and itself; row 7 is all ones, because `111₂` contains every mask
+below it.
+
+### Budget
+
+```
+'Realizability.pasN_even'             … [propext, Quot.sound]
+'Realizability.pasN_lucas_step'       … [propext, Quot.sound]
+'Realizability.pasN_eq_one_iff'       … [propext, Quot.sound]
+'Realizability.pasN_eq_one_iff_land'  … [propext, Quot.sound]
+```
+
+`Classical`-free throughout.  Full regression: every pre-existing
+`#print axioms` line diffed before and after — none changed.
+
+### Scope: this is metatheory, and the fragment cannot currently state it
+
+Phases F1–F4 put Pascal's recursion *inside* the fragment; Phase G proves
+Lucas **about** `pasN`, in Lean, not inside the fragment.  That is not an
+oversight, and the obstruction is precise:
+
+* **The fragment cannot state it.**  The submask condition needs either
+  binary digits (`m / 2^i % 2` — the fragment has `exp` but **no
+  division**) or a bitwise-`and` symbol.  A new symbol with a numeral
+  graph would fix the statement, at the cost of one more import.
+* **The fragment could not then prove it.**  The proof recurses `n → n/2`,
+  i.e. course-of-values recursion, and deriving that from `ind` requires
+  an order relation on `ℕ` — which the fragment does not have.  Its only
+  order, `prec`, is the ordinal-notation order of `Epsilon0.lean`, and on
+  notation codes it is not the numeric order.
+
+What the fragment *could* prove, and what a Phase-G2 would be, is the
+four binary step identities: they are `∀`-statements of the fragment's
+own language, provable by `ind` on `n` with the index arithmetic supplied
+by Phase A.  Lucas would then still need its final assembly — the
+induction down the bit positions — outside.  That split is recorded here
+rather than attempted, on the same principle as H7: the fragment proves
+what it can state, and the metatheory proves the general form.

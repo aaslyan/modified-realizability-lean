@@ -104,8 +104,23 @@ recommendations.  Items get moved to "Resolved" when you answer them.
 
 *(nothing blocking; the roadmap's phases and the Hydra project's six are
 all delivered, as are Phases E and F.  Item 12 is engineering, not
-mathematics; items 13–15 are design points, recorded rather than silently
+mathematics; items 13–16 are design points, recorded rather than silently
 chosen.)*
+
+16. **Lucas: should it be internalized in the fragment?**  *Raised and
+   answered 2026-07-30, on delivering Phase G.*  Phase G proves
+   Kummer/Lucas in the metatheory.  Internalizing it is blocked twice
+   over, and precisely: the fragment cannot **state** the submask
+   condition (it needs binary digits, i.e. division, which the signature
+   lacks — or a new bitwise symbol), and even given the statement it
+   could not **prove** it, because the proof recurses `n → n/2` and
+   deriving course-of-values recursion from `ind` needs an order on `ℕ`
+   that the fragment does not have (`prec` is the ordinal-notation order,
+   which on codes is not the numeric one).
+   **Recommendation: leave it, and if it is ever revisited, do the four
+   binary step identities first** — those *are* expressible and provable
+   by `ind`, and they are the mathematical core; only the final
+   bit-position induction would remain outside.
 
 15. **Pascal: how should `XOR` enter the fragment?**  *Raised and
    answered 2026-07-30, in Phase F, since the brief delegated the
