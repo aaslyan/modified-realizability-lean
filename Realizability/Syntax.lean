@@ -283,6 +283,38 @@ formulas. -/
 def FreshIn (x : ℕ) (Γ : List Formula) : Prop :=
   ∀ φ ∈ Γ, ¬ φ.FreeIn x
 
+/-! ## The side conditions are decidable
+
+All three conditions carried by the quantifier rules are decidable, so
+concrete derivations discharge them by `decide +kernel` rather than by
+hand.  (Introduced for Phase D2; shared with the Hydra layer since H5.) -/
+
+/-- Free occurrence is decidable. -/
+instance decidableFreeIn (x : ℕ) : (φ : Formula) → Decidable (Formula.FreeIn x φ)
+  | .bot => inferInstanceAs (Decidable False)
+  | .eq s t => inferInstanceAs (Decidable (x ∈ s.vars ∨ x ∈ t.vars))
+  | .and φ ψ =>
+      @instDecidableOr _ _ (decidableFreeIn x φ) (decidableFreeIn x ψ)
+  | .or φ ψ =>
+      @instDecidableOr _ _ (decidableFreeIn x φ) (decidableFreeIn x ψ)
+  | .imp φ ψ =>
+      @instDecidableOr _ _ (decidableFreeIn x φ) (decidableFreeIn x ψ)
+  | .all y φ =>
+      @instDecidableAnd _ _ (inferInstanceAs (Decidable (x ≠ y)))
+        (decidableFreeIn x φ)
+  | .ex y φ =>
+      @instDecidableAnd _ _ (inferInstanceAs (Decidable (x ≠ y)))
+        (decidableFreeIn x φ)
+
+/-- Substitutability is decidable as well. -/
+instance decidableSubstOK (u : Term) (φ : Formula) :
+    Decidable (Formula.SubstOK u φ) :=
+  inferInstanceAs (Decidable (∀ y ∈ u.vars, y ∉ φ.binders))
+
+/-- Freshness for a context is then decidable too. -/
+instance decidableFreshIn (x : ℕ) (Γ : List Formula) : Decidable (FreshIn x Γ) :=
+  inferInstanceAs (Decidable (∀ φ ∈ Γ, ¬ φ.FreeIn x))
+
 open Formula in
 /-- **Natural deduction for the fragment.**  Contexts are lists (head =
 most recent hypothesis); `Type`-valued so extraction can recurse. -/

@@ -63,33 +63,6 @@ namespace Realizability
 
 open ContinuousFunctionals
 
-/-- Free occurrence is decidable, so the side conditions of `allI`/`allE`/
-`exI`/`exE` on the concrete formulas below can be discharged by `decide`. -/
-instance decidableFreeIn (x : ℕ) : (φ : Formula) → Decidable (Formula.FreeIn x φ)
-  | .bot => inferInstanceAs (Decidable False)
-  | .eq s t => inferInstanceAs (Decidable (x ∈ s.vars ∨ x ∈ t.vars))
-  | .and φ ψ =>
-      @instDecidableOr _ _ (decidableFreeIn x φ) (decidableFreeIn x ψ)
-  | .or φ ψ =>
-      @instDecidableOr _ _ (decidableFreeIn x φ) (decidableFreeIn x ψ)
-  | .imp φ ψ =>
-      @instDecidableOr _ _ (decidableFreeIn x φ) (decidableFreeIn x ψ)
-  | .all y φ =>
-      @instDecidableAnd _ _ (inferInstanceAs (Decidable (x ≠ y)))
-        (decidableFreeIn x φ)
-  | .ex y φ =>
-      @instDecidableAnd _ _ (inferInstanceAs (Decidable (x ≠ y)))
-        (decidableFreeIn x φ)
-
-/-- Substitutability is decidable as well. -/
-instance decidableSubstOK (u : Term) (φ : Formula) :
-    Decidable (Formula.SubstOK u φ) :=
-  inferInstanceAs (Decidable (∀ y ∈ u.vars, y ∉ φ.binders))
-
-/-- Freshness for a context is then decidable too. -/
-instance decidableFreshIn (x : ℕ) (Γ : List Formula) : Decidable (FreshIn x Γ) :=
-  inferInstanceAs (Decidable (∀ φ ∈ Γ, ¬ φ.FreeIn x))
-
 /-! ## The formulas
 
 Variable convention: `1` is the ordinal `x`, `2` the start value `m`, `3`
