@@ -712,6 +712,115 @@ theorem precB_insertExp_mono_exp {a b : ℕ} (ha : nfB a = true)
         rw [if_neg hane, if_neg hnp]
         exact precB_mkO_rem _ _ (ih (oR X) (oR_lt hX) (nfB_rem hX hnX))
 
+/-! ### Iterated insertion: the `n` regrown copies
+
+`insertIter e n X` is the `n`-fold insertion of `ω^e` into `X` — the
+ordinal of a node that grew `n` copies.  The bound below is what makes
+arbitrarily many copies harmless, and note where `n` appears in its
+proof: only as a coefficient, in the two places the order constructors
+ignore coefficients.  The induction is on `X`, with `n` general. -/
+
+def insertIter (e : ℕ) : ℕ → ℕ → ℕ
+  | 0, X => X
+  | n + 1, X => insertExp e (insertIter e n X)
+
+@[simp] theorem insertIter_zero (e X : ℕ) : insertIter e 0 X = X := rfl
+
+@[simp] theorem insertIter_succ (e n X : ℕ) :
+    insertIter e (n + 1) X = insertExp e (insertIter e n X) := rfl
+
+/-- The head of an iterate is the inserted exponent or the old head. -/
+theorem oE_insertIter (e : ℕ) : ∀ (n X : ℕ),
+    oE (insertIter e n X) = e ∨ oE (insertIter e n X) = oE X
+  | 0, X => Or.inr rfl
+  | n + 1, X => by
+    rcases oE_insertExp e (insertIter e n X) with h | h
+    · exact Or.inl (by rw [insertIter_succ, h])
+    · rcases oE_insertIter e n X with h' | h'
+      · exact Or.inl (by rw [insertIter_succ, h, h'])
+      · exact Or.inr (by rw [insertIter_succ, h, h'])
+
+/-- When the inserted exponent is below the head, every insertion is
+pushed into the remainder. -/
+theorem insertIter_push {e X : ℕ} (h : precB e (oE X) = true) : ∀ n : ℕ,
+    insertIter e n X = mkO (oE X) (oC X) (insertIter e n (oR X))
+  | 0 => by
+    have hX : X ≠ 0 := by
+      intro h0
+      rw [h0] at h
+      simp only [oE] at h
+      rw [show pr1 (0 - 1) = 0 from rfl, precB_zero_right] at h
+      exact absurd h (by simp)
+    exact (mkO_oE_oC_oR hX).symm
+  | n + 1 => by
+    have hne : ¬ (e = oE X) := by
+      intro hEq
+      rw [hEq, precB_irrefl] at h
+      exact absurd h (by simp)
+    have hnp : ¬ (precB (oE X) e = true) := by
+      intro hp
+      rw [precB_asymm h] at hp
+      exact absurd hp (by simp)
+    rw [insertIter_succ, insertIter_push h n]
+    rw [insertExp_pos (mkO_ne_zero _ _ _), oE_mkO, oC_mkO, oR_mkO,
+      if_neg hne, if_neg hnp]
+    rfl
+
+/-- **The bound**: `n` copies of `ω^a` sit below one `ω^b`, for every `n`,
+whenever `a ≺ b`.  Induction on `X`; `n` is untouched. -/
+theorem precB_insertIter_lt {a b : ℕ} (ha : nfB a = true) (hb : nfB b = true)
+    (hab : precB a b = true) :
+    ∀ X : ℕ, nfB X = true → ∀ n : ℕ,
+      precB (insertIter a n X) (insertExp b X) = true := by
+  refine nat_strong_ind (fun X ih => ?_)
+  intro hnX n
+  have hbne : b ≠ 0 := by
+    intro h0
+    rw [h0, precB_zero_right] at hab
+    exact absurd hab (by simp)
+  rcases decEm (precB (oE X) b = true) with hpb | hpb
+  · -- `b` is above `X`'s head: the right side prepends, and the left
+    -- side's head is `a` or `oE X`, both below `b`
+    have hbE : ¬ (b = oE X) := by
+      intro hEq
+      rw [hEq, precB_irrefl] at hpb
+      exact absurd hpb (by simp)
+    have hRHS : insertExp b X = mkO b 0 X := by
+      rcases decEm (X = 0) with hX | hX
+      · rw [hX, insertExp_zero]
+      · rw [insertExp_pos hX, if_neg hbE, if_pos hpb]
+    rw [hRHS]
+    rcases decEm (insertIter a n X = 0) with hz | hz
+    · rw [hz]
+      exact precB_zero_mkO _ _ _
+    · have hd := mkO_oE_oC_oR hz
+      have hlt : precB (oE (insertIter a n X)) b = true := by
+        rcases oE_insertIter a n X with h | h
+        · rw [h]; exact hab
+        · rw [h]; exact hpb
+      have hgoal := precB_mkO_exp (oC (insertIter a n X))
+        (oR (insertIter a n X)) 0 X hlt
+      rwa [hd] at hgoal
+  · rcases decEm (b = oE X) with hbE | hbE
+    · -- `b` equals the head: coefficient comparison, `n` ignored
+      have haX : precB a (oE X) = true := hbE ▸ hab
+      have hX : X ≠ 0 := by
+        intro h0
+        rw [h0, show oE 0 = 0 from rfl, precB_zero_right] at haX
+        exact absurd haX (by simp)
+      rw [insertExp_pos hX, if_pos hbE, insertIter_push haX n]
+      exact precB_mkO_coeff _ _ _ (by omega)
+    · -- `b` is below the head: both sides push into the remainder
+      have hX : X ≠ 0 := by
+        intro h0
+        rw [h0, show oE 0 = 0 from rfl] at hpb
+        exact hpb (precB_zero_left hbne)
+      have hbX : precB b (oE X) = true :=
+        precB_of_ne_of_not_precB hb (nfB_exp hX hnX) hbE (by simpa using hpb)
+      have haX : precB a (oE X) = true := precB_trans hab hbX
+      rw [insertExp_pos hX, if_neg hbE, if_neg hpb, insertIter_push haX n]
+      exact precB_mkO_rem _ _ (ih (oR X) (oR_lt hX) (nfB_rem hX hnX) n)
+
 /-! ### The assignment -/
 
 mutual
