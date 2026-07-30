@@ -84,6 +84,26 @@ theorem continuous2_comp₂ (g : ℕ → ℕ → ℕ) {X Y : (ℕ → ℕ) → �
   show g (X α) (Y α) = g (X β) (Y β)
   rw [h₁ β fun i hi => hβ i (by omega), h₂ β fun i hi => hβ i (by omega)]
 
+/-- Five-fold composition — the arity Phase E2's `solves` symbol needs.
+Same proof as `continuous2_comp₂`, with five moduli summed. -/
+theorem continuous2_comp₅ (g : ℕ → ℕ → ℕ → ℕ → ℕ → ℕ)
+    {X₁ X₂ X₃ X₄ X₅ : (ℕ → ℕ) → ℕ}
+    (h₁ : Continuous2 X₁) (h₂ : Continuous2 X₂) (h₃ : Continuous2 X₃)
+    (h₄ : Continuous2 X₄) (h₅ : Continuous2 X₅) :
+    Continuous2 fun α => g (X₁ α) (X₂ α) (X₃ α) (X₄ α) (X₅ α) := by
+  intro α
+  obtain ⟨N₁, e₁⟩ := h₁ α
+  obtain ⟨N₂, e₂⟩ := h₂ α
+  obtain ⟨N₃, e₃⟩ := h₃ α
+  obtain ⟨N₄, e₄⟩ := h₄ α
+  obtain ⟨N₅, e₅⟩ := h₅ α
+  refine ⟨N₁ + N₂ + N₃ + N₄ + N₅, fun β hβ => ?_⟩
+  show g (X₁ α) (X₂ α) (X₃ α) (X₄ α) (X₅ α)
+    = g (X₁ β) (X₂ β) (X₃ β) (X₄ β) (X₅ β)
+  rw [e₁ β fun i hi => hβ i (by omega), e₂ β fun i hi => hβ i (by omega),
+    e₃ β fun i hi => hβ i (by omega), e₄ β fun i hi => hβ i (by omega),
+    e₅ β fun i hi => hβ i (by omega)]
+
 /-- Diagonal evaluation: reading the oracle at a continuously computed
 position is continuous. -/
 theorem continuous2_eval {X : (ℕ → ℕ) → ℕ} (hX : Continuous2 X) :
@@ -463,6 +483,15 @@ theorem termEval_continuous {R : (ℕ → ℕ) → ℕ → ℕ} (hR : TrackedEnv
   | .hydra s t => continuous2_comp₂ hydraSeqN
       (termEval_continuous hR s) (termEval_continuous hR t)
   | .hord t => continuous2_comp₁ ordOfHydraN (termEval_continuous hR t)
+  | .hcons s t => continuous2_comp₂ hconsN
+      (termEval_continuous hR s) (termEval_continuous hR t)
+  | .happ s t => continuous2_comp₂ happN
+      (termEval_continuous hR s) (termEval_continuous hR t)
+  | .mvcount t => continuous2_comp₁ hlen (termEval_continuous hR t)
+  | .solves n f t v k => continuous2_comp₅ solvesN
+      (termEval_continuous hR n) (termEval_continuous hR f)
+      (termEval_continuous hR t) (termEval_continuous hR v)
+      (termEval_continuous hR k)
 
 /-- Updating a tracked environment at a fixed variable with a
 continuously computed value stays tracked (rule `allI`'s environment
@@ -901,6 +930,23 @@ theorem axiomC_hydraSucc_tracked : TrackedFam fun _ => axiomC :=
 theorem axiomC_hordCutLt_tracked : TrackedFam fun _ => axiomC :=
   defaultFam_tracked
 
+/-- `axiomC` preserves tracking, the Phase-E2 Hanoi instances. -/
+theorem axiomC_solvesZero_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_solvesSucc_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_mvcountNil_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_mvcountApp_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_eqCongHcons_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_eqCongHapp_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_eqCongMvcount_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_eqCongSolves_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
 /-- `axiomC` preserves tracking, `hcutNum` instance (rule `hcutNum`). -/
 theorem axiomC_hcutNum_tracked : TrackedFam fun _ => axiomC :=
   defaultFam_tracked
@@ -1133,6 +1179,30 @@ theorem extract_tracked {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
   | eqCongHord s t =>
     intro R hR E hE
     exact axiomC_eqCongHord_tracked
+  | solvesZero f t v =>
+    intro R hR E hE
+    exact axiomC_solvesZero_tracked
+  | solvesSucc n f t v k₁ k₂ =>
+    intro R hR E hE
+    exact axiomC_solvesSucc_tracked
+  | mvcountNil =>
+    intro R hR E hE
+    exact axiomC_mvcountNil_tracked
+  | mvcountApp k₁ m k₂ =>
+    intro R hR E hE
+    exact axiomC_mvcountApp_tracked
+  | eqCongHcons s₁ t₁ s₂ t₂ =>
+    intro R hR E hE
+    exact axiomC_eqCongHcons_tracked
+  | eqCongHapp s₁ t₁ s₂ t₂ =>
+    intro R hR E hE
+    exact axiomC_eqCongHapp_tracked
+  | eqCongMvcount s t =>
+    intro R hR E hE
+    exact axiomC_eqCongMvcount_tracked
+  | eqCongSolves n₁ n₂ f₁ f₂ t₁ t₂ v₁ v₂ k₁ k₂ =>
+    intro R hR E hE
+    exact axiomC_eqCongSolves_tracked
 
 /-- **Generic continuity of extraction** (the theorem closing the gap
 flagged in STATUS.md): the extracted type-2 realizer of *every* closed

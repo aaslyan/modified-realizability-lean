@@ -630,6 +630,16 @@ def extract : {Γ : List Formula} → {φ : Formula} →
   | _, _, .eqCongHcut _ _ _ _, _, _ => axiomC
   | _, _, .eqCongHydra _ _ _ _, _, _ => axiomC
   | _, _, .eqCongHord _ _, _, _ => axiomC
+  -- Phase E2: the Hanoi schemas are contentless, like every other
+  -- equation/implication axiom of the fragment.
+  | _, _, .solvesZero _ _ _, _, _ => axiomC
+  | _, _, .solvesSucc _ _ _ _ _ _, _, _ => axiomC
+  | _, _, .mvcountNil, _, _ => axiomC
+  | _, _, .mvcountApp _ _ _, _, _ => axiomC
+  | _, _, .eqCongHcons _ _ _ _, _, _ => axiomC
+  | _, _, .eqCongHapp _ _ _ _, _, _ => axiomC
+  | _, _, .eqCongMvcount _ _, _, _ => axiomC
+  | _, _, .eqCongSolves _ _ _ _ _ _ _ _ _ _, _, _ => axiomC
 
 /-- **The witness is readable off an `∃`-realizer**: the first component
 at the canonical point is the witness the introduction rule supplied.
@@ -727,5 +737,15 @@ def derivBound : {Γ : List Formula} → {φ : Formula} → Deriv Γ φ → ℕ
   | _, _, .eqCongHcut _ _ _ _ => 2
   | _, _, .eqCongHydra _ _ _ _ => 2
   | _, _, .eqCongHord _ _ => 1
+  -- Phase E2: bare equations at every ambient; one binder level per
+  -- implication, so the five-fold congruence of `solves` needs five.
+  | _, _, .solvesZero _ _ _ => 0
+  | _, _, .solvesSucc _ _ _ _ _ _ => 2
+  | _, _, .mvcountNil => 0
+  | _, _, .mvcountApp _ _ _ => 0
+  | _, _, .eqCongHcons _ _ _ _ => 2
+  | _, _, .eqCongHapp _ _ _ _ => 2
+  | _, _, .eqCongMvcount _ _ => 1
+  | _, _, .eqCongSolves _ _ _ _ _ _ _ _ _ _ => 5
 
 end Realizability

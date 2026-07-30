@@ -727,5 +727,108 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
       intro x hx
       show ordOfHydraN (Term.eval ρ s) = ordOfHydraN (Term.eval ρ t)
       rw [(hx : Term.eval ρ s = Term.eval ρ t)]
+  -- Phase E2: the Hanoi layer.  The two `solves` schemas are exactly the
+  -- two value-level theorems of `Hanoi.lean`; the two `mvcount` ones are
+  -- the length function's own equations.  Nothing here is about ordinals.
+  | solvesZero f t v =>
+    intro ρ env henv n hn
+    show solvesN 0 (Term.eval ρ f) (Term.eval ρ t) (Term.eval ρ v) 0 = 0 + 1
+    rfl
+  | solvesSucc nT f t v k₁ k₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        have h₁ : solvesN (Term.eval ρ nT) (Term.eval ρ f) (Term.eval ρ v)
+            (Term.eval ρ t) (Term.eval ρ k₁) = 1 := hx
+        have h₂ : solvesN (Term.eval ρ nT) (Term.eval ρ v) (Term.eval ρ t)
+            (Term.eval ρ f) (Term.eval ρ k₂) = 1 := hy
+        show solvesN (Term.eval ρ nT + 1) (Term.eval ρ f) (Term.eval ρ t)
+          (Term.eval ρ v)
+          (happN (Term.eval ρ k₁)
+            (hconsN (Term.eval ρ f * (numeral 3).eval ρ + Term.eval ρ t)
+              (Term.eval ρ k₂))) = 0 + 1
+        rw [numeral_eval]
+        exact solvesN_succ h₁ h₂
+  | mvcountNil =>
+    intro ρ env henv n hn
+    show hlen 0 = 0
+    rfl
+  | mvcountApp k₁ m k₂ =>
+    intro ρ env henv n hn
+    show hlen (happN (Term.eval ρ k₁) (hconsN (Term.eval ρ m) (Term.eval ρ k₂))) + 1
+      = (hlen (Term.eval ρ k₁) + 1) + (hlen (Term.eval ρ k₂) + 1)
+    rw [hlen_happN, hlen_cons]
+    omega
+  | eqCongHcons s₁ t₁ s₂ t₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show hconsN (Term.eval ρ s₁) (Term.eval ρ s₂)
+          = hconsN (Term.eval ρ t₁) (Term.eval ρ t₂)
+        rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
+          (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+  | eqCongHapp s₁ t₁ s₂ t₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show happN (Term.eval ρ s₁) (Term.eval ρ s₂)
+          = happN (Term.eval ρ t₁) (Term.eval ρ t₂)
+        rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
+          (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+  | eqCongMvcount s t =>
+    intro ρ env henv n hn
+    have hb : (1 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      intro x hx
+      show hlen (Term.eval ρ s) = hlen (Term.eval ρ t)
+      rw [(hx : Term.eval ρ s = Term.eval ρ t)]
+  | eqCongSolves n₁ n₂ f₁ f₂ t₁ t₂ v₁ v₂ k₁ k₂ =>
+    intro ρ env henv n hn
+    have hb : (5 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ a =>
+      cases a with
+      | zero => omega
+      | succ b =>
+        cases b with
+        | zero => omega
+        | succ c =>
+          cases c with
+          | zero => omega
+          | succ d =>
+            cases d with
+            | zero => omega
+            | succ e =>
+              intro w hw x hx y hy z hz u hu
+              show solvesN (Term.eval ρ n₁) (Term.eval ρ f₁) (Term.eval ρ t₁)
+                  (Term.eval ρ v₁) (Term.eval ρ k₁)
+                = solvesN (Term.eval ρ n₂) (Term.eval ρ f₂) (Term.eval ρ t₂)
+                  (Term.eval ρ v₂) (Term.eval ρ k₂)
+              rw [(hw : Term.eval ρ n₁ = Term.eval ρ n₂),
+                (hx : Term.eval ρ f₁ = Term.eval ρ f₂),
+                (hy : Term.eval ρ t₁ = Term.eval ρ t₂),
+                (hz : Term.eval ρ v₁ = Term.eval ρ v₂),
+                (hu : Term.eval ρ k₁ = Term.eval ρ k₂)]
 
 end Realizability

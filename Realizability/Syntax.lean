@@ -49,6 +49,7 @@ the context, and `ind` the same no-capture condition as `∀`-elim for
 -/
 import Realizability.OrdinalAssignment
 import Realizability.Hydra
+import Realizability.Hanoi
 
 namespace Realizability
 
@@ -73,6 +74,10 @@ inductive Term : Type where
   | hcut : Term → Term → Term
   | hydra : Term → Term → Term
   | hord : Term → Term
+  | hcons : Term → Term → Term
+  | happ : Term → Term → Term
+  | mvcount : Term → Term
+  | solves : Term → Term → Term → Term → Term → Term
 deriving DecidableEq, Repr
 
 namespace Term
@@ -95,6 +100,11 @@ def eval (ρ : ℕ → ℕ) : Term → ℕ
   | hcut s t => hydraStepN (s.eval ρ) (t.eval ρ)
   | hydra s t => hydraSeqN (s.eval ρ) (t.eval ρ)
   | hord t => ordOfHydraN (t.eval ρ)
+  | hcons s t => hconsN (s.eval ρ) (t.eval ρ)
+  | happ s t => happN (s.eval ρ) (t.eval ρ)
+  | mvcount t => hlen (t.eval ρ)
+  | solves n f t v k =>
+      solvesN (n.eval ρ) (f.eval ρ) (t.eval ρ) (v.eval ρ) (k.eval ρ)
 
 /-- The variables occurring in a term. -/
 def vars : Term → List ℕ
@@ -112,6 +122,10 @@ def vars : Term → List ℕ
   | hcut s t => s.vars ++ t.vars
   | hydra s t => s.vars ++ t.vars
   | hord t => t.vars
+  | hcons s t => s.vars ++ t.vars
+  | happ s t => s.vars ++ t.vars
+  | mvcount t => t.vars
+  | solves n f t v k => n.vars ++ f.vars ++ t.vars ++ v.vars ++ k.vars
 
 /-- Substitution of a term for a variable. -/
 def subst (x : ℕ) (u : Term) : Term → Term
@@ -129,6 +143,11 @@ def subst (x : ℕ) (u : Term) : Term → Term
   | hcut s t => hcut (subst x u s) (subst x u t)
   | hydra s t => hydra (subst x u s) (subst x u t)
   | hord t => hord (subst x u t)
+  | hcons s t => hcons (subst x u s) (subst x u t)
+  | happ s t => happ (subst x u s) (subst x u t)
+  | mvcount t => mvcount (subst x u t)
+  | solves n f t v k =>
+      solves (subst x u n) (subst x u f) (subst x u t) (subst x u v) (subst x u k)
 
 /-- Evaluation after substitution is evaluation in the updated
 environment. -/
@@ -155,6 +174,11 @@ theorem eval_subst (ρ : ℕ → ℕ) (x : ℕ) (u : Term) :
   | hcut s t ihs iht => simp [subst, eval, ihs, iht]
   | hydra s t ihs iht => simp [subst, eval, ihs, iht]
   | hord t ih => simp [subst, eval, ih]
+  | hcons s t ihs iht => simp [subst, eval, ihs, iht]
+  | happ s t ihs iht => simp [subst, eval, ihs, iht]
+  | mvcount t ih => simp [subst, eval, ih]
+  | solves n f t v k ihn ihf iht ihv ihk =>
+      simp [subst, eval, ihn, ihf, iht, ihv, ihk]
 
 /-- Evaluation only depends on the values of the occurring variables. -/
 theorem eval_congr {ρ ρ' : ℕ → ℕ} :
@@ -211,6 +235,26 @@ theorem eval_congr {ρ ρ' : ℕ → ℕ} :
     rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
       iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
   | hord t ih => intro h; simp only [eval]; rw [ih h]
+  | hcons s t ihs iht =>
+    intro h
+    simp only [eval]
+    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+  | happ s t ihs iht =>
+    intro h
+    simp only [eval]
+    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+  | mvcount t ih => intro h; simp only [eval]; rw [ih h]
+  | solves n f t v k ihn ihf iht ihv ihk =>
+    intro h
+    simp only [eval]
+    simp only [vars, List.mem_append] at h
+    rw [ihn fun y hy => h y (Or.inl (Or.inl (Or.inl (Or.inl hy)))),
+      ihf fun y hy => h y (Or.inl (Or.inl (Or.inl (Or.inr hy)))),
+      iht fun y hy => h y (Or.inl (Or.inl (Or.inr hy))),
+      ihv fun y hy => h y (Or.inl (Or.inr hy)),
+      ihk fun y hy => h y (Or.inr hy)]
 
 end Term
 
@@ -528,5 +572,53 @@ inductive Deriv : List Formula → Formula → Type where
         (eq (.hydra s₁ s₂) (.hydra t₁ t₂))))
   | eqCongHord {Γ : List Formula} (s t : Term) :
       Deriv Γ ((eq s t).imp (eq (.hord s) (.hord t)))
+  -- Phase E2: the **Tower of Hanoi**.  `hcons m k` prepends a move to an
+  -- encoded sequence and `happ` concatenates two (the cons coding of
+  -- `Hanoi.lean`, over the same pairing as everything else); `mvcount k`
+  -- is the sequence's length; and `solves n f t v k` is the
+  -- characteristic function of "`k` is a valid `n`-disk solution moving
+  -- `f → t` via `v`", so the fragment writes `Solves` as the equation
+  -- `solves(n,f,t,v,k) = 1`.  A move `f → t` needs no symbol of its own:
+  -- it is the term `f × 3 + t`, written with the arithmetic Phase A
+  -- already has.
+  --
+  -- Two schemas give `solves` its recursion, and they are the *only*
+  -- mathematical import of the phase.  Unlike Goodstein's and Hydra's,
+  -- both are ordinary statements of PA, and the induction that consumes
+  -- them is `ind` — no `tiEps0`, no ordinals anywhere in this layer.
+  --
+  --   `solvesZero` ↔ `solvesN_hanoiN` at `n = 0`
+  --   `solvesSucc` ↔ `solvesN_succ`      (the branching step)
+  --   `mvcountNil` ↔ `hlen_nil`
+  --   `mvcountApp` ↔ `hlen_happN` with `hlen_cons`
+  --
+  -- The move count is carried in the subtraction-free form
+  -- `succ (mvcount k) = 2^n`, because the fragment has `pred` but no
+  -- order relation; `2^n - 1` is recovered at the end by `predSucc`.
+  | solvesZero {Γ : List Formula} (f t v : Term) :
+      Deriv Γ (eq (.solves .zero f t v .zero) (.succ .zero))
+  | solvesSucc {Γ : List Formula} (n f t v k₁ k₂ : Term) :
+      Deriv Γ ((eq (.solves n f v t k₁) (.succ .zero)).imp
+        ((eq (.solves n v t f k₂) (.succ .zero)).imp
+          (eq (.solves (.succ n) f t v
+              (.happ k₁ (.hcons (.plus (.times f (numeral 3)) t) k₂)))
+            (.succ .zero))))
+  | mvcountNil {Γ : List Formula} :
+      Deriv Γ (eq (.mvcount .zero) .zero)
+  | mvcountApp {Γ : List Formula} (k₁ m k₂ : Term) :
+      Deriv Γ (eq (.succ (.mvcount (.happ k₁ (.hcons m k₂))))
+        (.plus (.succ (.mvcount k₁)) (.succ (.mvcount k₂))))
+  | eqCongHcons {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
+      Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
+        (eq (.hcons s₁ s₂) (.hcons t₁ t₂))))
+  | eqCongHapp {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
+      Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
+        (eq (.happ s₁ s₂) (.happ t₁ t₂))))
+  | eqCongMvcount {Γ : List Formula} (s t : Term) :
+      Deriv Γ ((eq s t).imp (eq (.mvcount s) (.mvcount t)))
+  | eqCongSolves {Γ : List Formula} (n₁ n₂ f₁ f₂ t₁ t₂ v₁ v₂ k₁ k₂ : Term) :
+      Deriv Γ ((eq n₁ n₂).imp ((eq f₁ f₂).imp ((eq t₁ t₂).imp ((eq v₁ v₂).imp
+        ((eq k₁ k₂).imp
+          (eq (.solves n₁ f₁ t₁ v₁ k₁) (.solves n₂ f₂ t₂ v₂ k₂)))))))
 
 end Realizability

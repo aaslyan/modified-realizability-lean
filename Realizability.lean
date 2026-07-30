@@ -7,6 +7,7 @@ type-indexed primitive-recursion combinator (`indRecC`/`indC`).
 -/
 import Realizability.OrdinalAssignment
 import Realizability.Hydra
+import Realizability.Hanoi
 import Realizability.Syntax
 import Realizability.ModifiedRealizes
 import Realizability.Transport
