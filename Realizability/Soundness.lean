@@ -657,5 +657,75 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
           = oltN (Term.eval ρ t₁) (Term.eval ρ t₂)
         rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
           (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+  -- Phase H4: the Hydra layer.  The two battle equations are `hydraSeqN`'s
+  -- own definition; the descent schema is Phase H3's theorem, read on
+  -- codes, with "not dead" spelled as "code ≠ 0" (`hydraOf_eq_leaf_iff`).
+  | hydraZero s =>
+    intro ρ env henv n hn
+    show hydraSeqN (Term.eval ρ s) 0 = Term.eval ρ s
+    exact hydraSeqN_zero _
+  | hydraSucc s t =>
+    intro ρ env henv n hn
+    show hydraSeqN (Term.eval ρ s) (Term.eval ρ t + 1)
+      = hydraStepN (Term.eval ρ t + 1) (hydraSeqN (Term.eval ρ s) (Term.eval ρ t))
+    exact hydraSeqN_succ _ _
+  | hordCutLt nT c =>
+    intro ρ env henv nn hn
+    have hb : (2 : ℕ) ≤ nn := hn
+    cases nn with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx
+        have hne : Term.eval ρ c ≠ 0 := by
+          intro h0
+          exact (hx (defaultPT (m' + 1)) h0).elim
+        show oltN (ordOfHydraN (hydraStepN (Term.eval ρ nT) (Term.eval ρ c)))
+          (ordOfHydraN (Term.eval ρ c)) = 0 + 1
+        exact oltN_eq_one_iff.mpr (olt_ordOfHydraN_step _ _ hne)
+  | hcutNum k c =>
+    intro ρ env henv n hn
+    show hydraStepN ((numeral k).eval ρ) ((numeral c).eval ρ)
+      = (numeral (hydraStepN k c)).eval ρ
+    rw [numeral_eval, numeral_eval, numeral_eval]
+  | eqCongHcut s₁ t₁ s₂ t₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show hydraStepN (Term.eval ρ s₁) (Term.eval ρ s₂)
+          = hydraStepN (Term.eval ρ t₁) (Term.eval ρ t₂)
+        rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
+          (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+  | eqCongHydra s₁ t₁ s₂ t₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show hydraSeqN (Term.eval ρ s₁) (Term.eval ρ s₂)
+          = hydraSeqN (Term.eval ρ t₁) (Term.eval ρ t₂)
+        rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
+          (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+  | eqCongHord s t =>
+    intro ρ env henv n hn
+    have hb : (1 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      intro x hx
+      show ordOfHydraN (Term.eval ρ s) = ordOfHydraN (Term.eval ρ t)
+      rw [(hx : Term.eval ρ s = Term.eval ρ t)]
 
 end Realizability

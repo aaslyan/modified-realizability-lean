@@ -458,6 +458,11 @@ theorem termEval_continuous {R : (ℕ → ℕ) → ℕ → ℕ} (hR : TrackedEnv
       (termEval_continuous hR s) (termEval_continuous hR t)
   | .ord s t => continuous2_comp₂ ordOf
       (termEval_continuous hR s) (termEval_continuous hR t)
+  | .hcut s t => continuous2_comp₂ hydraStepN
+      (termEval_continuous hR s) (termEval_continuous hR t)
+  | .hydra s t => continuous2_comp₂ hydraSeqN
+      (termEval_continuous hR s) (termEval_continuous hR t)
+  | .hord t => continuous2_comp₁ ordOfHydraN (termEval_continuous hR t)
 
 /-- Updating a tracked environment at a fixed variable with a
 continuously computed value stays tracked (rule `allI`'s environment
@@ -881,6 +886,40 @@ theorem axiomC_bumpNeZero_tracked : TrackedFam fun _ => axiomC :=
 theorem axiomC_eqCongOrd_tracked : TrackedFam fun _ => axiomC :=
   defaultFam_tracked
 
+/-- `axiomC` preserves tracking, `hydraZero` instance (rule
+`hydraZero`). -/
+theorem axiomC_hydraZero_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `hydraSucc` instance (rule
+`hydraSucc`). -/
+theorem axiomC_hydraSucc_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `hordCutLt` instance (rule
+`hordCutLt`). -/
+theorem axiomC_hordCutLt_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `hcutNum` instance (rule `hcutNum`). -/
+theorem axiomC_hcutNum_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `eqCongHcut` instance (rule
+`eqCongHcut`). -/
+theorem axiomC_eqCongHcut_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `eqCongHydra` instance (rule
+`eqCongHydra`). -/
+theorem axiomC_eqCongHydra_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
+/-- `axiomC` preserves tracking, `eqCongHord` instance (rule
+`eqCongHord`). -/
+theorem axiomC_eqCongHord_tracked : TrackedFam fun _ => axiomC :=
+  defaultFam_tracked
+
 /-! ## The main induction and the capstone -/
 
 /-- **The invariant, threaded through the derivation**: for every
@@ -1073,6 +1112,27 @@ theorem extract_tracked {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
   | eqCongPrec s₁ t₁ s₂ t₂ =>
     intro R hR E hE
     exact axiomC_eqCongPrec_tracked
+  | hydraZero s =>
+    intro R hR E hE
+    exact axiomC_hydraZero_tracked
+  | hydraSucc s t =>
+    intro R hR E hE
+    exact axiomC_hydraSucc_tracked
+  | hordCutLt n c =>
+    intro R hR E hE
+    exact axiomC_hordCutLt_tracked
+  | hcutNum n c =>
+    intro R hR E hE
+    exact axiomC_hcutNum_tracked
+  | eqCongHcut s₁ t₁ s₂ t₂ =>
+    intro R hR E hE
+    exact axiomC_eqCongHcut_tracked
+  | eqCongHydra s₁ t₁ s₂ t₂ =>
+    intro R hR E hE
+    exact axiomC_eqCongHydra_tracked
+  | eqCongHord s t =>
+    intro R hR E hE
+    exact axiomC_eqCongHord_tracked
 
 /-- **Generic continuity of extraction** (the theorem closing the gap
 flagged in STATUS.md): the extracted type-2 realizer of *every* closed

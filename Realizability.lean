@@ -21,3 +21,4 @@ import Realizability.Exists
 import Realizability.OrdinalDescent
 import Realizability.GoodsteinTheorem
 import Realizability.GoodsteinExtraction
+import Realizability.HydraFragment

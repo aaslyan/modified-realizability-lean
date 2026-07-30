@@ -293,6 +293,15 @@ def extract : {Γ : List Formula} → {φ : Formula} →
   | _, _, @Deriv.exE _ x φ _ D₁ D₂ _ _, ρ, env =>
       exEC φ (extract D₁ ρ env)
         (fun w p => extract D₂ (Function.update ρ x w) (p :: env))
+  -- Phase H4: the Hydra schemas are contentless, like every other
+  -- equation/implication axiom of the fragment.
+  | _, _, .hydraZero _, _, _ => axiomC
+  | _, _, .hydraSucc _ _, _, _ => axiomC
+  | _, _, .hordCutLt _ _, _, _ => axiomC
+  | _, _, .hcutNum _ _, _, _ => axiomC
+  | _, _, .eqCongHcut _ _ _ _, _, _ => axiomC
+  | _, _, .eqCongHydra _ _ _ _, _, _ => axiomC
+  | _, _, .eqCongHord _ _, _, _ => axiomC
 
 /-- **The witness is readable off an `∃`-realizer**: the first component
 at the canonical point is the witness the introduction rule supplied.
@@ -381,5 +390,14 @@ def derivBound : {Γ : List Formula} → {φ : Formula} → Deriv Γ φ → ℕ
   | _, _, .exI _ D _ => derivBound D
   | _, _, @Deriv.exE _ _ φ _ D₁ D₂ _ _ =>
       max (max (derivBound D₁) (lvl φ)) (derivBound D₂)
+  -- Phase H4: bare equations at every ambient, single implications at one
+  -- binder level, nested ones at two — the Phase-A accounting again.
+  | _, _, .hydraZero _ => 0
+  | _, _, .hydraSucc _ _ => 0
+  | _, _, .hordCutLt _ _ => 2
+  | _, _, .hcutNum _ _ => 0
+  | _, _, .eqCongHcut _ _ _ _ => 2
+  | _, _, .eqCongHydra _ _ _ _ => 2
+  | _, _, .eqCongHord _ _ => 1
 
 end Realizability

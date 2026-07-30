@@ -48,13 +48,16 @@ the context, and `ind` the same no-capture condition as `∀`-elim for
 `succ x` — the term its step case substitutes.
 -/
 import Realizability.OrdinalAssignment
+import Realizability.Hydra
 
 namespace Realizability
 
 /-- Terms: variables (named by numbers), zero, successor; since the
 Phase-A extension, sum and product; since the Phase-B extension,
 predecessor, exponentiation, hereditary base change (`bump`), and the
-Goodstein sequence (`good`). -/
+Goodstein sequence (`good`); since the Phase-H4 extension, the Hydra
+move (`hcut`), the Hydra battle (`hydra`) and the Hydra ordinal
+assignment (`hord`), all on the tree codes of `Hydra.lean`. -/
 inductive Term : Type where
   | var : ℕ → Term
   | zero : Term
@@ -67,6 +70,9 @@ inductive Term : Type where
   | good : Term → Term → Term
   | prec : Term → Term → Term
   | ord : Term → Term → Term
+  | hcut : Term → Term → Term
+  | hydra : Term → Term → Term
+  | hord : Term → Term
 deriving DecidableEq, Repr
 
 namespace Term
@@ -86,6 +92,9 @@ def eval (ρ : ℕ → ℕ) : Term → ℕ
   | good s t => goodN (s.eval ρ) (t.eval ρ)
   | prec s t => oltN (s.eval ρ) (t.eval ρ)
   | ord s t => ordOf (s.eval ρ) (t.eval ρ)
+  | hcut s t => hydraStepN (s.eval ρ) (t.eval ρ)
+  | hydra s t => hydraSeqN (s.eval ρ) (t.eval ρ)
+  | hord t => ordOfHydraN (t.eval ρ)
 
 /-- The variables occurring in a term. -/
 def vars : Term → List ℕ
@@ -100,6 +109,9 @@ def vars : Term → List ℕ
   | good s t => s.vars ++ t.vars
   | prec s t => s.vars ++ t.vars
   | ord s t => s.vars ++ t.vars
+  | hcut s t => s.vars ++ t.vars
+  | hydra s t => s.vars ++ t.vars
+  | hord t => t.vars
 
 /-- Substitution of a term for a variable. -/
 def subst (x : ℕ) (u : Term) : Term → Term
@@ -114,6 +126,9 @@ def subst (x : ℕ) (u : Term) : Term → Term
   | good s t => good (subst x u s) (subst x u t)
   | prec s t => prec (subst x u s) (subst x u t)
   | ord s t => ord (subst x u s) (subst x u t)
+  | hcut s t => hcut (subst x u s) (subst x u t)
+  | hydra s t => hydra (subst x u s) (subst x u t)
+  | hord t => hord (subst x u t)
 
 /-- Evaluation after substitution is evaluation in the updated
 environment. -/
@@ -137,6 +152,9 @@ theorem eval_subst (ρ : ℕ → ℕ) (x : ℕ) (u : Term) :
   | good s t ihs iht => simp [subst, eval, ihs, iht]
   | prec s t ihs iht => simp [subst, eval, ihs, iht]
   | ord s t ihs iht => simp [subst, eval, ihs, iht]
+  | hcut s t ihs iht => simp [subst, eval, ihs, iht]
+  | hydra s t ihs iht => simp [subst, eval, ihs, iht]
+  | hord t ih => simp [subst, eval, ih]
 
 /-- Evaluation only depends on the values of the occurring variables. -/
 theorem eval_congr {ρ ρ' : ℕ → ℕ} :
@@ -182,6 +200,17 @@ theorem eval_congr {ρ ρ' : ℕ → ℕ} :
     simp only [eval]
     rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
       iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+  | hcut s t ihs iht =>
+    intro h
+    simp only [eval]
+    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+  | hydra s t ihs iht =>
+    intro h
+    simp only [eval]
+    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+  | hord t ih => intro h; simp only [eval]; rw [ih h]
 
 end Term
 
@@ -431,5 +460,41 @@ inductive Deriv : List Formula → Formula → Type where
   | exE {Γ : List Formula} {x : ℕ} {φ ψ : Formula} :
       Deriv Γ (.ex x φ) → Deriv (φ :: Γ) ψ →
       FreshIn x Γ → ¬ ψ.FreeIn x → Deriv Γ ψ
+  -- Phase H4: the **Hydra layer**.  `hcut (n, c)` is one Kirby–Paris move
+  -- on the hydra coded `c`, growing `n` copies at the grandparent;
+  -- `hydra (s, t)` is the state after `t` moves from the hydra coded `s`,
+  -- with `t + 1` copies at move `t`; `hord c` is the ordinal notation
+  -- assigned to the hydra coded `c` (`Hydra.lean`).  A code is `0` exactly
+  -- when the hydra is a bare head, so "`= 0`" is the fragment's
+  -- termination test — no new predicate is needed.
+  --
+  -- Two of the three schemas are the battle's own recursion equations, in
+  -- the style of `goodZero`/`goodSucc`.  The third is the single imported
+  -- fact of the phase, and it follows the `ordPredLt` pattern exactly: it
+  -- is a property of *one move symbol* relative to *one ordinal symbol*,
+  -- and it does not mention the battle.  Its Lean twin is
+  -- `olt_ordOfHydraN_step`, i.e. Phase H3's `cutH_descends` read on codes.
+  | hydraZero {Γ : List Formula} (s : Term) :
+      Deriv Γ (eq (.hydra s .zero) s)
+  | hydraSucc {Γ : List Formula} (s t : Term) :
+      Deriv Γ (eq (.hydra s (.succ t)) (.hcut (.succ t) (.hydra s t)))
+  | hordCutLt {Γ : List Formula} (n c : Term) :
+      Deriv Γ ((eq c .zero).neg.imp
+        (eq (.prec (.hord (.hcut n c)) (.hord c)) (.succ .zero)))
+  -- The move's numeral graph, for the same reason `bump` and `prec` have
+  -- one: a move is tree surgery on a code, which is course-of-values
+  -- recursion through the decoding, not a first-order equation schema over
+  -- the fragment's terms.  It is what lets the fragment *compute* a
+  -- concrete battle (`hydra_chain_derivable`) as well as reason about it.
+  | hcutNum {Γ : List Formula} (n c : ℕ) :
+      Deriv Γ (eq (.hcut (numeral n) (numeral c)) (numeral (hydraStepN n c)))
+  | eqCongHcut {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
+      Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
+        (eq (.hcut s₁ s₂) (.hcut t₁ t₂))))
+  | eqCongHydra {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
+      Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
+        (eq (.hydra s₁ s₂) (.hydra t₁ t₂))))
+  | eqCongHord {Γ : List Formula} (s t : Term) :
+      Deriv Γ ((eq s t).imp (eq (.hord s) (.hord t)))
 
 end Realizability

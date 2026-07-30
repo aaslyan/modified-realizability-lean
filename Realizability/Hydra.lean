@@ -917,6 +917,44 @@ theorem hydraStepN_descends (n code : ℕ) (h : hydraOf code ≠ Hydra.leaf) :
   rw [hydraOf_encodeH]
   exact cutH_descends n (hydraOf code) h
 
+/-! ### The form the fragment imports (Phase H4)
+
+The fragment has one sort and no predicate for "is a bare head", so the
+side condition must be an equation on codes.  It is: the coding is a
+bijection sending the dead hydra to `0`, so `code = 0` *is* "the hydra is
+dead".  Everything below is stated that way. -/
+
+/-- The dead hydra is exactly code `0` — one direction of the bijection,
+read as the fragment's termination test. -/
+theorem hydraOf_eq_leaf_iff {code : ℕ} : hydraOf code = Hydra.leaf ↔ code = 0 := by
+  refine ⟨fun h => ?_, fun h => by subst h; rfl⟩
+  have h2 : encodeH (hydraOf code) = encodeH Hydra.leaf := by rw [h]
+  rw [encodeH_hydraOf, encodeH_leaf] at h2
+  exact h2
+
+/-- **The descent, with the fragment's own side condition**: as long as
+the hydra is not already dead, one move strictly decreases its ordinal.
+This is the single fact Phase H4 imports as an axiom schema
+(`Deriv.hordCutLt`), and it is a property of the *move* symbol, not of the
+battle — the analogue of `ordPredLt` in the Goodstein layer. -/
+theorem olt_ordOfHydraN_step (n code : ℕ) (h : code ≠ 0) :
+    OLt (ordOfHydraN (hydraStepN n code)) (ordOfHydraN code) :=
+  olt_of (nfB_ordOfHydra _) (nfB_ordOfHydra _)
+    (hydraStepN_descends n code fun hl => h (hydraOf_eq_leaf_iff.mp hl))
+
+/-- The battle's own recursion, in the two forms the fragment's schemas
+`hydraZero`/`hydraSucc` assert.  Both hold by definition; they are named
+so that the soundness cases read as citations rather than as `rfl`. -/
+theorem hydraSeqN_zero (start : ℕ) : hydraSeqN start 0 = start := rfl
+
+theorem hydraSeqN_succ (start s : ℕ) :
+    hydraSeqN start (s + 1) = hydraStepN (s + 1) (hydraSeqN start s) := rfl
+
+/-- The dead hydra stays dead: `0` is a fixed point of every move.  Not
+needed for termination, but it is what makes "reaches `0`" the right
+reading of the theorem. -/
+theorem hydraStepN_zero (n : ℕ) : hydraStepN n 0 = 0 := rfl
+
 
 /-! ### The first descent instances, kernel-checked
 
