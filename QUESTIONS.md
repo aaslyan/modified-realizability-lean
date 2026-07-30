@@ -117,10 +117,13 @@ chosen.)*
    deriving course-of-values recursion from `ind` needs an order on `ℕ`
    that the fragment does not have (`prec` is the ordinal-notation order,
    which on codes is not the numeric one).
-   **Recommendation: leave it, and if it is ever revisited, do the four
-   binary step identities first** — those *are* expressible and provable
-   by `ind`, and they are the mathematical core; only the final
-   bit-position induction would remain outside.
+   **Done, in part: Phase G2 (2026-07-30) derives the four binary step
+   identities inside the fragment**, with round trips recovering the
+   value-level versions through `soundness`.  They are the mathematical
+   core; what remains outside is only the final bit-position induction,
+   which needs division (to state) and an order on `ℕ` (to justify the
+   `n → n/2` recursion).  Adding a division symbol would fix the first
+   and not the second.  Recommendation for the remainder: leave it.
 
 15. **Pascal: how should `XOR` enter the fragment?**  *Raised and
    answered 2026-07-30, in Phase F, since the brief delegated the

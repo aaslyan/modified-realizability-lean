@@ -149,6 +149,7 @@ draws is the theorem, not an illustration of it.
 | 56 | **`pasTotal`** | `PascalTheorem.lean` | `⊢ ∀n∀k. pas(n,k) = 1 ∨ pas(n,k) = 0`, by nested `ind`. The header names the standing device: `ind` with the hypothesis discarded *is* the fragment's `0`/`succ` case split. |
 | 57 | `pasTag`, **`pasDecide_eq`**, `pasTriangle` | `PascalExtraction.lean` | The disjunction's tag as a decision procedure, proved correct at every `(n,k)` from soundness — and the Sierpiński triangle it prints. **Start here if you want to see a theorem rather than read one.** |
 | 58 | `pasN_even`, `pasN_lucas_step`, **`pasN_eq_one_iff`**, `pasN_eq_one_iff_land` | `Lucas.lean` | **Kummer/Lucas at p=2** (Phase G): `C(n,k)` is odd iff `k`'s bits are a submask of `n`'s. The one theorem in the Pascal work that is *about* the triangle rather than about `pas`'s definition — it is why the picture is the gasket. Metatheory, not fragment; the header and STATUS say precisely why the fragment cannot state it. |
+| 59 | **`binEvenDeriv`**, `binOddDeriv`, `bin_even_via_fragment` | `PascalBinary.lean` | The four binary step identities — Lucas's core — derived **inside** the fragment by `ind`, with the round trip back to the value level. The induction alternates even/odd rows: the gasket's self-similarity as a proof term. |
 
 ---
 

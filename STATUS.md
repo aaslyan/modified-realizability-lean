@@ -1,4 +1,4 @@
-# Status: COMPLETE through Phase H9, Phase E (Hanoi), Phase F (Pascal mod 2) and Phase G (Kummer/Lucas) — Goodstein's theorem *and* the Kirby–Paris Hydra theorem are proved inside the fragment, each with its witness function extracted, certified, and executed; and the Hydra theorem is proved again in the metatheory in its full strategy-free form
+# Status: COMPLETE through Phase H9, Phase E (Hanoi), Phase F (Pascal mod 2) and Phases G/G2 (Kummer/Lucas, with its core inside the fragment) — Goodstein's theorem *and* the Kirby–Paris Hydra theorem are proved inside the fragment, each with its witness function extracted, certified, and executed; and the Hydra theorem is proved again in the metatheory in its full strategy-free form
 
 Phases: milestone (modified realizability + extraction + soundness),
 generic continuity, induction (2), arithmetic (A), hereditary base-`k`
@@ -2836,10 +2836,89 @@ oversight, and the obstruction is precise:
   order, `prec`, is the ordinal-notation order of `Epsilon0.lean`, and on
   notation codes it is not the numeric order.
 
-What the fragment *could* prove, and what a Phase-G2 would be, is the
+**Superseded: Phase G2 below does exactly this.**  What the fragment
+*could* prove, and what Phase G2 now does, is the
 four binary step identities: they are `∀`-statements of the fragment's
 own language, provable by `ind` on `n` with the index arithmetic supplied
 by Phase A.  Lucas would then still need its final assembly — the
 induction down the bit positions — outside.  That split is recorded here
 rather than attempted, on the same principle as H7: the fragment proves
 what it can state, and the metatheory proves the general form.
+
+## Phase G2 (the binary step identities, inside the fragment): COMPLETE
+
+Phase G's own section scoped this as "what a Phase G2 would be".  It is
+now done: all four identities are derived **inside the fragment**, by
+ordinary `ind`, from Pascal's recursion and Phase A's arithmetic.
+
+```
+binEvenDeriv : ⊢ ∀n ∀k. pas(n+n, k+k) = pas(n,k) ∧ pas(n+n, succ(k+k)) = 0
+binOddDeriv  : ⊢ ∀n ∀k. pas(succ(n+n), k+k) = pas(n,k)
+                      ∧ pas(succ(n+n), succ(k+k)) = pas(n,k)
+```
+
+So the mathematical core of Kummer/Lucas is now the fragment's own, and
+only the final assembly — the induction down the bit positions — remains
+in the metatheory, for the reason Phase G recorded (the fragment has no
+division, so it cannot state the submask condition, and no order on `ℕ`,
+so it cannot run the `n → n/2` recursion).
+
+### Doubling is `n + n`, not `2 × n` — recorded because it is load-bearing
+
+The proofs need `2(n+1)` as `succ (succ (n+n))`, since that is the shape
+`pasSuccSucc` consumes.  With `n + n` that is two rewrites — `succPlus`,
+then Phase A's `plusSuccDeriv'` — packaged once as `dblSuccDeriv`.  With
+`2 × n` it would be `timesSucc` followed by unfolding `+ 2` into two
+successors: strictly more work for the same result.
+
+### The alternation, now visible in a proof term
+
+`oddFromEven` derives the two odd-row identities from the two even-row
+ones **at the same `n`**; the induction step then derives the even-row
+identities at `n + 1` from the odd-row ones at `n`.  So the fragment's
+induction alternates between the two rows of the triangle — the same
+alternation the gasket's self-similarity expresses, and the same shape
+the Lean proof has, now as a `Deriv`.
+
+Three places need a `0`/`succ` case split on the *column*; the fragment's
+only way to do that is `ind` with the hypothesis discarded, the device
+Phase F3 introduced.  `xor` on bits needs three derivation-formers
+(`xorZeroLeft`, `xorZeroRight`, `xorSelf`), each an `orE` on the totality
+disjunction closed by the numeral graph — which is exactly why F1 chose
+the numeral graph over four conditional axioms.
+
+### The round trip
+
+`bin_even_via_fragment` and `bin_odd_via_fragment` read the fragment's
+derivations back through `soundness` and recover Phase G's value-level
+`pasN_even` and `pasN_odd` (up to `2*n = n+n`).  So the fragment proved
+the same mathematics, not a weaker syntactic shadow of it — the same
+check `ord_descent_via_fragment` and `hydra_descent_via_fragment` perform
+for their phases.
+
+### Budget
+
+```
+'Realizability.binEvenDeriv'             … [propext, Quot.sound]
+'Realizability.binOddDeriv'              … [propext, Quot.sound]
+'Realizability.binEven_realized'         … [propext, Classical.choice, Quot.sound]
+'Realizability.bin_even_via_fragment'    … [propext, Classical.choice, Quot.sound]
+'Realizability.bin_odd_via_fragment'     … [propext, Classical.choice, Quot.sound]
+'Realizability.binEven_extract_continuous' … [propext, Quot.sound]
+```
+
+`derivBound binEvenDeriv = 18`, `derivBound binOddDeriv = 22`.  Full
+regression: 701 jobs green, zero `sorry`, and every pre-existing
+`#print axioms` line diffed before and after — none changed.
+
+### What is still outside, precisely
+
+Lucas itself.  Given the four identities, the remaining step is: iterate
+them down the binary digits, i.e. strong induction on `n` with the
+recursive call at `n / 2`.  The fragment cannot express `n / 2` (no
+division symbol) and could not justify the recursion if it could (no
+order on `ℕ`; its `prec` is the ordinal-notation order, which on codes is
+not the numeric one).  Adding a division symbol would fix the first but
+not the second.  So the split is now: **the fragment proves the
+recursion, the metatheory does the descent** — and both halves are
+machine-checked.

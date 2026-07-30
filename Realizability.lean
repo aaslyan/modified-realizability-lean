@@ -34,3 +34,4 @@ import Realizability.HanoiExtraction
 import Realizability.PascalTheorem
 import Realizability.PascalExtraction
 import Realizability.Lucas
+import Realizability.PascalBinary
