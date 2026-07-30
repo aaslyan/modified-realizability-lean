@@ -1376,6 +1376,14 @@ elementary number theory inside the object theory — not a phase, and it
 would roughly double the size of the development.  Recorded here so the
 decision is informed rather than implicit.
 
+## Hydra project — see also `HYDRA.md`
+
+The Hydra work runs to eight phases and has its own self-contained
+document, **`HYDRA.md`**: what is proved, what is assumed, what is out of
+scope, the phase map, the trace, and the reproduction commands.  The
+sections below remain the authoritative per-phase record — rationale,
+flagged deviations, measurements — and `HYDRA.md` is the map over them.
+
 ## Hydra project, Phase H1 (tree encoding) and H2 (the move): COMPLETE
 
 A new mathematical layer on top of the finished Goodstein work, reusing

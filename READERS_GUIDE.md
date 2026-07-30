@@ -101,7 +101,10 @@ noted only where they help.
 | 35 | **`goodsteinTheorem`** | `GoodsteinTheorem.lean` | `⊢ ∀m ∃t. good(m,t) = 0`. |
 | 36 | `goodsteinStopTime`, **`goodsteinStopTime_spec`**, `goodstein_extract_continuous`, `goodsteinRealizesCtQ` | `GoodsteinExtraction.lean` | The extracted function, its correctness at every input, its continuity, and its class in `CtQ 2`. |
 
-### 1.7 The Hydra layer (H1–H6) — the second theorem, on the same machinery
+### 1.7 The Hydra layer (H1–H8) — the second theorem, on the same machinery
+
+**`HYDRA.md` is the self-contained account of this layer**; the table
+below is the dependency-ordered reading list.
 
 | # | Declaration | File | What it gives you |
 |---|---|---|---|
