@@ -194,6 +194,87 @@ theorem lt_tri_unTri_succ (n : ℕ) : n < tri (unTri n + 1) := by
   have := unTri_ge (n := n) (t := unTri n + 1) (by omega)
   omega
 
+/-! ### A fast inverse
+
+`unTriAux` searches downward one step at a time, which is `O(n)` and, being
+non-tail-recursive, overflows the stack on the Hydra layer's codes.  The
+binary search below is `O(log n)`.  Proving them equal needs no new
+arithmetic: `unTri` is *characterised* by the two inequalities
+`tri t ≤ n < tri (t + 1)` (`tri_unTri_le`, `lt_tri_unTri_succ`), those
+determine `t` uniquely, and the search maintains exactly them as its
+invariant. -/
+
+/-- Largest `t ∈ [lo, hi]` with `tri t ≤ n`, by bisection.  `fuel` bounds
+the number of halvings; the invariant is `tri lo ≤ n < tri (hi + 1)`. -/
+def unTriBin : ℕ → ℕ → ℕ → ℕ → ℕ
+  | 0, _, lo, _ => lo
+  | fuel + 1, n, lo, hi =>
+      if hi ≤ lo then lo
+      else
+        let mid := (lo + hi + 1) / 2
+        if tri mid ≤ n then unTriBin fuel n mid hi else unTriBin fuel n lo (mid - 1)
+
+theorem unTriBin_zero (n lo hi : ℕ) : unTriBin 0 n lo hi = lo := rfl
+
+theorem unTriBin_succ (fuel n lo hi : ℕ) :
+    unTriBin (fuel + 1) n lo hi =
+      if hi ≤ lo then lo
+      else if tri ((lo + hi + 1) / 2) ≤ n then
+        unTriBin fuel n ((lo + hi + 1) / 2) hi
+      else unTriBin fuel n lo ((lo + hi + 1) / 2 - 1) := rfl
+
+theorem unTriBin_spec : ∀ (fuel n lo hi : ℕ), hi - lo ≤ fuel → tri lo ≤ n →
+    n < tri (hi + 1) →
+    tri (unTriBin fuel n lo hi) ≤ n ∧ n < tri (unTriBin fuel n lo hi + 1)
+  | 0, n, lo, hi, hf, hlo, hhi => by
+    rw [unTriBin_zero]
+    have h : tri (hi + 1) ≤ tri (lo + 1) := tri_le_tri (by omega)
+    exact ⟨hlo, by omega⟩
+  | fuel + 1, n, lo, hi, hf, hlo, hhi => by
+    rw [unTriBin_succ]
+    rcases decEm (hi ≤ lo) with hc | hc
+    · rw [if_pos hc]
+      have h : tri (hi + 1) ≤ tri (lo + 1) := tri_le_tri (by omega)
+      exact ⟨hlo, by omega⟩
+    · rw [if_neg hc]
+      have hmid1 : lo + 1 ≤ (lo + hi + 1) / 2 := by omega
+      have hmid2 : (lo + hi + 1) / 2 ≤ hi := by omega
+      rcases decEm (tri ((lo + hi + 1) / 2) ≤ n) with ht | ht
+      · rw [if_pos ht]
+        exact unTriBin_spec fuel n _ hi (by omega) ht hhi
+      · rw [if_neg ht]
+        refine unTriBin_spec fuel n lo _ (by omega) hlo ?_
+        have he : (lo + hi + 1) / 2 - 1 + 1 = (lo + hi + 1) / 2 := by omega
+        rw [he]
+        omega
+
+/-- The fast inverse. -/
+def unTriFast (n : ℕ) : ℕ := unTriBin n n 0 n
+
+/-- The two inequalities determine the index uniquely. -/
+theorem unTri_unique {n t : ℕ} (h1 : tri t ≤ n) (h2 : n < tri (t + 1)) :
+    t = unTri n := by
+  have hu1 := tri_unTri_le n
+  have hu2 := lt_tri_unTri_succ n
+  rcases decEm (t ≤ unTri n) with hle | hle
+  · rcases decEm (t = unTri n) with he | he
+    · exact he
+    · have : tri (t + 1) ≤ tri (unTri n) := tri_le_tri (by omega)
+      omega
+  · have : tri (unTri n + 1) ≤ tri t := tri_le_tri (by omega)
+    omega
+
+theorem unTri_eq_unTriFast (n : ℕ) : unTri n = unTriFast n := by
+  have hn : n < tri (n + 1) := by
+    have := self_le_tri n
+    rw [tri_succ]
+    omega
+  have h := unTriBin_spec n n 0 n (by omega) (by simp [tri]) hn
+  exact (unTri_unique h.1 h.2).symm
+
+@[csimp] theorem unTri_eq_unTriFast' : unTri = unTriFast :=
+  funext unTri_eq_unTriFast
+
 /-- The triangular pairing. -/
 def pr (a b : ℕ) : ℕ := tri (a + b) + b
 

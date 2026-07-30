@@ -1463,20 +1463,36 @@ point or copy count would not land on it.  (Googology Wiki hosts a
 38-state bracket trace of that 37-step battle on the 4-node path,
 `File:Hydra3.svg`.)
 
-**Granularity, stated precisely.**  The research pass reports running our
-`hydraStep` on the path hydras and obtaining `1, 3, 37`, and reports an
-independent Python simulator under the *rightmost* strategy reaching the
-same length 37 with different intermediate states.  **That check was not
-reproduced in-session** and is therefore recorded as reported, not
-verified here: evaluating a 37-step battle exceeds what our pairing
-allows.  `tri` now has a constant-time `@[csimp]` implementation
-(`tri_eq_triFast`, proved via `2 * tri n = n * (n+1)`, so no division
-appears in the induction), but `unTri` is still a linear downward search,
-and the 4-node path battle times out at 240 s.  Making `unTri` efficient —
-binary search, or a closed form via a hand-rolled integer square root,
-choice-free either way — is now the top item, because it gates both this
-cross-check and the visualization data.  The `rfl`-checked battles in the
-table above stand on their own.
+**Verified in-session.**  Running our own `hydraStep` on the path hydras
+gives
+
+```
+path 1 (2 nodes) → 1      path 2 (3 nodes) → 3      path 3 (4 nodes) → 37
+```
+
+— the published Kirby–Paris values, `37` included.  Paths 1 and 2 are
+`rfl`-checked at build time (`battleLen_small`); path 3 takes ≈ 98 s, so
+it is run out of band (`#eval battleLen 200 1 (encodeH (path 3))`, output
+`37`) and recorded here rather than on every build.  The research pass
+independently reports the same 37 under the *rightmost* strategy with
+different intermediate states, which is a further check: our strategy is
+leftmost, and the length is strategy-independent.
+
+Getting there needed both halves of the pairing made fast, and both are
+proved rather than assumed:
+
+* `tri` gained a constant-time closed form (`tri_eq_triFast`, via
+  `2 * tri n = n * (n + 1)`, so no division enters the induction);
+* `unTri` gained an `O(log n)` **binary search** (`unTriBin`), proved
+  correct by maintaining exactly the invariant `tri lo ≤ n < tri (hi + 1)`
+  and closing with `unTri_unique` — those two inequalities characterise
+  the answer, and Phase C had already proved them for `unTri`
+  (`tri_unTri_le`, `lt_tri_unTri_succ`).
+
+Both are attached with `@[csimp]`, so the definitions and every proof
+about them are untouched; only compiled evaluation changes.  Both proofs
+are `Classical`-free, preserving the module invariant that
+`Epsilon0.lean` must stay at `[propext, Quot.sound]`.
 
 **Correction on attribution — this one matters for the theorem we will
 state.**  Kirby and Paris proved termination for the replication factor

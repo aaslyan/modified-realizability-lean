@@ -353,6 +353,39 @@ the phenomenon in miniature, and the reason the assigned ordinal, not the
 node count, is what decreases (Phase H3). -/
 theorem hydraSeq_one : (hydraSeqN 1 0, hydraSeqN 1 1) = (1, 0) := rfl
 
+/-! ### Path hydras and the published battle lengths
+
+The discriminating cross-check.  A *path hydra* is a chain: `path k` has
+`k + 1` nodes.  Under Kirby–Paris the battle lengths are `1, 3, 37, …`
+(the fourth exceeds Graham's number); under the *other* game in
+circulation — copies as bare leaves attached to the parent — they are
+`1, 3, 11, …`.  Getting `37` therefore pins down both the grandparent
+rule and the copy count.
+
+`battleLen` counts moves to death with the stage-indexed replication this
+file uses.  Paths 1 and 2 are checked by `rfl` at build time; path 3 takes
+about ninety seconds, so it is verified out of band and recorded in
+STATUS.md rather than run on every build:
+
+    #eval battleLen 200 1 (encodeH (path 3))   -- 37
+-/
+
+/-- The path hydra with `k + 1` nodes. -/
+def path : ℕ → Hydra
+  | 0 => Hydra.leaf
+  | k + 1 => .node (.cons (path k) .nil)
+
+/-- Moves to death, from stage `stage`, with `fuel` bounding the count. -/
+def battleLen : ℕ → ℕ → ℕ → ℕ
+  | 0, _, _ => 0
+  | f + 1, stage, code =>
+      if code = 0 then 0 else battleLen f (stage + 1) (hydraStepN stage code) + 1
+
+/-- `Hydra(1) = 1` and `Hydra(2) = 3`, the published values. -/
+theorem battleLen_small :
+    (battleLen 20 1 (encodeH (path 1)), battleLen 20 1 (encodeH (path 2)))
+      = (1, 3) := rfl
+
 /-! ## Phase H3 (in progress): the ordinal assignment
 
 The measure that decreases even when the tree grows.  A hydra is sent to
