@@ -1,11 +1,14 @@
-# Status: COMPLETE through Phase D5 — Goodstein's theorem is proved inside the fragment and its stopping-time function extracted, certified, and executed
+# Status: COMPLETE through Phase H6 — Goodstein's theorem *and* the Kirby–Paris Hydra theorem are proved inside the fragment, each with its witness function extracted, certified, and executed
 
 Phases: milestone (modified realizability + extraction + soundness),
 generic continuity, induction (2), arithmetic (A), hereditary base-`k`
-and the Goodstein sequence (B), transfinite induction to `ε₀` (C), and
+and the Goodstein sequence (B), transfinite induction to `ε₀` (C),
 Phase D in four checkpoints — `∃` (D0), the ordinal-assignment
 obligations (D1), Goodstein's theorem (D2), the extracted function
-(D3).
+(D3) — the derived descent (D5), and the Hydra project in six: tree
+coding (H1), the move (H2), the ordinal assignment and its descent
+theorem (H3), the game inside the fragment (H4), termination as a closed
+derivation (H5), and the extracted battle-length program (H6).
 
 `lake build` succeeds, zero `sorry`/`admit`.  `#print axioms` on the
 soundness theorem (now covering the `ind` rule and the Phase-A rules),
@@ -70,10 +73,14 @@ and on the Phase-B certification theorems (`#print axioms` in
 ## What is delivered
 
 - `Syntax.lean` — terms (since Phase A over `{0, succ, +, ×}`, since
-  Phase B additionally `pred`/`exp`/`bump`/`good`, with the
-  fuel-structural value-level functions `hlog`/`bumpN`/`goodN` and the
+  Phase B additionally `pred`/`exp`/`bump`/`good`, since Phase H4
+  additionally `hcut`/`hydra`/`hord`, with the fuel-structural
+  value-level functions `hlog`/`bumpN`/`goodN` and the
   `numeral` embedding), the fragment's formulas, capture-safe
-  substitution, and the 39-rule natural-deduction family — since the
+  substitution, the decidability instances for the quantifier rules' side
+  conditions (moved here from `GoodsteinTheorem.lean` in H5, since both
+  theorem phases discharge them by `decide +kernel`), and the 55-rule
+  natural-deduction family — since the
   Phase-2 extension including the arithmetic induction rule `ind`
   (from `φ(0)` and `∀x (φ(x) → φ(succ x))`, conclude `∀x φ(x)`; side
   condition: no variable capture for the substituted `succ x`, same
@@ -87,7 +94,11 @@ and on the Phase-B certification theorems (`#print axioms` in
   `goodSucc`), the two `bump` axioms (`bumpZero`, and the numeral
   graph `bumpNum` — see the Phase-B section), and the four matching
   congruence schemas (`eqCongPred`, `eqCongExp`, `eqCongBump`,
-  `eqCongGood`).
+  `eqCongGood`); and since the Phase-H4 extension the Hydra group (the
+  battle's recursion equations `hydraZero`/`hydraSucc`, the move's
+  numeral graph `hcutNum`, the imported descent `hordCutLt`, and the
+  three congruences `eqCongHcut`/`eqCongHydra`/`eqCongHord` — see the
+  Phase-H4 section).
 - `ModifiedRealizes.lean` — the pure-type devices (`up`/`down`,
   `pairPT`/`fstPT`/`sndPT`, `app₁`/`abs₁` with beta) and the
   **flexible-ambient** modified-realizability relation `MR ρ φ n x`
@@ -1368,7 +1379,10 @@ decision is informed rather than implicit.
 A new mathematical layer on top of the finished Goodstein work, reusing
 the existing `TI(ε₀)` machinery and the realizability pipeline unchanged.
 This entry covers H1 and H2 only; H3 (the ordinal assignment and its
-descent proof) is the hard part and has not been started.
+descent proof) was the hard part and is written up in the sections that
+follow, as are H4–H6.  *(Written when H3 had not been started; the
+sections below record how it went and supersede the forward-looking
+paragraphs in this one.)*
 
 ### H1 — finite rooted trees as natural numbers
 
@@ -1691,7 +1705,7 @@ dependency order for the rest of H3 is:
 `oE_insertExp` (the head of an insertion is either the inserted exponent
 or the old head) is proved and is what step 2 will consume.
 
-### What the rest of H3 needs (scoped, not started)
+### What the rest of H3 needs (superseded — this is how it was scoped before it was done; the plan held)
 
 The assignment sends a hydra to a `≺`-notation: `ord(node [c₁,…,cₖ])` is
 the Cantor normal form of `ω^{ord c₁} ⊕ … ⊕ ω^{ord cₖ}`.  Building it on
@@ -1706,3 +1720,243 @@ child's.  D1's retrospective on the analogous Goodstein assignment called
 that work the substantial part of the phase, and this one is strictly
 harder because it must see the whole tree shape rather than read off a
 linear hereditary notation.
+
+### H3, the descent theorem: COMPLETE
+
+`cutH_descends` — for every replication factor `n` and every hydra that
+is not already a bare head, `ord(cut n h) ≺ ord h`.  The three cases are
+`cutH`'s own:
+
+* a head hanging off this node — `ordOfForest_cons_leaf_descends`, i.e.
+  `precB_insertExp_self`, the "parent is the root" clause where nothing
+  regrows;
+* a deeper cut with no regrowth here — exponent monotonicity,
+  `precB_insertExp_mono_exp`;
+* a deeper cut where this node *is* the grandparent and `n` copies grow —
+  `precB_insertIter_lt` via `ordOfForest_append_replicate`, which turns
+  the regrown children into an iterate.  **That lemma is insensitive to
+  `n`**, so the case closes without ever looking at how many copies
+  appeared: the replication factor never enters the comparison, exactly
+  as the informal proof says.
+
+The bare head is excluded by hypothesis — `cutH` leaves it alone, and a
+dead hydra's ordinal does not drop.  `hydraStepN_descends` is the same
+statement on codes, and (added in H4) `olt_ordOfHydraN_step` restates it
+with the fragment's own side condition, `code ≠ 0`, using the bijection
+fact `hydraOf_eq_leaf_iff`.
+
+So the measure is proved to work in general, not merely computed on the
+small battles: the tree may grow without bound at any step, and the
+ordinal comes down every time.
+
+## Hydra Phase H4 (the game inside the fragment): COMPLETE
+
+`HydraFragment.lean`, plus the extension points in `Syntax.lean`,
+`Extraction.lean`, `Soundness.lean` and `GenericContinuity.lean`.
+
+### The three symbols
+
+| symbol | arity | evaluated by | reading |
+|---|---|---|---|
+| `hcut n c` | 2 | `hydraStepN` | one move on the hydra coded `c`, growing `n` copies at the grandparent |
+| `hydra s t` | 2 | `hydraSeqN` | the state after `t` moves from the hydra coded `s` |
+| `hord c` | 1 | `ordOfHydraN` | the ordinal notation assigned to the hydra coded `c` |
+
+**No coding side condition is needed anywhere**, and that is H1's round
+trips paying off: the coding is a bijection between `ℕ` and finite rooted
+trees, so the fragment's `∀h` ranges over exactly the hydras rather than
+over "codes, some of which are junk".  The dead hydra is the bare head,
+whose code is `0`, so `hydra(h,t) = 0` is literally "the battle from `h`
+is over after `t` moves" — termination is an equation of the fragment's
+existing atomic language, with no new predicate and no new relation.
+
+This required moving the Hydra math layer *before* `Syntax.lean` in the
+import chain (`Syntax.lean` now imports `Realizability.Hydra`), the same
+move Phase D made for `OrdinalAssignment.lean` and for the same reason:
+the value-level functions must exist before `Term.eval` mentions them,
+and `Soundness.lean` needs the H3 theorem for the descent case.  The
+prerequisite was that those functions be `Classical`-free and
+kernel-computable — checked, not assumed (`#print axioms hydraStepN`,
+`hydraSeqN`, `ordOfHydraN`: *does not depend on any axioms*).  Had they
+not been, every continuity theorem's `[propext, Quot.sound]` budget would
+have broken, since `Term.eval` sits inside `extract`.
+
+### The five schemas, and exactly what is imported
+
+* `hydraZero`, `hydraSucc` — the battle's recursion equations, `goodZero`/
+  `goodSucc`'s shape.  Honest first-order schemas; their soundness cases
+  are `hydraSeqN`'s own definition.
+* `hcutNum` — the move's **numeral graph**, for the reason `bumpNum` and
+  `precNum` exist: a move is tree surgery through the decoding, i.e.
+  course-of-values recursion, not a first-order equation schema over the
+  fragment's terms.  Flagged as the same documented compromise as
+  `bump`'s.
+* `eqCongHcut`, `eqCongHydra`, `eqCongHord` — the equational kit for the
+  extended signature, one congruence per new symbol.
+* `hordCutLt` — **the one imported mathematical fact of the phase**: from
+  `c ≠ 0`, `hord(hcut(n,c)) ≺ hord(c)`.  Its Lean twin is
+  `olt_ordOfHydraN_step`.
+
+`hordCutLt` follows the pattern D5 established for `ordPredLt`: it is a
+property of *one* function symbol (`hcut`) relative to *one* ordinal
+symbol (`hord`), and it says nothing about the battle — no sequence, no
+step counter, no stage-indexed replication.  It quantifies over the
+number of regrown copies, so the fragment's proof covers every
+replication rule at once, adversarial ones included.  Everything
+battle-specific — gluing the descent to the recursion equation, the case
+split on death, the induction — is the fragment's own work in H5.
+
+What is **not** claimed: that the fragment proves `hordCutLt`.  Like
+Goodstein's three schemas it is an axiom of the object theory justified
+by a Lean theorem.  Internalizing it would mean formalizing tree surgery
+and Cantor normal forms inside an equations-only first-order language —
+strictly harder than the Goodstein case that D5 already scoped as
+research-scale and did not attempt.
+
+### The import is faithful, and that is checked
+
+`hydra_descent_via_fragment` is the round trip: reading `hordCutLt` back
+through `soundness` returns exactly `OLt (ordOfHydraN (hydraStepN n code))
+(ordOfHydraN code)` for every `n` and every `code ≠ 0` — H3's theorem, not
+a weaker or differently-quantified statement.  This is the same
+non-vacuity check `ord_descent_via_fragment` performs for the Goodstein
+descent.
+
+### The fragment computes battles, not only reasons about them
+
+`hydraComputeDeriv start t` derives the numeral of the state after `t`
+moves, by a derivation whose length is the number of moves — the Hydra
+analogue of `good_compute`.  So `hydra_chain_derivable` is a closed
+derivation of `hydra(2̂, 3̂) = 0`, passing through the state where the tree
+*grows* (code `2 → 3`, one child with one head becoming two heads).
+
+### Machinery cases added, none silent
+
+Per the per-rule discipline: three cases each in `Term.eval`, `vars`,
+`subst`, `eval_subst`, `eval_congr` and `termEval_continuous`; seven cases
+each in `extract`, `derivBound`, `soundness` and `extract_tracked`, with
+seven new `axiomC_*_tracked` lemmas.  Bounds follow the Phase-A
+accounting: bare equations `0`, single implications `1`, nested `2`.
+
+## Hydra Phase H5 (Hercules wins): COMPLETE
+
+`HydraTheorem.lean`:
+
+```
+hydraTheorem : Deriv [] (∀h ∃t. hydra(h, t) = 0)
+```
+
+spelled out and `#check`ed against the unabbreviated formula in
+`HydraExtraction.lean`, so what is proved cannot drift behind a
+definition.  The quantifier is over all naturals — by H1's bijection, all
+finite rooted trees — the witness is unbounded, and the number of heads
+regrown at each move is whatever the move symbol's argument says.
+
+### The argument
+
+`tiEps0` along `≺`, on
+
+    φ(x)  :=  ∀s. hord(hydra(h,s)) = x  →  ∃t. hydra(h,t) = 0
+
+with `h` a parameter, quantified only at the end.  Fix `x`, assume φ(y)
+for `y ≺ x`, let `s` be a state with ordinal `x`.  Either `hydra(h,s) = 0`
+and `t := s` witnesses; or not, and then `hord(hydra(h,s+1)) ≺ x`, so the
+induction hypothesis at that ordinal, instantiated at `s+1`, supplies the
+witness.  `∀x φ(x)` is instantiated at the initial state's ordinal, whose
+hypothesis is reflexivity.
+
+This is `GoodsteinTheorem.lean` line for line, **including the naming
+step**: the induction hypothesis cannot be instantiated at
+`hord(hydra(h,s+1))`, because that term mentions `s`, which φ binds, and
+the fragment's substitution is naive.  So `hydraNamedIHDeriv` proves
+`∀z. z = hord(hydra(h,s+1)) → …` first — instantiating at the *variable*
+`z`, which captures nothing — and only then instantiates at the term.
+That D2 technique transferred with no modification, which is evidence it
+is the right general device for naive-substitution calculi rather than a
+Goodstein-specific trick.
+
+### The one Hydra-specific difference
+
+Where the descent comes from.  Goodstein assembled it from three schemas
+about `ord`, `bump` and `pred` (D5); here `hydraDescentDeriv` glues
+`hordCutLt` to the battle's recursion equation `hydraSucc` by congruence
+of `hord` — three lines, entirely the fragment's own.  **Nothing about the
+number of regrown copies is ever used**: the schema quantifies over it, so
+the derivation never inspects how far the hydra grew.  That is the point
+of the game, and it is visible in the proof term.
+
+### Refactor this phase forced
+
+The decidability instances for the quantifier rules' side conditions
+(`decidableFreeIn`, `decidableSubstOK`, `decidableFreshIn`) moved from
+`GoodsteinTheorem.lean` to `Syntax.lean`.  Both theorem phases discharge
+those conditions by `decide +kernel`, and the Hydra layer should not have
+to import the Goodstein layer to obtain them.  It does not:
+`HydraTheorem.lean` imports only `HydraFragment.lean`.
+
+### Out of scope, stated plainly
+
+**Independence from PA is not formalized and is not claimed.**  Kirby–
+Paris has two halves — every hydra dies, and PA cannot prove it — and
+only the first is here.  The second needs a model-theoretic or
+proof-theoretic argument about PA itself (indicators, or the
+`ε₀`-ordinal analysis), which this development has no machinery for.
+
+## Hydra Phase H6 (the extracted program): COMPLETE, with the same limit as D3
+
+`HydraExtraction.lean`.  `hydraBattleLength h` reads the witness off
+`hydraTheorem`'s realizer at the derivation's own ambient level
+(`derivBound hydraTheorem = 12`, the same as `goodsteinTheorem`'s — same
+derivation shape, same level accounting), and
+
+```
+hydraBattleLength_spec : ∀ h, hydraSeqN h (hydraBattleLength h) = 0
+```
+
+is proved from `soundness`, not by computation, so it holds at trees no
+evaluator will reach.  Continuity is `extract_continuous` with no
+per-derivation certificate; `hydraRealizesCtQ` is the class in `CtQ 2`.
+
+It runs at the small trees, checked at every build:
+
+```
+#eval hydraBattleLength 0   -- 0   (the bare head, already dead)
+#eval hydraBattleLength 1   -- 1   (a root with one head)
+```
+
+both cross-checked against `hydraSeqN` by `rfl`
+(`hydraSeqN_one_at_one`, `hydraSeqN_zero_at_zero`).
+
+**The limit, reported rather than papered over.**  `hydraBattleLength 2`
+produced no output at 600 s on this machine.  As in D3/D4 the distinction
+matters and is unambiguous: **the answer is tiny.**  The battle is
+`2 → 3 → 1 → 0`, so the length is `3`, and `hydraSeqN` computes it
+instantly.  What is astronomical is only the extract's re-evaluation
+count, for the cause D4 diagnosed and did not fix: every recursive value
+in `tiRecC`'s output is wrapped in two `dropR` transports, and
+`app₁`/`abs₁` duplicate their argument at each application, so the
+realizer re-evaluates its own recursive calls exponentially often in the
+number of moves, with nothing memoized.  The Hydra layer **inherits** that
+bottleneck and adds none of its own — the same shape of derivation, the
+same recursor, the same transports.  The certified content is unaffected.
+
+### Axiom budgets for the Hydra phases (checked at every build)
+
+```
+'Realizability.hydraTheorem'                     … [propext, Quot.sound]
+'Realizability.hord_cut_lt_realized'             … [propext, Classical.choice, Quot.sound]
+'Realizability.hord_cut_lt_extract_continuous'   … [propext, Quot.sound]
+'Realizability.hydra_chain_realized'             … [propext, Classical.choice, Quot.sound]
+'Realizability.hydra_chain_extract_continuous'   … [propext, Quot.sound]
+'Realizability.hydra_descent_via_fragment'       … [propext, Classical.choice, Quot.sound]
+'Realizability.hydra_theorem_realized'           … [propext, Classical.choice, Quot.sound]
+'Realizability.hydra_theorem_extract_continuous' … [propext, Quot.sound]
+'Realizability.hydra_realized'                   … [propext, Classical.choice, Quot.sound]
+'Realizability.hydraBattleLength_spec'           … [propext, Classical.choice, Quot.sound]
+'Realizability.hydra_extract_continuous'         … [propext, Quot.sound]
+```
+
+Unchanged from every earlier phase, which is the point: adding three
+symbols and seven rules to the fragment cost nothing in axiom footprint,
+because the value-level functions are choice-free and the schemas are
+contentless.

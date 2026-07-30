@@ -102,8 +102,33 @@ recommendations.  Items get moved to "Resolved" when you answer them.
 
 ## Open
 
-*(nothing blocking; the roadmap's phases are all delivered.  The
-remaining item is engineering, not mathematics.)*
+*(nothing blocking; the roadmap's phases and the Hydra project's six are
+all delivered.  Item 12 is engineering, not mathematics; item 13 is a
+genuine mathematical fork, recorded rather than silently chosen.)*
+
+13. **Should the Hydra descent be *derived* the way D5 derived the
+   Goodstein one?**  *Raised 2026-07-30, at the close of H4/H5.*
+   H4 imports exactly one mathematical fact, `hordCutLt`: from `c ≠ 0`,
+   `hord(hcut(n,c)) ≺ hord(c)`.  It follows D5's `ordPredLt` pattern —
+   one property of one move symbol relative to one ordinal symbol, silent
+   about the battle, quantified over the replication factor — so it is
+   already at D5's granularity, not at the pre-D5 "one composite step"
+   granularity.  There is no analogue of D5's split available: the
+   Goodstein step decomposed because it *is* `pred ∘ bump`, two symbols
+   with separate ordinal properties, whereas a Hydra move is one
+   operation and its descent is one theorem (`cutH_descends`) whose three
+   cases are cases of the *tree*, not of a composition of symbols.
+   Going further would mean internalizing tree surgery and Cantor normal
+   forms in an equations-only first-order language — strictly harder than
+   the Goodstein internalization D5 already scoped as research-scale and
+   declined.
+   **Recommendation: leave it.**  `hydra_descent_via_fragment` checks the
+   import is faithful (it returns exactly H3's theorem through
+   `soundness`), and STATUS.md's H4 section states the gap plainly.  If
+   this is ever revisited, the first genuine sub-step would be giving the
+   fragment `hord` of a *node in terms of its children* — i.e. `insertExp`
+   as a symbol with its four defining equations — which is a phase of its
+   own, not a refactor.
 
 12. **The extracted program is correct but not efficient.**  *Diagnosed
    2026-07-29 in Phase D4 and left unfixed, deliberately.*  The profile:

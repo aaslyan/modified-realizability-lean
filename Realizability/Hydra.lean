@@ -44,6 +44,21 @@ between `ℕ` and hydras — both round trips are proved below
 Decoding is fueled, like every other recursion in this development: the
 components `pr1 n` and `pr2 n` are `≤ n` (`pr1_le`, `pr2_le`), so fuel
 `= n` is adequate (`decodeF_eq_of_le`).
+
+## Position in the import chain (since H4)
+
+This module sits **before `Syntax.lean`**, next to `OrdinalAssignment.lean`
+and for the same reason: `Term.eval` evaluates the Phase-H4 symbols by
+`hydraStepN`/`hydraSeqN`/`ordOfHydraN` defined here, and `Soundness.lean`
+needs `olt_ordOfHydraN_step` for the descent schema's case.  So the
+definitions in this file are inside `extract`'s dependency graph, and
+every one of them must stay `Classical`-free and kernel-computable — the
+same constraint `Epsilon0.lean` carries, and for the same reason: a
+`Classical.choice` here would break every continuity theorem's
+`[propext, Quot.sound]` budget.  It currently holds: `#print axioms` on
+all three reports *does not depend on any axioms*.  Proofs in this file
+are unconstrained (they reach `soundness`, whose budget allows choice);
+only the definitions are.
 -/
 import Realizability.Epsilon0
 
@@ -386,7 +401,7 @@ theorem battleLen_small :
     (battleLen 20 1 (encodeH (path 1)), battleLen 20 1 (encodeH (path 2)))
       = (1, 3) := rfl
 
-/-! ## Phase H3 (in progress): the ordinal assignment
+/-! ## Phase H3: the ordinal assignment
 
 The measure that decreases even when the tree grows.  A hydra is sent to
 a Cantor-normal-form notation of `Epsilon0.lean` — **no second ordinal

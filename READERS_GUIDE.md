@@ -9,6 +9,15 @@ The one-sentence version of what is proved: **the fragment derives
 into a program that computes the Goodstein stopping time, certified
 correct at every input and continuous as a type-2 functional.**
 
+Since the Hydra phases the same sentence holds a second time, for a
+second theorem: **the fragment derives `∀h ∃t. hydra(h,t) = 0`** — every
+Kirby–Paris hydra dies — **and the same pipeline extracts a
+battle-length function from it, certified the same three ways.**  The
+second run reused the first's machinery unchanged, which is the strongest
+evidence available here that the pipeline is general rather than tuned to
+Goodstein.  Neither *independence* result (unprovability in PA) is
+formalized, and neither is claimed.
+
 ---
 
 ## 1. Dependency-ordered theorem map
@@ -83,6 +92,19 @@ noted only where they help.
 | 34 | `descentDeriv`, `namedIHDeriv`, `stepBranch`, `goodProgressive` | `GoodsteinTheorem.lean` | The four pieces of the induction step.  `namedIHDeriv` is the substitution trick — read its docstring. |
 | 35 | **`goodsteinTheorem`** | `GoodsteinTheorem.lean` | `⊢ ∀m ∃t. good(m,t) = 0`. |
 | 36 | `goodsteinStopTime`, **`goodsteinStopTime_spec`**, `goodstein_extract_continuous`, `goodsteinRealizesCtQ` | `GoodsteinExtraction.lean` | The extracted function, its correctness at every input, its continuity, and its class in `CtQ 2`. |
+
+### 1.7 The Hydra layer (H1–H6) — the second theorem, on the same machinery
+
+| # | Declaration | File | What it gives you |
+|---|---|---|---|
+| 37 | `encodeH`/`hydraOf`, `hydraOf_encodeH`, `encodeF_forestOf` | `Hydra.lean` | Finite rooted trees coded into `ℕ` through Phase C's pairing, with **both** round trips — so `∀h` ranges over exactly the trees, and `0` is the dead hydra. |
+| 38 | `cutH`, `hydraStepN`, `hydraSeqN`, `hydraSeq_chain`, `battleLen_small` | `Hydra.lean` | The Kirby–Paris move and the battle, with the small battles kernel-checked and the published lengths `1, 3, 37` used to pin the rule down. |
+| 39 | `insertExp`, `nfB_insertExp`, `precB_trans`, `precB_trichotomy` | `Hydra.lean` | The CNF sum `ω^e ⊕ c` on Phase C's codes, plus the order facts the notation layer never needed before: totality, transitivity, asymmetry. |
+| 40 | `ordOfHydra`, `nfB_ordOfHydra`, **`cutH_descends`** | `Hydra.lean` | The ordinal assignment and the descent theorem: every legal move lowers it, at every replication factor — including the moves that make the tree bigger. |
+| 41 | `Deriv.hordCutLt`, `hydra_descent_via_fragment`, `hydraComputeDeriv` | `HydraFragment.lean` | The single imported schema, the round trip proving the import faithful, and the fragment computing concrete battles. Read this before the theorem — it is where "the fragment proves Kirby–Paris" is cashed out or qualified. |
+| 42 | `hydraDescentDeriv`, `hydraNamedIHDeriv`, `hydraProgressive` | `HydraTheorem.lean` | The pieces of the induction step; the same naming trick as `namedIHDeriv`. |
+| 43 | **`hydraTheorem`** | `HydraTheorem.lean` | `⊢ ∀h ∃t. hydra(h,t) = 0`. |
+| 44 | `hydraBattleLength`, **`hydraBattleLength_spec`**, `hydra_extract_continuous`, `hydraRealizesCtQ` | `HydraExtraction.lean` | The extracted battle-length function, correct at every tree, continuous, with its class in `CtQ 2`. |
 
 ---
 
@@ -246,6 +268,68 @@ end Realizability
 EOF
 lake env lean /tmp/check.lean
 ```
+
+And the Hydra claims (H1–H6):
+
+```bash
+cat > /tmp/hcheck.lean <<'EOF'
+import Realizability.HydraExtraction
+namespace Realizability
+
+-- H5: the theorem, at exactly the claimed type
+#check (hydraTheorem :
+  Deriv [] (Formula.all 2 (Formula.ex 4
+    (Formula.eq (Term.hydra (Term.var 2) (Term.var 4)) Term.zero))))
+
+-- H4: the value-level functions are choice-free (they sit inside `extract`)
+#print axioms hydraStepN
+#print axioms hydraSeqN
+#print axioms ordOfHydraN
+
+-- H1/H3: the coding is a bijection; the descent is general
+#print axioms hydraOf_encodeH
+#print axioms cutH_descends
+
+-- H4/H5/H6: the import is faithful, the theorem, the program
+#print axioms hydra_descent_via_fragment
+#print axioms hydraTheorem
+#print axioms hydraBattleLength_spec
+#print axioms hydra_extract_continuous
+
+-- H6: the extracted function, running
+#eval hydraBattleLength 0                     -- 0    (a few s)
+#eval hydraBattleLength 1                     -- 1    (a few s)
+-- #eval hydraBattleLength 2                  -- does NOT finish; see STATUS.md
+end Realizability
+EOF
+lake env lean /tmp/hcheck.lean
+```
+
+Expected output, in order (measured, ~6 s in total):
+
+```
+hydraTheorem : Deriv [] hydraGoal
+'Realizability.hydraStepN'   does not depend on any axioms
+'Realizability.hydraSeqN'    does not depend on any axioms
+'Realizability.ordOfHydraN'  does not depend on any axioms
+'Realizability.hydraOf_encodeH'            … [propext, Quot.sound]
+'Realizability.cutH_descends'              … [propext, Quot.sound]
+'Realizability.hydra_descent_via_fragment' … [propext, Classical.choice, Quot.sound]
+'Realizability.hydraTheorem'               … [propext, Quot.sound]
+'Realizability.hydraBattleLength_spec'     … [propext, Classical.choice, Quot.sound]
+'Realizability.hydra_extract_continuous'   … [propext, Quot.sound]
+0
+1
+```
+
+Two lines are worth pausing on.  The three *does not depend on any
+axioms* results are load-bearing, not decoration: those functions sit
+inside `Term.eval`, hence inside `extract`, so if any of them ever
+acquired `Classical.choice` every continuity theorem's budget would break
+at once.  And as with `goodsteinTheorem`, Lean *displays* the abbreviation
+(`hydraGoal`), but the ascription in the `#check` is the spelled-out
+`Formula.ex 4 (Formula.eq (Term.hydra …) …)`, so what was checked is the
+unfolded type.
 
 Expected output, in order: the `#check` echoing
 `goodsteinTheorem : Deriv [] (Formula.all 2 goodTerminates)` — note Lean
