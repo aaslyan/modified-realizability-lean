@@ -126,6 +126,32 @@ theorem tri_le_tri : ∀ {m n : ℕ}, m ≤ n → tri m ≤ tri n := by
       rw [tri_succ]
       omega
 
+/-- The closed form.  `tri` is defined by unary recursion — which is what
+the proofs and the kernel want — but that makes *evaluation* `O(n)`, and
+the Hydra layer's codes are large enough to overflow the interpreter's
+stack.  `@[csimp]` swaps in the constant-time version for compiled code,
+backed by the proof below.  The definition and every proof about it are
+untouched. -/
+def triFast (n : ℕ) : ℕ := n * (n + 1) / 2
+
+theorem two_mul_tri : ∀ n : ℕ, 2 * tri n = n * (n + 1)
+  | 0 => rfl
+  | n + 1 => by
+    have ih := two_mul_tri n
+    have h1 : (n + 1) * (n + 1 + 1) = (n + 1) * (n + 1) + (n + 1) := by
+      rw [Nat.mul_add, Nat.mul_one]
+    have h2 : (n + 1) * (n + 1) = n * (n + 1) + (n + 1) := by
+      rw [Nat.add_mul, Nat.one_mul]
+    rw [tri_succ]
+    omega
+
+theorem tri_eq_triFast (n : ℕ) : tri n = triFast n := by
+  have h := two_mul_tri n
+  simp only [triFast]
+  omega
+
+@[csimp] theorem tri_eq_triFast' : tri = triFast := funext tri_eq_triFast
+
 /-- The largest `t` with `tri t ≤ n`, searching downward from the fuel. -/
 def unTriAux : ℕ → ℕ → ℕ
   | 0, _ => 0

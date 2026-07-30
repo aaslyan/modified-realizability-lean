@@ -1447,9 +1447,66 @@ assignment is needed at all: the node count goes *up* at that step, so
 nothing about the tree's size is decreasing — only the assigned ordinal
 is.
 
-### Two things flagged rather than glossed
+### The citation, now checked — and two corrections it forced
 
-**The citation is still open.**  The brief requires the exact regrowth
+A dedicated research pass closed the item flagged below.  Three findings
+change what this section originally said.
+
+**The rule implemented is Kirby–Paris, and the battle lengths confirm
+it.**  There are two *different* games in circulation and they are widely
+conflated.  Wikipedia introduces a "simple hydra game" first — copies are
+**bare leaves attached to the parent** — whose path-hydra battle lengths
+are `1, 3, 11, 1114111`.  Kirby–Paris is the grandparent rule with the
+whole post-cut subtree copied, and its lengths are `1, 3, 37, >` Graham's
+number.  `37` is therefore the discriminating number: a wrong attachment
+point or copy count would not land on it.  (Googology Wiki hosts a
+38-state bracket trace of that 37-step battle on the 4-node path,
+`File:Hydra3.svg`.)
+
+**Granularity, stated precisely.**  The research pass reports running our
+`hydraStep` on the path hydras and obtaining `1, 3, 37`, and reports an
+independent Python simulator under the *rightmost* strategy reaching the
+same length 37 with different intermediate states.  **That check was not
+reproduced in-session** and is therefore recorded as reported, not
+verified here: evaluating a 37-step battle exceeds what our pairing
+allows.  `tri` now has a constant-time `@[csimp]` implementation
+(`tri_eq_triFast`, proved via `2 * tri n = n * (n+1)`, so no division
+appears in the induction), but `unTri` is still a linear downward search,
+and the 4-node path battle times out at 240 s.  Making `unTri` efficient —
+binary search, or a closed form via a hand-rolled integer square root,
+choice-free either way — is now the top item, because it gates both this
+cross-check and the visualization data.  The `rfl`-checked battles in the
+table above stand on their own.
+
+**Correction on attribution — this one matters for the theorem we will
+state.**  Kirby and Paris proved termination for the replication factor
+equal to the round number.  Our `cutH` deliberately takes the copy count
+as a parameter, so what this development will prove is the **free**
+battle (arbitrary, adversarial replication).  That generalization must
+**not** be attributed to Kirby–Paris 1982; it belongs to the later
+literature and to Castéran's development.  Relatedly, Dershowitz and
+Moser ("The Hydra Battle Revisited") record explicitly that they shift
+the factor by one relative to the original — so the convention has to be
+pinned rather than assumed.  Ours: `hydraSeqN` grows `s + 1` copies at
+step `s`, i.e. round numbering from 1.
+
+**Sources.**  Kirby & Paris, *Accessible independence results for Peano
+arithmetic*, Bull. LMS 14 (1982), 285–293; a scan with a text layer is at
+`cs.tau.ac.il/~nachumd/term/Kirbyparis.pdf`.  Castéran's Coq development
+is at `rocq-community.org/hydra-battles/` (the `coq-community` URL times
+out); its §2.0.1 states the rule as "`h′` is replaced by `n + 1` copies of
+`h′` which share the same root", with the replication factor equal to the
+round index — the same rule as ours.
+
+**Not verified, and not claimed**: `Hydra(4) > Graham's number` and the
+`f_α` growth-rate bounds (asserted by the wikis, unchecked here); and a
+numeric instance of Castéran's `l_std` formula, which did not obviously
+reproduce the small cases and may be an indexing offset — deliberately
+left alone rather than quoted.
+
+### One thing still flagged
+
+**The original citation note (now superseded, kept for the record).**  The brief requires the exact regrowth
 rule to be stated and cited before implementing, since the literature has
 inequivalent-looking variants (copies at the grandparent versus the
 parent; `n` copies at stage `n` versus adversarially many; heads as
