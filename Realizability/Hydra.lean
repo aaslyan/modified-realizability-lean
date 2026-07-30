@@ -485,6 +485,59 @@ theorem oE_insertExp (e c : ℕ) :
       · rw [if_neg hp, oE_mkO]
         exact Or.inr rfl
 
+/-- An insertion is never zero: every branch builds an `mkO`. -/
+theorem insertExp_ne_zero (e c : ℕ) : insertExp e c ≠ 0 := by
+  rcases decEm (c = 0) with hc | hc
+  · subst hc
+    rw [insertExp_zero]
+    exact mkO_ne_zero _ _ _
+  · rw [insertExp_pos hc]
+    rcases decEm (e = oE c) with he | he
+    · rw [if_pos he]; exact mkO_ne_zero _ _ _
+    · rw [if_neg he]
+      rcases decEm (precB (oE c) e = true) with hp | hp
+      · rw [if_pos hp]; exact mkO_ne_zero _ _ _
+      · rw [if_neg hp]; exact mkO_ne_zero _ _ _
+
+/-- **Insertion preserves normal form.**  Three of the four cases are the
+normal-form destructors read back; the fourth — recursing into the
+remainder — is where totality of the comparison is consumed, to know that
+an exponent neither equal to nor above the head sits below it, so the new
+remainder still fits under the old head. -/
+theorem nfB_insertExp {e : ℕ} (he : nfB e = true) :
+    ∀ c : ℕ, nfB c = true → nfB (insertExp e c) = true := by
+  refine nat_strong_ind (fun c ih => ?_)
+  intro hnc
+  rcases decEm (c = 0) with hc | hc
+  · subst hc
+    rw [insertExp_zero]
+    exact nfB_mkO he nfB_zero (Or.inl rfl)
+  · rw [insertExp_pos hc]
+    rcases decEm (e = oE c) with heq | heq
+    · rw [if_pos heq]
+      exact nfB_mkO (nfB_exp hc hnc) (nfB_rem hc hnc) (nfB_below hc hnc)
+    · rw [if_neg heq]
+      rcases decEm (precB (oE c) e = true) with hp | hp
+      · rw [if_pos hp]
+        exact nfB_mkO he hnc (Or.inr hp)
+      · rw [if_neg hp]
+        have hpf : precB (oE c) e = false := by
+          simpa using hp
+        have hlt : precB e (oE c) = true :=
+          precB_of_ne_of_not_precB he (nfB_exp hc hnc) heq hpf
+        have hrec : nfB (insertExp e (oR c)) = true :=
+          ih (oR c) (oR_lt hc) (nfB_rem hc hnc)
+        refine nfB_mkO (nfB_exp hc hnc) hrec (Or.inr ?_)
+        rcases decEm (oR c = 0) with hr0 | hr0
+        · rw [hr0, insertExp_zero, oE_mkO]
+          exact hlt
+        · rcases oE_insertExp e (oR c) with hoe | hoe
+          · rw [hoe]; exact hlt
+          · rw [hoe]
+            rcases nfB_below hc hnc with h0 | h0
+            · exact absurd h0 hr0
+            · exact h0
+
 /-! ### The assignment -/
 
 mutual
@@ -507,6 +560,19 @@ end
 
 @[simp] theorem ordOfForest_cons (h : Hydra) (f : Forest) :
     ordOfForest (.cons h f) = insertExp (ordOfHydra h) (ordOfForest f) := rfl
+
+mutual
+
+/-- **The assignment lands in normal form**, so `≺` applies to it — the
+precondition for any descent statement at all. -/
+theorem nfB_ordOfHydra : ∀ h : Hydra, nfB (ordOfHydra h) = true
+  | .node f => nfB_ordOfForest f
+
+theorem nfB_ordOfForest : ∀ f : Forest, nfB (ordOfForest f) = true
+  | .nil => nfB_zero
+  | .cons h f => nfB_insertExp (nfB_ordOfHydra h) _ (nfB_ordOfForest f)
+
+end
 
 /-- The assignment on codes — the value-level function the fragment's
 symbol will evaluate by in H4. -/

@@ -896,5 +896,86 @@ theorem olt_omega_omegaOmega : OLt omegaCode (mkO omegaCode 0 0) :=
   olt_of nfB_omegaCode nfB_omegaOmegaCode
     (precB_mkO_exp _ _ _ _ precB_one_omegaCode)
 
+/-! ## Totality of the comparison on normal forms
+
+Phase C needed the order to be well-founded and irreflexive, never
+*total*: its descent always related two notations that were built to be
+related.  The Hydra layer needs totality — inserting an exponent into a
+normal form has to know that if it is neither equal to nor above the head,
+it is below it — so it is proved here.
+
+The induction is the same three-way shape as the comparison itself:
+compare head exponents, then coefficients, then remainders, with the
+recursive calls at `(oE a, oE b)` and `(oR a, oR b)`, both of which shrink
+the sum. -/
+
+theorem precB_trichotomy : ∀ (s a b : ℕ), a + b ≤ s → nfB a = true →
+    nfB b = true → a = b ∨ precB a b = true ∨ precB b a = true
+  | 0, a, b, h, _, _ => Or.inl (by omega)
+  | s + 1, a, b, h, hna, hnb => by
+    rcases decEm (a = 0) with ha | ha
+    · subst ha
+      rcases decEm (b = 0) with hb | hb
+      · exact Or.inl hb.symm
+      · exact Or.inr (Or.inl (precB_zero_left hb))
+    · rcases decEm (b = 0) with hb | hb
+      · subst hb
+        exact Or.inr (Or.inr (precB_zero_left ha))
+      · have hE : oE a + oE b ≤ s := by
+          have h1 := oE_lt ha
+          have h2 := oE_lt hb
+          omega
+        have hR : oR a + oR b ≤ s := by
+          have h1 := oR_lt ha
+          have h2 := oR_lt hb
+          omega
+        have hA : mkO (oE a) (oC a) (oR a) = a := mkO_oE_oC_oR ha
+        have hB : mkO (oE b) (oC b) (oR b) = b := mkO_oE_oC_oR hb
+        rcases precB_trichotomy s (oE a) (oE b) hE (nfB_exp ha hna)
+            (nfB_exp hb hnb) with he | he | he
+        · -- equal head exponents: compare coefficients
+          rcases decEm (oC a < oC b) with hc | hc
+          · refine Or.inr (Or.inl ?_)
+            rw [← hA, ← hB, he]
+            exact precB_mkO_coeff _ _ _ hc
+          · rcases decEm (oC b < oC a) with hc' | hc'
+            · refine Or.inr (Or.inr ?_)
+              rw [← hA, ← hB, he]
+              exact precB_mkO_coeff _ _ _ hc'
+            · -- equal coefficients: compare remainders
+              have hceq : oC a = oC b := by omega
+              rcases precB_trichotomy s (oR a) (oR b) hR (nfB_rem ha hna)
+                  (nfB_rem hb hnb) with hr | hr | hr
+              · refine Or.inl ?_
+                rw [← hA, ← hB, he, hceq, hr]
+              · refine Or.inr (Or.inl ?_)
+                rw [← hA, ← hB, he, hceq]
+                exact precB_mkO_rem _ _ hr
+              · refine Or.inr (Or.inr ?_)
+                rw [← hA, ← hB, he, hceq]
+                exact precB_mkO_rem _ _ hr
+        · refine Or.inr (Or.inl ?_)
+          rw [← hA, ← hB]
+          exact precB_mkO_exp _ _ _ _ he
+        · refine Or.inr (Or.inr ?_)
+          rw [← hA, ← hB]
+          exact precB_mkO_exp _ _ _ _ he
+
+/-- Totality, at the adequate bound. -/
+theorem precB_total {a b : ℕ} (hna : nfB a = true) (hnb : nfB b = true) :
+    a = b ∨ precB a b = true ∨ precB b a = true :=
+  precB_trichotomy (a + b) a b (Nat.le_refl _) hna hnb
+
+/-- The form the Hydra layer's insertion needs: not equal and not above
+means below. -/
+theorem precB_of_ne_of_not_precB {a b : ℕ} (hna : nfB a = true)
+    (hnb : nfB b = true) (hne : a ≠ b) (h : precB b a = false) :
+    precB a b = true := by
+  rcases precB_total hna hnb with he | hab | hba
+  · exact absurd he hne
+  · exact hab
+  · rw [h] at hba
+    exact absurd hba (by simp)
+
 end Realizability
 

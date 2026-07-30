@@ -1569,7 +1569,33 @@ first step is the one where the **tree grows** — one child with one head
 becomes two heads — and it is exactly there that `ω` drops to `2`.  The
 node count went up; the measure came down.
 
-### A missing lemma discovered while attempting normality
+### H3 chain, steps 1–3: DONE
+
+* **1. Totality of `≺` on normal forms** (`precB_trichotomy`,
+  `precB_total`, and the form insertion needs,
+  `precB_of_ne_of_not_precB`).  Phase C proved the order well-founded and
+  irreflexive but never *total* — its descent always related notations
+  built to be related.  The Hydra layer needs totality, and the proof is
+  the same three-way induction as the comparison itself: head exponents,
+  then coefficients, then remainders, the recursive calls shrinking the
+  sum.
+* **2. `nfB_insertExp` — insertion preserves normal form.**  Three cases
+  are the normal-form destructors read back; the fourth, recursing into
+  the remainder, is exactly where totality is consumed: an exponent
+  neither equal to nor above the head must sit below it, which is what
+  keeps the new remainder under the old head.  `oE_insertExp` and
+  `insertExp_ne_zero` are the two small facts it needs.
+* **3. `nfB_ordOfHydra` / `nfB_ordOfForest` — the assignment lands in
+  normal form**, by mutual induction over the tree.  This is the
+  precondition for *any* descent statement, since `OLt` requires
+  normality on both sides.
+
+Remaining: monotonicity of `insertExp`, the inequality
+`ω^a·(m+1) ≺ ω^b` for `a ≺ b` (what makes arbitrarily many copies
+harmless), and then the general descent by induction over `cutH`'s
+recursion.
+
+### The original note, superseded by step 1 above
 
 Worth recording because it would otherwise be found mid-proof.  Before
 any *general* descent theorem can even be stated, the assignment must be
