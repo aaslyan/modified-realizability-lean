@@ -3308,8 +3308,25 @@ Regression: 708 jobs green, zero `sorry`.
 ## Refinement targets (the consolidation phase's agenda)
 
 New-content work pauses after Sperner (the last new theorem); the next
-phase is refinement.  Grounded targets noticed while building E2/S1, to be
-worked from real uses rather than speculation:
+phase is refinement.
+
+**Done in refinement so far:**
+- **Layered directory reorg** — the flat `Realizability/*.lean` (38 files) is
+  now `Ordinals/` · `Signature/` (value layers) · `Core/` (the engine) ·
+  `Common/` (shared lemmas) · `Theorems/<name>/`; imports follow the path.
+  Pure `git mv` + import rewrites, build green.
+- **Dependency made visible** — `ContinuousFunctionals` is now required via
+  an in-tree symlink `Realizability/Core/ContinuousFunctionals` →
+  `../kleene-kreisel-lean` (single pointer to maintain).  **Still interim**:
+  this does not make the build self-contained (a clone still needs the
+  sibling).  The real fix — pin it as a git dependency
+  (`from git "…/kleene-kreisel-lean" @ rev`) — is **deferred by user
+  decision** (co-development convenience vs. reproducibility); revisit when
+  that settles.  Do **not** vendor the parent in — it is the canonical work
+  this repo is a companion to, and is still being developed.
+
+**Remaining targets** noticed while building E2/S1, to be worked from real
+uses rather than speculation:
 
 - **The operation-library idea** (the conservative-definitional-extension
   route): package `monus`/difference handling as a *defined relation* with
