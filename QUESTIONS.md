@@ -174,6 +174,47 @@ chosen.)*
    as a symbol with its four defining equations — which is a phase of its
    own, not a refactor.
 
+18. **Phase S1 Sperner: arbitrary `ℕ` colors, and a two-ambient
+   extraction.**  *Raised and resolved 2026-07-31 while building 1D
+   Sperner.*  Two choices, both recorded:
+   (a) **Arbitrary `ℕ`-valued colorings, not `{0,1}`.**  The brief framed
+   the coloring as `{0,1}`, but the crossing argument never uses binariness
+   — "endpoints differ ⇒ some adjacent pair differs" holds for any
+   `ℕ`-coloring, and `≠` (the negated equation) needs no binary test.  So
+   the delivered theorem is the general discrete IVT; binary Sperner is the
+   special case.  This also *avoided* forcing colors binary (which would
+   have needed either an extra `∀j. c j ∈ {0,1}` hypothesis — more `app₁`
+   depth — or a normalizing `lookN`).  Using `xor(c k)(c(k+1)) = 1` (an
+   equation, reusing the Pascal symbol) was considered and rejected: it
+   only means "differ" for binary colors, so it would have *required* the
+   restriction it was meant to save.
+   (b) **The extract is read at two ambients.**  `spernerWitness_spec` is
+   certified at `derivBound = 11` (soundness), but the ambient-11 pure-type
+   realizer overflows the interpreter stack (the `gcd` wall).  The witness
+   numeral is ambient-independent, so the *runnable demonstration*
+   (`spernerScan`) reads the same derivation at ambient 5 — checked under
+   `lean --run` to agree with ambient 11 wherever both terminate.  The
+   agreement is *checked*, not *proved* (proving ambient-independence of a
+   realizer's witness component is out of scope); flagged as such.  A
+   cleaner single-ambient run would need `derivBound ≤ ~5`, which the
+   essential `impI`/`ind`/`allI` nesting (`+1` each) rules out.
+
+17. **Phase E2 gcd: the positivity precondition, dropped.**  *Raised and
+   resolved 2026-07-31 during the gcd existence proof.*  The roadmap
+   handoff stated the theorem as `∀a∀b. (a>0 ∨ b>0) → ∃g. spec`.  While
+   building it I found the precondition is **unnecessary**: `spec(0,0,0)`
+   holds — `0∣0`, and `∀d. d∣0→d∣0→d∣0` is trivial because everything
+   divides `0` — so `gcd(0,0)=0` (the standard convention, `Nat.gcd 0 0 =
+   0`) realizes the predicate at the origin.  The delivered `gcdTheorem`
+   is therefore the strictly stronger `∀a∀b. ∃g. spec`, and dropping the
+   precondition is *simpler* throughout (the `a=0` base returns `g:=b`
+   unconditionally; the recursion never re-establishes a precondition; the
+   extract takes `(a,b)` not `(a,b,precond-realizer)`).  **Chosen: no
+   precondition.**  A precondition-carrying variant, if ever wanted, is a
+   four-line `impI`-that-ignores wrapper over `gcdTheorem`.  Flagged here
+   per the "record design forks" discipline; the user may still prefer the
+   documented form.
+
 12. **The extracted program is correct but not efficient.**  *Diagnosed
    2026-07-29 in Phase D4; the authorized memoization fix was built,
    proved and measured in Phase D6 (2026-07-30) and **does not help** —

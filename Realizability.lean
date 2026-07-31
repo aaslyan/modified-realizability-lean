@@ -35,3 +35,10 @@ import Realizability.PascalTheorem
 import Realizability.PascalExtraction
 import Realizability.Lucas
 import Realizability.PascalBinary
+import Realizability.StrongInduction
+import Realizability.Euclid
+import Realizability.GcdTheorem
+import Realizability.GcdExtraction
+import Realizability.Coloring
+import Realizability.SpernerTheorem
+import Realizability.SpernerExtraction

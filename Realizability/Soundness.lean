@@ -884,5 +884,24 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
           = pasN (Term.eval ρ t₁) (Term.eval ρ t₂)
         rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
           (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+  | lookNum a b =>
+    intro ρ env henv n hn
+    show lookN ((numeral a).eval ρ) ((numeral b).eval ρ)
+      = (numeral (lookN a b)).eval ρ
+    rw [numeral_eval, numeral_eval, numeral_eval]
+  | eqCongLook s₁ t₁ s₂ t₂ =>
+    intro ρ env henv n hn
+    have hb : (2 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      cases m with
+      | zero => omega
+      | succ m' =>
+        intro x hx y hy
+        show lookN (Term.eval ρ s₁) (Term.eval ρ s₂)
+          = lookN (Term.eval ρ t₁) (Term.eval ρ t₂)
+        rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
+          (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
 
 end Realizability

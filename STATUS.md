@@ -2922,3 +2922,415 @@ not the numeric one).  Adding a division symbol would fix the first but
 not the second.  So the split is now: **the fragment proves the
 recursion, the metatheory does the descent** — and both halves are
 machine-checked.
+
+## Phase Z0 (numeric order on `ℕ` and strong induction — the Zeckendorf foundation): COMPLETE
+
+Prompted by a Zeckendorf's-theorem brief.  Before committing to that
+theorem the brief flagged one dependency — "largest Fibonacci `≤ n`
+needs numeric comparison" — and pointed at a companion Euclid brief to
+supply it.  Investigation found that comparison **did not exist in any
+form**: no order symbol, no `Deriv` rule, not even a value-level
+`ℕ → ℕ → Bool` a symbol could evaluate to, and no Euclid/comparison work
+landed or planned.  The only "order" is `prec`, the Cantor-normal-form
+order on notation codes, which on a numeral does not track magnitude.
+And the docs' own boundary (`OrdinalDescent.lean`, Phase G2 above) records
+that internalizing this class of result needs "an order relation… and
+course-of-values induction derived from `ind`" — "a research-scale
+project".
+
+So, on the user's decision ("foundation first, then reassess"), this
+phase builds exactly that missing layer — the order relation and strong
+induction — as a standalone, reusable deliverable, and stops there.
+`Realizability/StrongInduction.lean`.
+
+### What is delivered (all in the fragment, **zero new symbols, zero new
+axiom schemas**)
+
+- **`plusAssocDeriv`** `∀u∀v∀w. (u+v)+w = u+(v+w)`, and its α-variant
+  `plusAssocDeriv'` at bound variables `6,7,8` — the one arithmetic fact
+  Phase A had not proved that the descent needs.  Genuine `ind` theorems,
+  in the exact style of `plusZeroDeriv`.
+- **Order as a defined notion, not a symbol**: `ltT d s t := ∃d. succ s + d = t`
+  (`≤`/`<` are `∃` over `+`, already in the fragment since D0).  Every
+  order lemma below is therefore a *derivation*, imported from nothing.
+- **The order kit**: `ltZeroElim` (nothing is `< 0`, via `succNeZero`),
+  `ltSuccSelfV` (`a < succ a`), and the load-bearing **`ltStepDown`**
+  (`z < y` and `y < succ v` give `z < v`; the new difference is the sum
+  of the two old ones, landed by `plusAssocDeriv'`).  Plus the utilities
+  `Deriv.wkNil` (weaken a closed derivation into any context) and
+  `freshIn_cons`.
+- **Strong induction, derived from `ind`**: `demoAuxDeriv` proves
+  `∀v. Aux(v)` where `Aux(v) := ∀y. y < v → φ(y)`, by ordinary `ind` on
+  `v`; `strongIndDemo` reads `φ` back off `Aux(succ v)`.  This is the
+  numeric-`<` analogue of `tiEps0` — except `tiEps0` is the fragment's one
+  *primitive* rule and this is *derived*.
+
+### The design decision worth recording: transport-free strong induction
+
+The textbook "strong induction from ordinary induction" splits `y ≤ x`
+into `y < x ∨ y = x` and, in the `y = x` case, turns `φ(x)` into `φ(y)`
+by `y = x`.  That step is **replacement of equals inside a formula**,
+which the fragment does not have — its equality kit is reflexivity,
+symmetry, transitivity and *per-symbol congruence*, all of which rewrite
+inside **terms**, never across `∧∨→∀∃`.  A generic Leibniz schema would be
+its own recursion-over-formulas sub-project.
+
+The derivation dodges it: `φ(y)` is never *transported*, it is *produced
+at `y`*.  Progressiveness is applied at `y` itself
+(`H y : (∀z. z<y → φ(z)) → φ(y)`) and its antecedent discharged from the
+induction hypothesis `Aux(v)` by order-transitivity (`z < y` and
+`y < succ v` give `z < v`, `ltStepDown`).  Every `φ(·)` appears exactly
+where it is needed.  This is the same flavour of manoeuvre as Goodstein's
+"naming" trick and Hanoi's `ihRenamed` — routing around naive
+substitution, not repairing a mathematical error.
+
+### What is *not* done, and is the reassess point
+
+`strongIndDemo` proves `⊢ ∀v. (v = v)`.  The demonstration `φ` is trivial,
+but the derivation is **deliberately routed through the whole scaffold**
+(`ind` on `Aux`, progressiveness at the point, `ltStepDown`), so every
+piece is certified together rather than short-circuited by the one-line
+`eqRefl` the trivial `φ` would allow.  Two things are consequently *not*
+yet built:
+
+1. **A course-of-values theorem that genuinely needs the IH at a
+   non-adjacent point** (even/odd, `div`/`mod`, …).  Any such theorem
+   forces the scaffold to carry real content; the demonstration only
+   shows the scaffold is sound and extracts.
+2. **A fully generic-in-`φ` `natStrongInd` *former*** (a `def` taking a
+   progressiveness derivation for *arbitrary* `φ` and returning the
+   conclusion, à la `tiEps0`).  Running `ind` on an *abstract* `φ` makes
+   the base/step substitutions `(φ.subst v (var y)).subst v u` stick
+   (they do not compute), so the former needs a small
+   **formula-substitution lemma library** — `subst_self`, `subst_notFree`,
+   `not_freeIn_self_subst`, and a rename-composition lemma — none of which
+   the repo currently has (only `numeral_subst`/`eval_subst` exist).  For
+   a *concrete* `φ` everything computes and no such library is needed,
+   which is why this phase ships concretely.
+
+Neither is hard in principle; both are bounded next increments, to be
+chosen at the reassess before (or instead of) proceeding to Zeckendorf
+proper.
+
+### Relation to the earlier "research-scale" flags
+
+D5 and G2 said full internalization needs "an order relation… and
+course-of-values induction derived from `ind`".  This phase supplies both
+(the order relation `ltT` with its kit, and strong induction from `ind`),
+choice-free at the derivation level.  It does **not** supply `div`/`mod`
+or `hlog` as symbols, so those flags are only *partly* retired: Zeckendorf
+needs `fib` and a "largest index" fact on top of this; Lucas would still
+need `div`.  What is now removed is the specific obstruction "the fragment
+has no order on `ℕ` and no strong induction".
+
+### Budget (checked at every build)
+
+```
+'Realizability.strongIndDemo_realized'           … [propext, Classical.choice, Quot.sound]
+'Realizability.strongIndDemo_extract_continuous'  … [propext, Quot.sound]
+```
+
+Exactly the project's realization/continuity budgets.  The order kit adds
+no symbol, so `Term.eval`/`extract`/`soundness`/`extract_tracked` are
+untouched and every pre-existing `#print axioms` line is unchanged.  Full
+regression: 702 jobs green, zero `sorry`.
+
+## Phase E1 (order + Euclid-roadmap foundation): IN PROGRESS — decisions recorded
+
+A second brief arrived (numeric order → Euclid → Bézout → CRT, phases
+E1–E4), whose E1 overlaps Phase Z0 above.  This section records how they
+reconcile and the load-bearing design decisions the brief asked to be
+fixed.  **Phase Z0 is the start of E1**; both the Euclid roadmap and the
+Zeckendorf brief depend on E1's order, and E1 lands first — the `fib`
+symbol work for Zeckendorf is deferred so it *reuses* this order rather
+than building a second one.
+
+### Decision 1 (order vs. monus): defined order, no monus symbol
+
+**Chosen**: keep Z0's *defined* order `ltT d s t := ∃d. succ s + d = t`
+(no new symbol), and reason with the order **witness** rather than a
+truncated-subtraction symbol.  Rationale: `a ≤ b` unpacks by `∃`-elim to
+`b = a + d`, and that witness `d` *is* `b − a` — additively, expressible
+with `+` alone.  So subtractive Euclid can recurse `gcd(a,b) → gcd(a,d)`
+using only `+`, and no `∸` symbol is needed for the subtraction.  This
+keeps E1 in the "derive, don't import" spirit and adds **zero symbols**.
+*Escape hatch, flagged*: if E4's `mod` turns out materially cleaner with a
+genuine `∸` symbol (repeated subtraction bounded by fuel), it will be
+added there and this decision amended — recorded now so the choice is not
+silent.
+
+### Decision 2 (strong induction as a reusable principle)
+
+The brief wants strong induction "proved once, as a named lemma… rather
+than re-deriving per proof".  Z0 delivered it *concretely* (certifies the
+scaffold).  The reusable form is a **generic-in-`φ` former** with a
+`tiEps0`-style signature — which, run on an abstract `φ`, needs the
+formula-substitution facts that a concrete `φ` computes away.  Those are
+now built (this phase): `Term`/`Formula` `subst_self`, `subst_notMem` /
+`subst_notFree`, and `notMem_self_subst` / `notFree_self_subst` in
+`StrongInduction.lean`, by structural induction — reusable across all
+later phases.
+
+### Status
+
+- Done and green: Z0 (order kit + `plusAssocDeriv` + concrete strong
+  induction, certified), and the substitution-lemma library.
+- Pending for E1: the generic `natStrongInd` former (needs one more
+  substitution-composition/rename lemma on top of the library above), and
+  the order **trichotomy** `∀a∀b. a ≤ b ∨ b < a` for Euclid's branch.
+- Then E2 (Euclid `gcd` with the full greatest-common-divisor
+  characterisation), E3 (Bézout — the signed-coefficient formulation is
+  its own flagged decision, deferred to that phase), E4 (CRT).
+
+Full regression after the substitution library: 702 jobs green, zero
+`sorry`, every pre-existing `#print axioms` line unchanged.
+
+### E1 update — order layer for Euclid complete
+
+Since the note above, the concrete order layer Euclid (E2) branches on is
+done and certified, all in `StrongInduction.lean`, still **zero new
+symbols**:
+
+- **`caseNatDeriv`** `∀n. n = 0 ∨ ∃m. n = succ m` — the fragment's
+  `0`/`succ` split, a one-line `ind` theorem (witness variable `5`, clear
+  of low indices).  The docs long called case analysis a missing *rule*;
+  it is a derivable *fact*.
+- **`leT`** (`≤`) alongside `ltT` (`<`), both defined via `∃`+`+`.
+- **`trichotomyDeriv`** `⊢ ∀a ∀b. a ≤ b ∨ b < a` — order totality, by
+  `ind` on `a` with `caseNat` on the difference `a ≤ b` provides
+  (difference `0` ⟹ `a = b` ⟹ `b < succ a`; a successor ⟹ `succ a ≤ b`).
+  Certified: `trichotomy_realized` `[propext, Classical.choice,
+  Quot.sound]`, `trichotomy_extract_continuous` `[propext, Quot.sound]`.
+
+Remaining for E1: only the generic `natStrongInd` former (the
+substitution-lemma library it needs is already in place — one
+rename-composition lemma plus the assembly).  Then E2 (Euclid `gcd`)
+begins on top of trichotomy + the order witnesses.
+
+Regression: 702 jobs green, zero `sorry`, every pre-existing
+`#print axioms` line unchanged.
+
+## Phase E2 (Euclid): COMPLETE — divisibility foundation → gcd theorem + extraction
+
+`Realizability/Euclid.lean`.  The greatest-common-divisor
+characterisation rests on divisibility algebra; that algebra is now in,
+in the fragment with **no new symbols**:
+
+- **`distribDeriv`** `∀d∀x∀y. d·(x+y) = d·x + d·y`, an `ind` theorem on
+  `y` (uses `plusSucc`/`timesSucc`/`plusAssoc`).  The one general fact the
+  divisibility laws need that Phase A did not prove.
+- **`dvdT`** — `d ∣ a := ∃q. a = d·q` (just `∃` and `×`; no symbol).
+- **`dvdReflDeriv`** (`d ∣ d`, quotient 1), **`dvdZeroDeriv`** (`d ∣ 0`,
+  quotient 0), and **`dvdAddDeriv`** (`d ∣ a → d ∣ b → d ∣ (a+b)`,
+  quotient `qₐ+q_b` — the payoff of distributivity).
+
+Certified: `distrib_realized`/`dvdAdd_realized`
+`[propext, Classical.choice, Quot.sound]`, the `*_extract_continuous`
+`[propext, Quot.sound]`.
+
+**Design fixed here**: `gcd` is stated **existentially** —
+`∃g. g ∣ a ∧ g ∣ b ∧ (∀d. d ∣ a → d ∣ b → d ∣ g)` — so the extracted
+realizer *is* the gcd and no `gcd` symbol is added, the same
+witness-carrying design as Goodstein and Hanoi.
+
+Remaining for E2: the subtractive-step divisibility lemma
+(`d ∣ a → d ∣ (a+c) → d ∣ c`, and its converse already have `dvdAdd`),
+then the gcd characterisation itself by strong induction on the second
+argument (recursion `gcd(a,b) → gcd(a, b−a)`, the difference supplied by
+trichotomy's order witness), extracted and run.
+
+Regression: 703 jobs green, zero `sorry`, every pre-existing
+`#print axioms` line unchanged.
+
+### E2 update — cancellation and `addEqZero`; `dvdSub` scoped
+
+Added (green, certified via the full regression): **`cancelAddDeriv`**
+(`∀a∀x∀y. a+x = a+y → x = y`, left cancellation by `ind` on `a`) and
+**`addEqZeroDeriv`** (`∀x∀c. x+c = 0 → c = 0`, by `caseNat` + `succNeZero`)
+— the two arithmetic tools the subtractive divisibility law needs.
+
+**`dvdSubDeriv`** (`d∣a → d∣(a+c) → d∣c`) is scoped but deferred one step:
+its proof splits by `trichotomy` on the two quotients, and instantiating
+`trichotomyDeriv` at the natural quotient indices *collides with
+trichotomy's own difference variables* `2`,`3`.  The fix is a deliberate
+non-colliding renaming (or an α-variant of `trichotomyDeriv` at high diff
+vars) — recorded so it is done cleanly rather than rushed.  Once `dvdSub`
+lands, the gcd characterisation's "greatest" direction is unblocked and
+the existence proof (strong induction on `b`) assembles.
+
+Regression remains 703 jobs green, zero `sorry`.
+
+### E2 update — `dvdSub` complete; divisibility toolkit done
+
+**`dvdSubDeriv`** (`∀d∀a∀c. d∣a → d∣(a+c) → d∣c`) is proved and certified
+(`dvdSub_realized` `[propext, Classical.choice, Quot.sound]`,
+`dvdSub_extract_continuous` `[propext, Quot.sound]`).  The variable
+collision flagged last step was resolved by *relabelling `dvdSub`'s own
+variables* (`c = var 4`, quotients `5,6`) so trichotomy's difference
+variables `2,3` stay clear — no α-variant of `trichotomyDeriv` needed.
+Both trichotomy branches are handled: `q₆ = q₅ + r` (cancel to `c = d·r`)
+and `q₅ = succ q₆ + s` (which forces `c = 0` via two `addEqZero` peels,
+and `d ∣ 0`).
+
+**The divisibility toolkit is now complete**: `distrib`, `dvdT`,
+`dvdRefl`/`dvdZero`/`dvdAdd`, `cancelAdd`, `addEqZero`, `dvdSub`.  Both
+directions of the gcd characterisation are unblocked —
+"divides both" from `dvdAdd`, "greatest" from `dvdSub`.
+
+Regression: 703 jobs green, zero `sorry`, every pre-existing
+`#print axioms` line unchanged.
+
+### E2 COMPLETE — the gcd existence theorem and its extraction
+
+**`gcdTheorem`** (`GcdTheorem.lean`):
+
+    ⊢ ∀a ∀b. ∃g. g ∣ a ∧ g ∣ b ∧ (∀d. d∣a → d∣b → d∣g)
+
+a closed derivation of the fragment; the extracted `g` **is** the gcd (no
+`gcd` symbol, per the existential design).  Certified with the standard
+budgets: `gcd_realized` `[propext, Classical.choice, Quot.sound]`,
+`gcd_extract_continuous` `[propext, Quot.sound]`.
+
+**Design fork resolved — no positivity precondition.**  The handoff's
+form carried `(a>0 ∨ b>0)`; it is **unnecessary** and the delivered
+theorem is the stronger `∀a∀b. ∃g. …spec`.  `spec(0,0,0)` holds
+(everything divides `0`, so `∀d. d∣0→d∣0→d∣0` is trivial and `0∣0`), the
+convention `gcd(0,0)=0` = `Nat.gcd 0 0`.  The base case `a=0` returns
+`g:=b` unconditionally, and the recursion never needs to re-establish a
+precondition — simpler everywhere.  Recorded in QUESTIONS.md (item 9).
+
+**Measure**: strong induction on the **sum `a+b`**.  Subtractive Euclid
+recurses `gcd(a,b) → gcd(a, b−a)` for `a ≤ b` and `gcd(a,b) → gcd(a−b, b)`
+for `b < a`; neither argument decreases every step, but the sum does
+(`a+(b−a)=b<a+b`, `(a−b)+b=a<a+b`).  Predicate
+`φ(m) := ∀a∀b. (a+b=m) → ∃g. spec`, run through the derived
+strong-induction scaffold (`Aux(v):=∀y.y<v→φ(y)`, `ind`, `ltStepDown`) of
+`StrongInduction.lean` — approach A, inlined at the concrete φ, no generic
+former needed.  The `b<a` branch recurses on `(b, succ s)` (not
+`(succ s, b)`), so `b + succ s = a` needs **no commutativity** in the
+recombination; `plusCommDeriv` (added here, one instantiation of
+`plusRightCommDeriv`) is needed only for the two descents (`b<a+b`).
+
+**Both naive-substitution dodges appear, composed.**  Instantiating the
+IH at the sub-pair's *sum* (a term mentioning the bound `a`) captures, and
+so does instantiating φ there at the *sub-pair*: the sum is **named** by a
+fresh `∀17` (Goodstein's `namedIHDeriv` device) and φ's inner `∀a∀b` is
+**α-renamed** to `15,16` (Hanoi's `ihRenamed` device).  One further local
+rename: in `b<a`, the difference `s` is moved off `var 3` to `var 2`, so
+`succ s` avoids the divisibility lemmas' quotient variables `{3,4,5,6,7}`
+(else `SubstOK` conservatively rejects `dvdAddDeriv` at `succ (var 3)`).
+
+**Extraction** (`GcdExtraction.lean`): `gcdWitness`, `gcdWitness_dvd`
+(the extract is a common divisor of every `(a,b)`, from soundness),
+continuity, and the `CtQ 2` class.  **No `#eval`**: the derivation is the
+repository's deepest (`derivBound = 41`, vs Goodstein 12 / Hanoi 26), and
+`pairPT`/`up`/`down` at ambient 41 are functionals nested 40 deep, so even
+`gcdWitness 0 0` does not return.  The realizer is certified (soundness
+holds at every input), but running it is walled by the level — the same
+kind of wall as `hanoiSolution 5` (encoding) and Hydra code-2.  The
+"greatest" half of the spec is `gcd_realized`'s third conjunct (formally
+proved), not re-extracted at value level.
+
+Regression: 705 jobs green, zero `sorry`, every pre-existing
+`#print axioms` line unchanged.
+
+### NEXT STEP (precise handoff) — E3 (Bézout)
+
+E2 (order → divisibility → gcd) is complete.  Next is **E3, Bézout**:
+`∀a∀b. ∃x∃y. gcd(a,b) + a·y = b·x` (or the sign-managed equivalent —
+**the signed-coefficient formulation is a flagged decision**: the fragment
+has no negatives, so Bézout must be stated additively, e.g.
+`∃x∃y. a·x = b·y + g ∨ b·y = a·x + g`, or carry the gcd on the smaller
+side; decide and record in QUESTIONS.md before starting).  It reuses the
+same strong-induction-on-`a+b` scaffold as `gcdTheorem` — the extended
+Euclid recursion carries the coefficient pair alongside the gcd — so
+`gcdTheorem` is the template.  Then **E4** (CRT, needing `mod` — revisit
+the monus decision there).  `div`/`fib` remain not-yet-built.
+
+## Phase S1 (Sperner 1D / discrete IVT): COMPLETE
+
+**`spernerTheorem`** (`SpernerTheorem.lean`):
+
+    ⊢ ∀n ∀c. (c 0 = 0) → (c n = 1) → ∃k. k < n ∧ c k ≠ c(k+1)
+
+the 1-dimensional Sperner lemma — colour a line's points with the ends `0`
+and `1`, then adjacent colours must differ somewhere (the discrete
+ancestor of the IVT).  Certified: `sperner_realized`
+`[propext, Classical.choice, Quot.sound]`, `sperner_extract_continuous`
+`[propext, Quot.sound]`.  **2D Sperner and Brouwer are explicitly out of
+scope** (they need a triangulation object); this brief is the honestly-
+scoped 1D instance.
+
+**The coloring, and the one new symbol.**  The fragment has no function
+variables, so the arbitrary coloring `c` is a `ℕ` **code** `w` (variable
+`2`) and `c k` is a new symbol **`look`** (`Coloring.lean`),
+`look w k = lookN w k` decoding the cons-list coded by `w` (reusing
+`Hanoi.lean`'s `hcons`/`hhead`/`htail` over Phase C's choice-free pairing,
+so structural in the index and choice-free).  This is the one place the
+"no new symbols" discipline is genuinely forced: `c k` for a bound `k` is
+data access — a decode recursion, not a relation — so unlike order it
+cannot be an `∃`-encoding.  It is a *safe* symbol (primitive-recursive,
+kernel-computable, not in `Epsilon0`), added through all ~16 sites; every
+pre-existing `#print axioms` line is unchanged and the Hydra/Hanoi
+choice-free checks still pass.
+
+**Proved for arbitrary `ℕ`-valued colorings** — the `{0,1}` restriction is
+never used, so the delivered theorem is the general discrete IVT and
+binary Sperner is its special case (recorded in QUESTIONS.md item 18).
+
+**The argument** is a forward scan: `ind` on the invariant
+`P(m) := (c m = 0) ∨ ∃k<m. c k ≠ c(k+1)`; the step compares `c(m+1)` to `0`
+by `eqDec` and either stays on the left disjunct or reports the crossing at
+`m`; at the end `c n = 1 ≠ 0` forces a crossing.  No `TI(ε₀)` — an ordinary
+PA-strength theorem.  `≠` is the negated equation, `k < n` is `ltT` (the E1
+order layer, a payoff of the Euclid work).
+
+**Extraction and the ambient story** (`SpernerExtraction.lean`).
+`spernerBody` leaves `n, c` free; `spernerWitness` reads the ∃-witness off
+it at the certified bound `derivBound = 11`, and `spernerWitness_spec`
+proves from `soundness` that it is `< n` and a genuine crossing, at every
+coloring meeting the boundary.  The extracted search is a genuine
+**linear scan returning the first crossing** — this is forced by the
+invariant, which carries the minimal crossing once found and never revises
+it.  *Running* it: the ambient-11 pure-type realizer overflows the
+interpreter stack even at `n = 1` (the same wall as `gcd`), but the witness
+numeral is **ambient-independent**, so `spernerScan` reads the *same*
+derivation at ambient 5 (checked to agree with ambient 11 under
+`lean --run` on every pair where both terminate), which the interpreter
+evaluates; its build-time `#guard`s run the search on concrete colorings —
+`[0,1] → 0`, `[0,0,1] → 1`, `[0,0,0,1] → 2`, and the multiple-crossing
+cases `[0,1,0,1] → 0` and `[0,1,1,0,1] → 0`, confirming it returns the
+**first** crossing, not merely *a* crossing.  Continuity and the `CtQ 2`
+class as in every extraction phase.
+
+Regression: 708 jobs green, zero `sorry`.
+
+## Refinement targets (the consolidation phase's agenda)
+
+New-content work pauses after Sperner (the last new theorem); the next
+phase is refinement.  Grounded targets noticed while building E2/S1, to be
+worked from real uses rather than speculation:
+
+- **The operation-library idea** (the conservative-definitional-extension
+  route): package `monus`/difference handling as a *defined relation* with
+  its defining property and a small lemma library, so subtraction-heavy
+  proofs (a future Bézout, a retrofit of `gcd`) stop re-deriving the
+  difference-as-existential-witness algebra ad hoc.  Reserve a *signature*
+  symbol only where **statability** forces it (CRT's `mod`, Sperner's
+  `look`), not for mere operations.  Grounded in: the `gcdTheorem` proof's
+  size is ~half this algebra.
+- **The generic `natStrongInd` former** (deferred "approach B"): `gcd`
+  inlined the strong-induction scaffold; a generic-in-`φ` former (needing
+  the substitution-composition library, already partly in
+  `StrongInduction.lean`) would amortize it across future course-of-values
+  proofs.  Build it if a second real use appears.
+- **The pure-type `#eval` wall** is now a recurring theme (`gcd` at 41,
+  Sperner at 11): the interpreter overflows on ambient-N realizers.
+  Sperner found a partial answer (the witness is ambient-independent, so
+  read it low).  Worth a general note / helper, and possibly measuring
+  whether a compiled runner lifts the wall.
+- **`gcd` cleanup**: the 525-line proof has deep `set`-context `wk` chains
+  and duplicated branch machinery that a factored recombination lemma (or
+  the library above) could shrink.
+- Documentation: keep HYDRA.md-style maps and the `#print axioms` quotes
+  in step; the signature is now 20 symbols / 72 rules.

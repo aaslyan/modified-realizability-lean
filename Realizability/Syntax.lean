@@ -51,6 +51,7 @@ import Realizability.OrdinalAssignment
 import Realizability.Hydra
 import Realizability.Hanoi
 import Realizability.Pascal
+import Realizability.Coloring
 
 namespace Realizability
 
@@ -81,6 +82,7 @@ inductive Term : Type where
   | solves : Term → Term → Term → Term → Term → Term
   | xor : Term → Term → Term
   | pas : Term → Term → Term
+  | look : Term → Term → Term
 deriving DecidableEq, Repr
 
 namespace Term
@@ -110,6 +112,7 @@ def eval (ρ : ℕ → ℕ) : Term → ℕ
       solvesN (n.eval ρ) (f.eval ρ) (t.eval ρ) (v.eval ρ) (k.eval ρ)
   | xor s t => xorN (s.eval ρ) (t.eval ρ)
   | pas s t => pasN (s.eval ρ) (t.eval ρ)
+  | look s t => lookN (s.eval ρ) (t.eval ρ)
 
 /-- The variables occurring in a term. -/
 def vars : Term → List ℕ
@@ -133,6 +136,7 @@ def vars : Term → List ℕ
   | solves n f t v k => n.vars ++ f.vars ++ t.vars ++ v.vars ++ k.vars
   | xor s t => s.vars ++ t.vars
   | pas s t => s.vars ++ t.vars
+  | look s t => s.vars ++ t.vars
 
 /-- Substitution of a term for a variable. -/
 def subst (x : ℕ) (u : Term) : Term → Term
@@ -157,6 +161,7 @@ def subst (x : ℕ) (u : Term) : Term → Term
       solves (subst x u n) (subst x u f) (subst x u t) (subst x u v) (subst x u k)
   | xor s t => xor (subst x u s) (subst x u t)
   | pas s t => pas (subst x u s) (subst x u t)
+  | look s t => look (subst x u s) (subst x u t)
 
 /-- Evaluation after substitution is evaluation in the updated
 environment. -/
@@ -190,6 +195,7 @@ theorem eval_subst (ρ : ℕ → ℕ) (x : ℕ) (u : Term) :
       simp [subst, eval, ihn, ihf, iht, ihv, ihk]
   | xor s t ihs iht => simp [subst, eval, ihs, iht]
   | pas s t ihs iht => simp [subst, eval, ihs, iht]
+  | look s t ihs iht => simp [subst, eval, ihs, iht]
 
 /-- Evaluation only depends on the values of the occurring variables. -/
 theorem eval_congr {ρ ρ' : ℕ → ℕ} :
@@ -272,6 +278,11 @@ theorem eval_congr {ρ ρ' : ℕ → ℕ} :
     rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
       iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
   | pas s t ihs iht =>
+    intro h
+    simp only [eval]
+    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+  | look s t ihs iht =>
     intro h
     simp only [eval]
     rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
@@ -665,6 +676,15 @@ inductive Deriv : List Formula → Formula → Type where
   | eqCongPas {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
       Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
         (eq (.pas s₁ s₂) (.pas t₁ t₂))))
+  -- Sperner (1D): the coloring lookup symbol.  A numeral graph (a lookup
+  -- is a cons-list decode — course-of-values through the encoding, not a
+  -- first-order equation schema, the same reason `bump`/`hcut` have one)
+  -- plus its congruence.
+  | lookNum {Γ : List Formula} (a b : ℕ) :
+      Deriv Γ (eq (.look (numeral a) (numeral b)) (numeral (lookN a b)))
+  | eqCongLook {Γ : List Formula} (s₁ t₁ s₂ t₂ : Term) :
+      Deriv Γ ((eq s₁ t₁).imp ((eq s₂ t₂).imp
+        (eq (.look s₁ s₂) (.look t₁ t₂))))
   | eqCongSolves {Γ : List Formula} (n₁ n₂ f₁ f₂ t₁ t₂ v₁ v₂ k₁ k₂ : Term) :
       Deriv Γ ((eq n₁ n₂).imp ((eq f₁ f₂).imp ((eq t₁ t₂).imp ((eq v₁ v₂).imp
         ((eq k₁ k₂).imp
