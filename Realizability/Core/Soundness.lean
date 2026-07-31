@@ -903,5 +903,29 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
           = lookN (Term.eval ρ t₁) (Term.eval ρ t₂)
         rw [(hx : Term.eval ρ s₁ = Term.eval ρ t₁),
           (hy : Term.eval ρ s₂ = Term.eval ρ t₂)]
+  -- Fibonacci: the three defining equations are `fibN`'s own recursion
+  -- (`fibN_succ_succ` is `rfl`), the congruence is unary like `eqCongPred`.
+  | fibZero =>
+    intro ρ env henv n hn
+    show fibN 0 = 0
+    rfl
+  | fibOne =>
+    intro ρ env henv n hn
+    show fibN (0 + 1) = 0 + 1
+    rfl
+  | fibSucc s =>
+    intro ρ env henv n hn
+    show fibN (Term.eval ρ s + 1 + 1)
+      = fibN (Term.eval ρ s) + fibN (Term.eval ρ s + 1)
+    rfl
+  | eqCongFib s t =>
+    intro ρ env henv n hn
+    have hb : (1 : ℕ) ≤ n := hn
+    cases n with
+    | zero => omega
+    | succ m =>
+      intro x hx
+      show fibN (Term.eval ρ s) = fibN (Term.eval ρ t)
+      rw [(hx : Term.eval ρ s = Term.eval ρ t)]
 
 end Realizability

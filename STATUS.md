@@ -3305,10 +3305,78 @@ class as in every extraction phase.
 
 Regression: 708 jobs green, zero `sorry`.
 
+## Phase Fib (Fibonacci — the paired-invariant on-ramp): COMPLETE
+
+**`fibPairedTheorem`** (`FibonacciTheorem.lean`):
+
+    ⊢ ∀n. (∃y. fib n = y) ∧ (∃z. fib (n+1) = z)
+
+the most recognizable recursive function, extracted from a constructive
+proof by the pipeline **unchanged** — meant to sit *before*
+Goodstein/Hydra in the narrative as the easy case that shows the
+mechanism working before anything ordinal-flavored appears.  Certified:
+`fib_realized` `[propext, Classical.choice, Quot.sound]`,
+`fib_extract_continuous` `[propext, Quot.sound]`, and — the check the
+brief demanded, traced not assumed — the extracted function itself,
+`#print axioms fibonacci` = `[propext, Quot.sound]`.
+
+**The design: a paired invariant proved by *ordinary* `ind`, not strong
+induction.**  `fib (n+2)` needs both `fib (n+1)` and `fib n` (the
+course-of-values snag); it is dodged by carrying the pair.  The step from
+`(y, z)` with `fib n = y`, `fib (n+1) = z` witnesses `(z, y+z)`:
+`fib (n+1) = z` is the old hypothesis and `fib (n+2) = y+z` is `fibSucc`
+rewritten by the two hypotheses — the shift *is* the step, and the
+extracted realizer is exactly that iteration, computing `fib` by `+`
+alone.  `lvl = 1` (checked by `fib_lvl : lvl … = 1 := rfl`), the same as
+every headline theorem, so `PureType 2` / `CtQ 2` as usual.
+
+**Why the ∧-of-∃'s shape, not nested `∃y ∃z`.**  Both are `lvl 0`, but
+with `∃y ∃z (A ∧ B)` the step's outer `exI` supplies `z`, which is the
+*inner* binder's variable, so naive substitution captures it (the
+Goodstein/Hanoi renaming dance).  Written `(∃y. A) ∧ (∃z. B)` each
+existential body is atomic, so the witnesses drop into binder-free
+formulas and nothing captures — no renaming needed.  The brief flagged
+`lvl 1` as the correctness signal for the formula shape; it comes out
+`lvl 1` on the nose.
+
+**The encoding: `fib` as a value symbol** (Option 1 of the brief), the
+same category as Hanoi's `solves` or Pascal's `pas` — a genuinely
+recursively-defined value, not an order/divisibility-style `∃`-relation.
+Added through all ~16 sites; value function `fibN` via a *structural*
+paired recursion `fibPair : (a,b) ↦ (b, a+b)` (`Signature/Fibonacci.lean`),
+so it reduces in the kernel (`fibN 10 = 55` by `rfl`) and `fibSucc`
+(`fib (n+2) = fib n + fib (n+1)`) is `rfl`-sound.  Choice-free, like every
+`Term.eval` symbol; every pre-existing `#print axioms` line is unchanged.
+
+**Extraction and the evaluation wall** (`FibonacciExtraction.lean`).
+`derivBound = 5`; `fibonacci` reads the first existential's witness off the
+realizer, and `fibonacci_spec : fibonacci n = fibN n` proves from
+`soundness` that it computes the `n`-th Fibonacci number at **every** `n`.
+Reading *both* witnesses (`fibonacci`, `fibNext`) yields the iterative
+loop's exact pair-state — `fib_pair_spec : (fibonacci n, fibNext n) =
+(fibN n, fibN (n+1))` certifies it, and the build-checked `#guard` runs it:
+`(0,1) → (1,1) → (1,2) → (2,3)`, the `(a,b) ↦ (b,a+b)` iteration falling out
+of a proof that never mentions a loop (the extraction made visible).
+Because it is `ind`-based (not `tiEps0`), it *runs* — but its cost is
+**exponential in `n`** (≈ ×4/step: the step forces the accumulated pair
+without sharing, the D4/D6 wall memoization was measured not to fix).  So
+the extract is `#guard`ed at the small `n` it reaches (`0…3`), and the
+headline `fibonacci 10 = 55` is the **certified** `fibonacci_ten` —
+`fibonacci_spec` rewrites it to the kernel-checked `fibN 10 = 55` — proved,
+not evaluated, exactly as Goodstein's `m = 4` and gcd are certified-not-run.
+
+**Side effect: this unblocks Zeckendorf**, which STATUS flagged as needing
+`fib` and a "largest index" fact on top of Z0.  Zeckendorf itself is *not*
+in scope for this phase — this leaves `fib` in the state its brief needs.
+
+Regression: 711 jobs green, zero `sorry`.
+
 ## Refinement targets (the consolidation phase's agenda)
 
-New-content work pauses after Sperner (the last new theorem); the next
-phase is refinement.
+New-content work pauses after Sperner (the last *headline* theorem); the
+Fibonacci on-ramp above is the one deliberate addition of the
+consolidation period — a pedagogical easy case, and the `fib` prerequisite
+Zeckendorf needs.  The next phase is refinement.
 
 **Done in refinement so far:**
 - **Layered directory reorg** — the flat `Realizability/*.lean` (38 files) is
@@ -3350,4 +3418,5 @@ uses rather than speculation:
   and duplicated branch machinery that a factored recombination lemma (or
   the library above) could shrink.
 - Documentation: keep HYDRA.md-style maps and the `#print axioms` quotes
-  in step; the signature is now 20 symbols / 72 rules.
+  in step; the signature is now 21 symbols / 76 rules (Fibonacci's `fib`
+  and its four schemas `fibZero`/`fibOne`/`fibSucc`/`eqCongFib`).

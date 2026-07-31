@@ -494,6 +494,7 @@ theorem termEval_continuous {R : (ℕ → ℕ) → ℕ → ℕ} (hR : TrackedEnv
       (termEval_continuous hR s) (termEval_continuous hR t)
   | .look s t => continuous2_comp₂ lookN
       (termEval_continuous hR s) (termEval_continuous hR t)
+  | .fib t => continuous2_comp₁ fibN (termEval_continuous hR t)
   | .solves n f t v k => continuous2_comp₅ solvesN
       (termEval_continuous hR n) (termEval_continuous hR f)
       (termEval_continuous hR t) (termEval_continuous hR v)
@@ -955,6 +956,14 @@ theorem axiomC_lookNum_tracked : TrackedFam fun _ => axiomC := defaultFam_tracke
 
 theorem axiomC_eqCongLook_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
 
+theorem axiomC_fibZero_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_fibOne_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_fibSucc_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
+theorem axiomC_eqCongFib_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
+
 /-- `axiomC` preserves tracking, the Phase-E2 Hanoi instances. -/
 theorem axiomC_solvesZero_tracked : TrackedFam fun _ => axiomC := defaultFam_tracked
 
@@ -1255,6 +1264,18 @@ theorem extract_tracked {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
   | eqCongLook s₁ t₁ s₂ t₂ =>
     intro R hR E hE
     exact axiomC_eqCongLook_tracked
+  | fibZero =>
+    intro R hR E hE
+    exact axiomC_fibZero_tracked
+  | fibOne =>
+    intro R hR E hE
+    exact axiomC_fibOne_tracked
+  | fibSucc s =>
+    intro R hR E hE
+    exact axiomC_fibSucc_tracked
+  | eqCongFib s t =>
+    intro R hR E hE
+    exact axiomC_eqCongFib_tracked
 
 /-- **Generic continuity of extraction** (the theorem closing the gap
 flagged in STATUS.md): the extracted type-2 realizer of *every* closed

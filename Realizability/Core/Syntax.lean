@@ -52,6 +52,7 @@ import Realizability.Signature.Hydra
 import Realizability.Signature.Hanoi
 import Realizability.Signature.Pascal
 import Realizability.Signature.Coloring
+import Realizability.Signature.Fibonacci
 
 namespace Realizability
 
@@ -83,6 +84,7 @@ inductive Term : Type where
   | xor : Term → Term → Term
   | pas : Term → Term → Term
   | look : Term → Term → Term
+  | fib : Term → Term
 deriving DecidableEq, Repr
 
 namespace Term
@@ -113,6 +115,7 @@ def eval (ρ : ℕ → ℕ) : Term → ℕ
   | xor s t => xorN (s.eval ρ) (t.eval ρ)
   | pas s t => pasN (s.eval ρ) (t.eval ρ)
   | look s t => lookN (s.eval ρ) (t.eval ρ)
+  | fib t => fibN (t.eval ρ)
 
 /-- The variables occurring in a term. -/
 def vars : Term → List ℕ
@@ -137,6 +140,7 @@ def vars : Term → List ℕ
   | xor s t => s.vars ++ t.vars
   | pas s t => s.vars ++ t.vars
   | look s t => s.vars ++ t.vars
+  | fib t => t.vars
 
 /-- Substitution of a term for a variable. -/
 def subst (x : ℕ) (u : Term) : Term → Term
@@ -162,6 +166,7 @@ def subst (x : ℕ) (u : Term) : Term → Term
   | xor s t => xor (subst x u s) (subst x u t)
   | pas s t => pas (subst x u s) (subst x u t)
   | look s t => look (subst x u s) (subst x u t)
+  | fib t => fib (subst x u t)
 
 /-- Evaluation after substitution is evaluation in the updated
 environment. -/
@@ -196,6 +201,7 @@ theorem eval_subst (ρ : ℕ → ℕ) (x : ℕ) (u : Term) :
   | xor s t ihs iht => simp [subst, eval, ihs, iht]
   | pas s t ihs iht => simp [subst, eval, ihs, iht]
   | look s t ihs iht => simp [subst, eval, ihs, iht]
+  | fib t ih => simp [subst, eval, ih]
 
 /-- Evaluation only depends on the values of the occurring variables. -/
 theorem eval_congr {ρ ρ' : ℕ → ℕ} :
@@ -287,6 +293,7 @@ theorem eval_congr {ρ ρ' : ℕ → ℕ} :
     simp only [eval]
     rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
       iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+  | fib t ih => intro h; simp only [eval]; rw [ih h]
 
 end Term
 
@@ -689,5 +696,21 @@ inductive Deriv : List Formula → Formula → Type where
       Deriv Γ ((eq n₁ n₂).imp ((eq f₁ f₂).imp ((eq t₁ t₂).imp ((eq v₁ v₂).imp
         ((eq k₁ k₂).imp
           (eq (.solves n₁ f₁ t₁ v₁ k₁) (.solves n₂ f₂ t₂ v₂ k₂)))))))
+  -- Fibonacci: the value symbol `fib`, with its defining recursion as
+  -- honest first-order equation schemas (like `good`/`exp`, not a numeral
+  -- graph — both `fib (n+1)` and `fib n` on the right are fragment terms)
+  -- plus its congruence.  The base needs *two* seeds (`fibZero`, `fibOne`),
+  -- because `fibSucc` reaches only `fib (n+2)`.  The step order
+  -- `fib n + fib (n+1)` matches `FibonacciTheorem.lean`'s paired invariant
+  -- `(y, z) ↦ (z, y + z)` and `fibN_succ_succ`.
+  | fibZero {Γ : List Formula} :
+      Deriv Γ (eq (.fib .zero) .zero)
+  | fibOne {Γ : List Formula} :
+      Deriv Γ (eq (.fib (.succ .zero)) (.succ .zero))
+  | fibSucc {Γ : List Formula} (n : Term) :
+      Deriv Γ (eq (.fib (.succ (.succ n)))
+        (.plus (.fib n) (.fib (.succ n))))
+  | eqCongFib {Γ : List Formula} (s t : Term) :
+      Deriv Γ ((eq s t).imp (eq (.fib s) (.fib t)))
 
 end Realizability

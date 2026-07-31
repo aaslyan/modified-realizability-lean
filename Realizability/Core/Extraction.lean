@@ -651,6 +651,10 @@ def extract : {Γ : List Formula} → {φ : Formula} →
   | _, _, .eqCongPas _ _ _ _, _, _ => axiomC
   | _, _, .lookNum _ _, _, _ => axiomC
   | _, _, .eqCongLook _ _ _ _, _, _ => axiomC
+  | _, _, .fibZero, _, _ => axiomC
+  | _, _, .fibOne, _, _ => axiomC
+  | _, _, .fibSucc _, _, _ => axiomC
+  | _, _, .eqCongFib _ _, _, _ => axiomC
 
 /-- **The witness is readable off an `∃`-realizer**: the first component
 at the canonical point is the witness the introduction rule supplied.
@@ -769,5 +773,9 @@ def derivBound : {Γ : List Formula} → {φ : Formula} → Deriv Γ φ → ℕ
   | _, _, .eqCongPas _ _ _ _ => 2
   | _, _, .lookNum _ _ => 0
   | _, _, .eqCongLook _ _ _ _ => 2
+  | _, _, .fibZero => 0
+  | _, _, .fibOne => 0
+  | _, _, .fibSucc _ => 0
+  | _, _, .eqCongFib _ _ => 1
 
 end Realizability

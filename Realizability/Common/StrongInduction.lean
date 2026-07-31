@@ -146,6 +146,7 @@ theorem Term.subst_self (x : ℕ) (t : Term) : Term.subst x (.var x) t = t := by
   | xor a b iha ihb => simp [Term.subst, iha, ihb]
   | pas a b iha ihb => simp [Term.subst, iha, ihb]
   | look a b iha ihb => simp [Term.subst, iha, ihb]
+  | fib a ih => simp [Term.subst, ih]
 
 /-- Substituting for a variable that does not occur is the identity, on
 terms. -/
@@ -207,6 +208,7 @@ theorem Term.subst_notMem (x : ℕ) (u : Term) :
   | look a b iha ihb =>
       intro h; simp only [Term.vars, List.mem_append, not_or] at h
       rw [Term.subst, iha h.1, ihb h.2]
+  | fib a ih => intro h; simp only [Term.vars] at h; rw [Term.subst, ih h]
 
 /-- Substituting `x` away (by a term not containing `x`) removes `x` from
 the term's variables. -/
@@ -241,6 +243,7 @@ theorem Term.notMem_self_subst (x : ℕ) (u : Term) (hu : x ∉ u.vars) :
   | xor a b iha ihb => simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
   | pas a b iha ihb => simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
   | look a b iha ihb => simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
+  | fib a ih => simpa [Term.subst, Term.vars] using ih
 
 /-- Substituting a variable for itself is the identity, on formulas. -/
 theorem Formula.subst_self (x : ℕ) (φ : Formula) : φ.subst x (.var x) = φ := by

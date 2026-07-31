@@ -42,3 +42,6 @@ import Realizability.Theorems.Euclid.GcdExtraction
 import Realizability.Signature.Coloring
 import Realizability.Theorems.Sperner.SpernerTheorem
 import Realizability.Theorems.Sperner.SpernerExtraction
+import Realizability.Signature.Fibonacci
+import Realizability.Theorems.Fibonacci.FibonacciTheorem
+import Realizability.Theorems.Fibonacci.FibonacciExtraction
