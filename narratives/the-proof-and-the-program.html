@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Proof, and the Program It Realizes</title>
+</head>
+<body>
+<style>
+  :root {
+    --paper:#f4f2ec; --paper-2:#eae7de; --ink:#1a1c22; --ink-soft:#4c515e;
+    --ink-faint:#7d8492; --line:#ddd9ce; --gold:#b5791f; --gold-2:#9a6416; --spine:#cdb277;
+    --term-bg:#16181d; --term-line:#2b2f39; --term-ink:#d3d7e0; --term-soft:#868e9c;
+    --erase:#8a8f9c;
+    --measure:38rem;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Charter,Georgia,"Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Fira Code",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:#131418; --paper-2:#191b21; --ink:#e9e6dd; --ink-soft:#a9adb9;
+      --ink-faint:#6b7180; --line:#262932; --gold:#e0a94a; --gold-2:#edbf6d; --spine:#6a5a34;
+      --term-bg:#0e0f13; --term-line:#23262f; --term-ink:#d3d7e0; --term-soft:#868e9c;
+      --erase:#5f6572;
+    }
+  }
+  :root[data-theme="light"]{--paper:#f4f2ec;--paper-2:#eae7de;--ink:#1a1c22;--ink-soft:#4c515e;--ink-faint:#7d8492;--line:#ddd9ce;--gold:#b5791f;--gold-2:#9a6416;--spine:#cdb277;--term-bg:#16181d;--term-line:#2b2f39;--erase:#8a8f9c;}
+  :root[data-theme="dark"]{--paper:#131418;--paper-2:#191b21;--ink:#e9e6dd;--ink-soft:#a9adb9;--ink-faint:#6b7180;--line:#262932;--gold:#e0a94a;--gold-2:#edbf6d;--spine:#6a5a34;--term-bg:#0e0f13;--term-line:#23262f;--erase:#5f6572;}
+
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  .doc{background:var(--paper);color:var(--ink);font-family:var(--serif);line-height:1.62;
+    -webkit-font-smoothing:antialiased;padding:clamp(1.4rem,4vw,4rem) 1.3rem 5rem;
+    display:flex;justify-content:center;transition:background .25s,color .25s;}
+  .wrap{width:100%;max-width:56rem;}
+
+  .eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--gold);margin:0 0 1.4rem;display:flex;align-items:center;gap:.6rem;}
+  .eyebrow::before{content:"";width:1.6rem;height:1px;background:var(--gold);opacity:.6;}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5.6vw,3.3rem);line-height:1.05;
+    letter-spacing:-.015em;text-wrap:balance;margin:0 0 1rem;}
+  h1 em{font-style:italic;color:var(--gold);}
+  .deck{font-size:clamp(1.06rem,2.3vw,1.28rem);color:var(--ink-soft);max-width:var(--measure);
+    text-wrap:pretty;margin:0 0 .8rem;}
+  .thesis{font-family:var(--sans);font-size:.94rem;color:var(--ink-faint);max-width:var(--measure);
+    margin:0;}
+  .thesis code{font-family:var(--mono);color:var(--gold-2);font-size:.88em;}
+
+  /* legend */
+  .legend{display:flex;flex-wrap:wrap;gap:.6rem 1.3rem;margin:2.4rem 0 1.1rem;
+    font-family:var(--sans);font-size:.8rem;color:var(--ink-soft);}
+  .legend span{display:inline-flex;align-items:center;gap:.5rem;}
+  .swatch{font-family:var(--mono);font-size:.72rem;padding:.12em .5em;border-radius:3px;font-weight:600;}
+  .swatch.comb{color:var(--gold);background:color-mix(in srgb,var(--gold) 13%,transparent);
+    border:1px solid color-mix(in srgb,var(--gold) 34%,transparent);}
+  .swatch.era{color:var(--erase);border:1px solid color-mix(in srgb,var(--erase) 45%,transparent);}
+  .swatch.star{color:var(--gold);}
+
+  /* the tree */
+  .tree{margin-top:.6rem;background:var(--term-bg);border:1px solid var(--term-line);
+    border-radius:6px;padding:1.3rem .3rem 1.4rem;overflow-x:auto;}
+  .tcap{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--term-soft);padding:0 1.2rem 1rem;border-bottom:1px solid var(--term-line);
+    margin-bottom:.5rem;}
+  .node{display:grid;grid-template-columns:minmax(15rem,1fr) auto;align-items:baseline;
+    gap:.4rem 1rem;padding:.28rem 1.2rem;position:relative;min-width:min-content;}
+  .node:hover{background:rgba(255,255,255,.02);}
+  .lhs{font-family:var(--mono);font-size:.86rem;color:var(--term-ink);white-space:pre;line-height:1.5;}
+  .lhs .g{color:var(--term-soft);}                 /* tree guides */
+  .rule{color:#cfe0f3;font-weight:600;}
+  .rule.era{color:var(--erase);font-weight:400;}
+  .bind{color:var(--term-soft);}                   /* λ binder text */
+  .star{color:var(--gold);}
+  .comb{justify-self:start;font-family:var(--mono);font-size:.78rem;font-weight:600;white-space:nowrap;
+    color:var(--gold);background:color-mix(in srgb,var(--gold) 12%,transparent);
+    border:1px solid color-mix(in srgb,var(--gold) 32%,transparent);padding:.1em .5em;border-radius:3px;}
+  .comb.era{color:var(--erase);background:transparent;border-color:color-mix(in srgb,var(--erase) 38%,transparent);}
+  .node.key{background:color-mix(in srgb,var(--gold) 8%,transparent);}
+  .node.key .comb{background:color-mix(in srgb,var(--gold) 22%,transparent);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 14%,transparent);}
+  .gloss{grid-column:1 / -1;font-family:var(--serif);font-size:.95rem;color:var(--term-soft);
+    padding-left:0;margin-top:-.05rem;}
+  .gloss em{color:var(--gold);font-style:italic;}
+  .tree::-webkit-scrollbar{height:8px;}
+  .tree::-webkit-scrollbar-thumb{background:var(--term-line);border-radius:8px;}
+
+  .read{margin:2.4rem 0 0;display:grid;grid-template-columns:1fr 1fr;gap:1px;
+    background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+  .read > div{background:var(--paper);padding:1.2rem 1.3rem;}
+  .read h3{font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--gold);margin:0 0 .6rem;}
+  .read p{margin:0;font-size:1rem;color:var(--ink-soft);text-wrap:pretty;}
+  .read code{font-family:var(--mono);font-size:.85em;color:var(--gold-2);}
+  @media (max-width:40rem){.read{grid-template-columns:1fr;}}
+
+  .coda{margin-top:2.8rem;padding-top:1.7rem;border-top:1px solid var(--line);}
+  .coda h2{font-family:var(--serif);font-weight:600;font-size:1.2rem;margin:0 0 .7rem;}
+  .coda p{color:var(--ink-soft);font-size:1.02rem;max-width:var(--measure);margin:0 0 .8rem;text-wrap:pretty;}
+  .coda code{font-family:var(--mono);font-size:.86em;color:var(--gold-2);}
+  .src{font-family:var(--mono);font-size:.74rem;color:var(--ink-faint);margin-top:1.3rem;}
+  .src b{color:var(--gold);font-weight:600;}
+
+  a{color:var(--gold);}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:2px;}
+</style>
+
+<main class="doc">
+  <div class="wrap">
+
+    <p class="eyebrow">modified-realizability-lean · the proof term</p>
+    <h1>The proof, and the program it <em>realizes</em></h1>
+    <p class="deck">Goodstein's theorem as an actual λ-term — and the realizer <code>extract</code> reads off it. You wanted to see it; here is the whole thing.</p>
+    <p class="thesis">Two things are in play, worth not conflating. In Lean's own type theory the left column really is a λ-term — that is Curry–Howard, and why it prints as a tree. But the proof→program map for the fragment is <em>modified realizability</em>: <code>extract</code> is an explicit function sending each derivation to a realizer in a <em>separate</em> type — the continuous functionals <code>PureType</code> — keeping only witness-bearing content and giving atomic equations contentless realizers. Correctness is not the typing; it is a soundness theorem proved by induction. So the right column is not the term reread — it is the term's <em>realizer</em>, and the erased <code>·</code> nodes are the content realizability throws away.</p>
+
+    <div class="legend">
+      <span><b class="swatch comb">combinator</b> a node that computes</span>
+      <span><b class="swatch era">·</b> erased — equality bookkeeping, no content</span>
+      <span><b class="swatch star">★</b> the two nodes that carry the whole argument</span>
+    </div>
+
+    <section class="tree" aria-label="Goodstein's proof term, annotated with its extract">
+      <div class="tcap">goodsteinTheorem : Deriv [] (∀m. ∃t. good(m,t) = 0)</div>
+
+      <div class="node">
+        <div class="lhs"><span class="rule">allI</span> <span class="bind">m</span></div>
+        <div class="comb">allIC</div>
+        <div class="gloss">λm — bind the start value; quantified only at the very end.</div>
+      </div>
+
+      <div class="node">
+        <div class="lhs"><span class="g">└ </span><span class="rule">impE</span></div>
+        <div class="comb">impEC</div>
+        <div class="gloss">Apply the induction's conclusion to a proof of its premise.</div>
+      </div>
+
+      <div class="node">
+        <div class="lhs"><span class="g">  └ </span><span class="rule">allE</span> <span class="bind">ord(2, good m 0)</span></div>
+        <div class="comb">allEC</div>
+        <div class="gloss">Instantiate the invariant φ at <em>x</em> := the ordinal of the initial state.</div>
+      </div>
+
+      <div class="node key">
+        <div class="lhs"><span class="g">    └ </span><span class="rule">tiEps0</span> <span class="star">★</span></div>
+        <div class="comb">tiC</div>
+        <div class="gloss"><em>The recursion.</em> Well-founded recursion along <em>≺</em>, the ordinal order below ε₀ — this is the one rule the fragment cannot derive from its own resources.</div>
+      </div>
+
+      <div class="node">
+        <div class="lhs"><span class="g">      └ </span><span class="rule">allI</span> <span class="bind">x</span></div>
+        <div class="comb">allIC</div>
+        <div class="gloss">λx — an ordinal notation.</div>
+      </div>
+
+      <div class="node">
+        <div class="lhs"><span class="g">        └ </span><span class="rule">impI</span> <span class="bind">ih : ∀y≺x. φy</span></div>
+        <div class="comb">impIC</div>
+        <div class="gloss">λih — <em>this binder is the recursive handle</em>: φ assumed for every smaller ordinal.</div>
+      </div>
+
+      <div class="node">
+        <div class="lhs"><span class="g">          └ </span><span class="rule">allI</span> <span class="bind">s</span></div>
+        <div class="comb">allIC</div>
+        <div class="gloss">λs — a state of the sequence whose ordinal is x.</div>
+      </div>
+
+      <div class="node">
+        <div class="lhs"><span class="g">            └ </span><span class="rule">impI</span> <span class="bind">e : ord(s+2, good m s)=x</span></div>
+        <div class="comb">impIC</div>
+        <div class="gloss">λe — witnessing that s's ordinal really is x.</div>
+      </div>
+
+      <div class="node key">
+        <div class="lhs"><span class="g">              └ </span><span class="rule">orE</span> <span class="star">★</span></div>
+        <div class="comb">orEC</div>
+        <div class="gloss"><em>The decision.</em> Case-split the disjunction — has the sequence hit 0?</div>
+      </div>
+
+      <div class="node">
+        <div class="lhs"><span class="g">                ├ </span><span class="rule">eqDec</span> <span class="bind">good m s ≟ 0</span></div>
+        <div class="comb">eqDecC</div>
+        <div class="gloss">Compute the decision bit itself — <code>decide (good m s = 0)</code>.</div>
+      </div>
+
+      <div class="node">
+        <div class="lhs"><span class="g">                ├ </span><span class="rule">exI</span> <span class="bind">s</span></div>
+        <div class="comb">exIC</div>
+        <div class="gloss">Bit = 0 → the witness is <em>s</em> itself: package ⟨ s, · ⟩.</div>
+      </div>
+
+      <div class="node">
+        <div class="lhs"><span class="g">                └ </span><span class="rule">impE</span></div>
+        <div class="comb">impEC</div>
+        <div class="gloss">Bit ≠ 0 → not done yet; take the recursive branch.</div>
+      </div>
+
+      <div class="node">
+        <div class="lhs"><span class="g">                  └ </span><span class="rule">allE</span> <span class="bind">ord(s+3, good m (s+1))</span></div>
+        <div class="comb">allEC</div>
+        <div class="gloss"><em>The recursive call</em>: feed <code>ih</code> the next state's ordinal — provably ≺ x, so the recursion is allowed to descend there.</div>
+      </div>
+
+      <div class="node">
+        <div class="lhs"><span class="g">                    ├ </span><span class="rule era">⟨name z, congPrec, symmE⟩</span></div>
+        <div class="comb era">·</div>
+        <div class="gloss">The capture-avoiding "naming" dodge and the descent's transport — <em>structure only</em>, no witness.</div>
+      </div>
+
+      <div class="node">
+        <div class="lhs"><span class="g">                    └ </span><span class="rule era">ordDescent · goodSucc</span></div>
+        <div class="comb era">·</div>
+        <div class="gloss">The ordinal-descent facts, glued by equality reasoning. All contentless — <code>axiomC</code>.</div>
+      </div>
+
+      <div class="node">
+        <div class="lhs"><span class="g">  └ </span><span class="rule era">eqRefl</span></div>
+        <div class="comb era">·</div>
+        <div class="gloss">The initial state's ordinal equals itself — erased.</div>
+      </div>
+    </section>
+
+    <div class="read">
+      <div>
+        <h3>read the left column</h3>
+        <p>…and it is a <strong>proof</strong>: induction up to ε₀, a case split, a witness. Every node is a typed rule of the fragment; the tree type-checks to <code>∀m ∃t. good(m,t)=0</code>.</p>
+      </div>
+      <div>
+        <h3>read the right column</h3>
+        <p>…and it is a <strong>program</strong> in <code>PureType</code>, not in φ: a transfinite recursor, a branch on a computed bit, a pair carrying the answer. <code>extract</code> walks the left tree and drops each node's realizer into place; <code>soundness</code> proves it right.</p>
+      </div>
+    </div>
+
+    <div class="coda">
+      <h2>The Hydra term is this same tree</h2>
+      <p>The Kirby–Paris theorem, <code>∀h ∃t. hydra(h,t)=0</code>, is proved by the identical shape — <code>tiEps0</code> over the same paired argument, down to the naming step. Only one erased node changes: Goodstein's <code>ordDescent</code> becomes Hydra's <code>hordCutLt</code>, the fact that one cut lowers the ordinal. Swap that leaf and the very same proof term computes battle lengths instead of stopping times.</p>
+      <p>Nothing here is a picture <em>of</em> the term — it <em>is</em> the term, node for node, as written in the source and checked by the kernel. The realizer's axiom footprint is <code>[propext, Quot.sound]</code>: the recursion is real, the classical content is nil.</p>
+      <p class="src">source · <b>Realizability/Theorems/Goodstein/GoodsteinTheorem.lean</b> · extract map in <b>Core/Extraction.lean</b></p>
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>
