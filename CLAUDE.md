@@ -14,7 +14,7 @@ Two headline theorems are derived *inside* the fragment, each with its witness f
 - `lake build Realizability.Theorems.Goodstein.Goodstein` — build a single module (module names mirror file paths, now under layer directories — see "Directory layout" below).
 - Toolchain is pinned in `lean-toolchain` (`leanprover/lean4:v4.26.0`); elan handles it automatically.
 
-**Path dependency**: the build requires a sibling checkout of the Kleene–Kreisel project at `../kleene-kreisel-lean`. `lakefile.lean` declares `require ContinuousFunctionals from "Realizability/Core/ContinuousFunctionals"` — an in-tree **symlink** to `../kleene-kreisel-lean`, the single pointer to maintain (it makes the dependency visible in the `Core/` layer, but still needs the sibling present; pinning it as a git dependency is the deferred real fix — see QUESTIONS.md). It supplies `PureType`, `Assoc`, `Ct`, `CtPer`, `ctQTwoEquiv`, etc. — never reimplement those here.
+**Vendored dependency**: the Kleene–Kreisel continuous-functionals code this project uses is **vendored in-tree** at `Realizability/Core/ContinuousFunctionals/ContinuousFunctionals/*.lean` (12 files, copied verbatim from `kleene-kreisel-lean` — the transitive closure of `Hierarchy` + `CtQ`), built by the `lean_lib «ContinuousFunctionals»` declared in `lakefile.lean` (`srcDir := "Realizability/Core/ContinuousFunctionals"`). The build is **standalone**: no sibling `../kleene-kreisel-lean` checkout is needed, and `lakefile.lean` requires Mathlib directly (pinned to the same `v4.26.0` the vendored code uses). It supplies `PureType`, `Assoc`, `Ct`, `CtPer`, `ctQTwoEquiv`, etc. — never reimplement those here, and treat the vendored files as read-only mirrors (fixes belong upstream in `kleene-kreisel-lean`).
 
 ## Non-negotiable invariants
 
@@ -33,7 +33,7 @@ Files live under layer directories and `import`s follow the path
 
 - `Realizability/Ordinals/` — `Epsilon0` (the ε₀ substrate + hand-rolled pairing).
 - `Realizability/Signature/` — the value layers `Term.eval` evaluates by, which must precede `Syntax`: `Hydra`, `Hanoi`, `Pascal`, `Coloring`, `OrdinalAssignment`.
-- `Realizability/Core/` — the realizability **engine**: `Syntax`, `ModifiedRealizes`, `Transport`, `Extraction`, `Soundness`, `GenericContinuity`, `CollapseDemo`; plus the `ContinuousFunctionals` dependency symlink.
+- `Realizability/Core/` — the realizability **engine**: `Syntax`, `ModifiedRealizes`, `Transport`, `Extraction`, `Soundness`, `GenericContinuity`, `CollapseDemo`; plus the vendored `ContinuousFunctionals/` dependency (a real directory of the 12 upstream files, built as its own in-package `lean_lib`).
 - `Realizability/Common/` — shared content built *on* Core: `Arithmetic`, `Exists`, `StrongInduction`.
 - `Realizability/Theorems/{Goodstein,Hydra,Hanoi,Pascal,Euclid,Sperner}/` — each headline theorem's proof + extraction (and the post-`Syntax` value modules like `Goodstein`, `HydraFragment`).
 

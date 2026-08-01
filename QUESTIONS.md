@@ -32,6 +32,21 @@ recommendations.  Items get moved to "Resolved" when you answer them.
    Realizability path dependency and manifest updated, both repos
    rebuilt green.*
 
+3¾. **How to consume `ContinuousFunctionals` — symlink, git-pin, or
+   vendor?**  The layered-reorg symlink
+   (`Realizability/Core/ContinuousFunctionals` → `../kleene-kreisel-lean`)
+   was explicitly interim, pending this decision.  *Resolved 2026-08-01:
+   **vendor.***  The transitive closure of the two direct imports
+   (`Hierarchy`, `CtQ`) — **12 files** — is copied verbatim into
+   `Realizability/Core/ContinuousFunctionals/ContinuousFunctionals/` and
+   built by an in-package `lean_lib «ContinuousFunctionals»`.  The symlink
+   and its `require` are gone; Mathlib is now required directly at the same
+   `v4.26.0` (manifest regenerated, no dependency-rev drift), and the repo
+   builds **standalone** — verified by a clean clone with no
+   `kleene-kreisel-lean` anywhere nearby.  `Density/` and `KleeneTree/` are
+   unreachable from anything imported here and were not copied; the vendored
+   files are a **read-only mirror**, so fixes go upstream, not here.
+
 6. **Induction axiom (long-term plan).**  *Closed: delivered as Phase 2
    (see STATUS.md), and now exercised on new content by Phase A — the
    four `+`/`×` defining equations are `ind` theorems (five inductions,

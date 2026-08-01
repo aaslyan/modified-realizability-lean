@@ -3383,15 +3383,21 @@ Zeckendorf needs.  The next phase is refinement.
   now `Ordinals/` · `Signature/` (value layers) · `Core/` (the engine) ·
   `Common/` (shared lemmas) · `Theorems/<name>/`; imports follow the path.
   Pure `git mv` + import rewrites, build green.
-- **Dependency made visible** — `ContinuousFunctionals` is now required via
-  an in-tree symlink `Realizability/Core/ContinuousFunctionals` →
-  `../kleene-kreisel-lean` (single pointer to maintain).  **Still interim**:
-  this does not make the build self-contained (a clone still needs the
-  sibling).  The real fix — pin it as a git dependency
-  (`from git "…/kleene-kreisel-lean" @ rev`) — is **deferred by user
-  decision** (co-development convenience vs. reproducibility); revisit when
-  that settles.  Do **not** vendor the parent in — it is the canonical work
-  this repo is a companion to, and is still being developed.
+- **Dependency vendored in — the build is now standalone.** The subset of
+  the Kleene–Kreisel development this project actually depends on (the
+  transitive closure of `ContinuousFunctionals.Hierarchy` + `CtQ`, **12
+  files**) is copied verbatim into
+  `Realizability/Core/ContinuousFunctionals/ContinuousFunctionals/*.lean`
+  and built by an in-package `lean_lib «ContinuousFunctionals»`
+  (`srcDir := "Realizability/Core/ContinuousFunctionals"`). The old symlink
+  to `../kleene-kreisel-lean` and its `require` are gone; `lakefile.lean`
+  now requires Mathlib directly, pinned to the same `v4.26.0` (verified: no
+  dependency-rev drift in `lake-manifest.json`). Verified by cloning this
+  repo alone, with no `kleene-kreisel-lean` nearby, and running `lake build`
+  from a clean tree. The vendored files are a **read-only mirror**: `Density/`
+  and `KleeneTree/` are not reachable and were not copied, and fixes belong
+  upstream, not here. (This supersedes the earlier "do not vendor" note — the
+  user's decision settled toward a self-contained, reproducible repository.)
 
 **Remaining targets** noticed while building E2/S1, to be worked from real
 uses rather than speculation:

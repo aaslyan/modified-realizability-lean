@@ -79,15 +79,17 @@ beside it — the tree growing while the ordinal falls.
 ## Building
 
 ```bash
-git clone <this repo> Realizability
-git clone https://github.com/aaslyan/kleene-kreisel-lean   # sibling checkout, required
-cd Realizability && lake build
+git clone <this repo>
+cd modified-realizability-lean && lake build
 ```
 
-The toolchain is pinned in `lean-toolchain`; elan fetches it.  The build
-requires the sibling Kleene–Kreisel checkout at `../kleene-kreisel-lean`,
-declared in `lakefile.lean` — it supplies `PureType`, `Assoc`, `CtQ` and
-the capstone equivalence.
+The toolchain is pinned in `lean-toolchain` (elan fetches it) and Mathlib
+in `lakefile.lean` (`lake build` downloads it).  The build is
+**standalone** — no sibling checkout is required.  The subset of the
+Kleene–Kreisel continuous-functionals development this project uses
+(`PureType`, `Assoc`, `CtQ` and the capstone equivalence) is **vendored**
+under `Realizability/Core/ContinuousFunctionals/`, copied verbatim from
+`kleene-kreisel-lean`.
 
 ## Scope, stated once
 

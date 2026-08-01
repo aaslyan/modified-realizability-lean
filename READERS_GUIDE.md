@@ -266,13 +266,14 @@ order is only well-founded on normal forms.
 ## 4. Reproducing every claim from a fresh clone
 
 ```bash
-# 1. Both repositories, side by side (the path dependency is hard-coded).
-git clone https://github.com/aaslyan/kleene-kreisel-lean.git
-git clone https://github.com/aaslyan/modified-realizability-lean.git Realizability
-cd Realizability
+# 1. This repository alone — it is standalone (the Kleene–Kreisel subset it
+#    uses is vendored under Realizability/Core/ContinuousFunctionals/).
+git clone https://github.com/aaslyan/modified-realizability-lean.git
+cd modified-realizability-lean
 
 # 2. Build everything.  Toolchain (leanprover/lean4:v4.26.0) is pinned in
-#    lean-toolchain; elan fetches it automatically.
+#    lean-toolchain; elan fetches it automatically.  Mathlib (pinned in
+#    lakefile.lean) is downloaded on first build.
 lake build
 
 # 3. Zero placeholders.
