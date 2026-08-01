@@ -134,10 +134,10 @@ soundness, MR_indRecC, MR_tiRecC
       │  (all three use MR_subst; MR_indRecC also uses Function.update_idem directly)
       ▼
 MR_subst                                    [propext, Classical.choice, Quot.sound]
-      │  (ModifiedRealizes.lean:285,300,313,337)
+      │  (ModifiedRealizes.lean:291,306,319,343)
       ▼
 Function.update_comm , Function.update_idem  [propext, Classical.choice, Quot.sound]
-      │  (Mathlib.Logic.Function.Basic, imported by Ordinals/Epsilon0.lean:71)
+      │  (Mathlib.Logic.Function.Basic, imported by Ordinals/Epsilon0.lean:6)
       ▼
 Classical.choice
 ```

@@ -3412,8 +3412,9 @@ Zeckendorf needs.  The next phase is refinement.
   renamed — that would erase the project's own vocabulary, which the
   convention guide explicitly warns against. Axiom budgets and the
   choice-free `Epsilon0`/Hydra definitions are unchanged (cosmetic edits +
-  a rename). Note: line-number citations inside `DOSSIER.md` drifted by the
-  header additions; the declaration **names** and facts remain valid.
+  a rename). `DOSSIER.md` cites declarations by **name** (no line numbers),
+  so it needed no resync beyond the rename; `CONSTRUCTIVITY.md`'s two
+  line-number citations were re-synced to the post-header positions.
 
 **Remaining targets** noticed while building E2/S1, to be worked from real
 uses rather than speculation:
