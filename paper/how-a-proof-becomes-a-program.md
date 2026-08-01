@@ -72,11 +72,10 @@ opens the box all the way. We are going to watch, in complete detail and
 on a real example, a proof turn into a program — first on something tiny
 enough to hold in your hand, then on Goodstein itself, and then on a
 handful of other theorems that each ask the machine to do one genuinely
-new thing. By the end you will have seen the whole mechanism, and you
-will be in a position to ask, and answer, the sharpest question about it:
-when a program falls out of a proof this powerful, does some sliver of
-non-constructive reasoning sneak into the program along the way? The last
-act is devoted to that question, because its answer is the real payoff.
+new thing. By the end you will have seen the whole mechanism, and one
+question will remain: when a program falls out of a proof this powerful,
+does some sliver of non-constructive reasoning sneak into the program
+along the way? The last act is devoted to answering it.
 
 ---
 
@@ -95,7 +94,7 @@ vocabulary of things it can talk about (zero, successor, addition,
 multiplication, and a modest list of further operations we will meet as
 we need them), a fixed grammar of statements it can form, and a fixed
 list of inference rules for building proofs. Nothing enters the fragment
-except through that rulebook. This rigidity is the whole point: because
+except through that rulebook. This rigidity is deliberate: because
 the rules are finite and mechanical, a proof in the fragment is itself a
 finite, mechanical object — a tree of rule-applications — and a machine
 can take that tree apart. Hold that thought; it is what makes everything
@@ -303,9 +302,9 @@ proof of this?*
   holds. (This is the contentless case from Act II. Equations carry no
   computational content.)
 
-- **A conjunction** `φ and ψ` is realized by a **pair**: a realizer of
-  `φ` together with a realizer of `ψ`. To use a proof of "both," you need
-  to be able to get at each side, so the data is both sides at once.
+- **A conjunction** `φ and ψ` is realized by a **pair** — a realizer of
+  each side, both at once, since using a proof of "both" means getting at
+  each side.
 
 - **A disjunction** `φ or ψ` is realized by a **tag plus a payload**: a
   bit that says *which* side holds — 0 for the left, non-zero for the
@@ -334,8 +333,7 @@ You have now seen the shape of every realizer the fragment will ever
 produce. Two of them — implication and universal — take something in and
 give something back; they are the procedures, the parts that *do work* at
 runtime. The others — pair, tag, witness — just *hold* data. Keep that
-distinction in view, because it is about to become the single most
-important accounting rule in the whole system.
+distinction in view; the next section — levels — is built entirely on it.
 
 ### Levels: the cost of consuming
 
@@ -362,16 +360,15 @@ between consuming and holding:
   the number you instantiate at and returns a realizer, one layer up.
 - **An existential adds nothing to the level.**
 
-That last line deserves a pause, because it is the payoff of the
-"consuming versus holding" distinction and it will matter later. Why does
-`∀` cost a level but `∃` does not, when both mention a bound variable?
+Why does `∀` cost a level but `∃` does not, when both mention a bound
+variable?
 Because `∀y. φ` is a *procedure* — you hand it a `y` and it works — while
 `∃y. φ` merely *holds* a `y`, the witness, already chosen. A universal
 consumes; an existential packages. Consuming costs a level; packaging is
 free. Look back at Act II: the witness 5 was already sitting in the
 realizer, waiting to be read; nothing had to be *run* to consume an
 input and produce it. That is exactly why our existential example was so
-simple, and now we can say precisely why: `∃` adds no level. This is not
+simple: `∃` adds no level. This is not
 a rule imposed from outside — it falls straight out of the difference
 between a realizer that runs and a realizer that merely stores.
 
@@ -406,12 +403,11 @@ that consume procedures. The tower is just bookkeeping for "how much
 consuming is going on," made into actual mathematical objects a machine
 can build and evaluate.
 
-One thing worth flagging now, because Act V will lean on it hard: this
-tower — the numbers, the functions between the layers, the operations for
-packing and unpacking pairs and applying one layer's object to the layer
-below — is built by completely elementary means. There is nothing
-classical or non-constructive anywhere in it. That will turn out to be
-load-bearing.
+One thing to carry forward, because Act V turns on it: this tower — the
+numbers, the functions between the layers, the operations for packing and
+unpacking pairs and applying one layer's object to the layer below — is
+built by completely elementary means, with nothing classical or
+non-constructive anywhere in it.
 
 ### The program a closed statement denotes: `CtQ`
 
@@ -624,8 +620,8 @@ The fragment can prove that any two numbers have a greatest common
 divisor — and the extracted witness *is* the gcd, computed by subtractive
 Euclid (repeatedly replace the larger number by the difference), with no
 gcd operation built into the fragment at all. Two supporting ideas make
-this possible, and both are worth stating because they show the fragment's
-economy. First, the fragment never needed to add an "order" operation to
+this possible, and both show the fragment's economy. First, the fragment
+never needed to add an "order" operation to
 talk about one number being smaller than another: `s < t` is simply
 *there exists a `d` with `succ s + d = t`* — order is an existential over
 addition, not a new primitive. Second, the fragment never needed a
@@ -633,8 +629,8 @@ separate "strong induction" (course-of-values induction, where the step
 may use *all* smaller cases, not just the immediately previous one): it is
 *derived* from ordinary `ind`.
 
-But the genuinely new capability the gcd proof forces is subtler and more
-interesting than either, and it is a problem about *substitution*. When
+But the new capability the gcd proof forces is neither of these — it is a
+problem about *substitution*. When
 you instantiate an induction hypothesis, or apply a "for all" statement,
 you substitute a specific term for a bound variable. If that term happens
 to mention a variable that is *also bound* somewhere in the formula you
@@ -691,7 +687,8 @@ you first met.
 
 ### New capability: recursion along the ordinals (Goodstein)
 
-Now the payoff Act II was set up to deliver.
+Now Goodstein itself, the general theorem behind Act II's single
+hand-worked case.
 
 Back in Act II we proved, by hand, that the Goodstein sequence from 3
 reaches 0 — a single existential, `∃s. good(3, s) = 0`, witness supplied
@@ -810,9 +807,9 @@ these general plays, so the fragment's theorem is a genuine special case
 of the general one, not a different game. This split — a *fragment
 theorem* for one encoded battle, a *metatheorem* for all strategies — is
 forced, cleanly and provably, by the single fact that the fragment has no
-function variables. It is the sharpest example in this tour of a boundary
-that mathematics draws for you, rather than one you choose, and it is the
-right place to stop feeding the machine harder proofs.
+function variables. It is a boundary that mathematics draws for you,
+rather than one you choose, and it is the right place to stop feeding the
+machine harder proofs.
 
 ---
 
@@ -839,19 +836,16 @@ This act resolves the suspicion, precisely, in the program's favour. And
 the resolution is possible only because the proof assistant tracks,
 mechanically and unforgeably, exactly which axioms any given object
 depends on. Ask it about any definition or theorem and it reports the
-complete list. There are three names to know.
+complete list.
 
-- **`propext`** and **`Quot.sound`** are the proof assistant's own two
-  foundational axioms. Neither is non-constructive; neither lets you
-  conjure an object you cannot build; neither implies the law of excluded
-  middle. They are bookkeeping about when two propositions, or two
-  quotient elements, count as equal. Think of them as part of the
-  machine's floor, computationally inert.
-- **`Classical.choice`** is the genuinely non-constructive axiom — the one
-  that asserts choices can be made without giving any rule for making them,
-  and from which the full law of excluded middle follows. *This* is the
-  axiom whose presence in a program would hollow it out. This is the one
-  the suspicion is about.
+The suspicion has a specific name. The genuinely non-constructive axiom —
+the one that asserts choices can be made without giving any rule for
+making them, and from which the full law of excluded middle follows — is
+called **`Classical.choice`**. It is the axiom whose presence in a program
+would hollow the program out, turning a thing that computes into a thing
+that merely type-checks. So when we ask whether something non-constructive
+rode into the extracted programs, the question has one precise form: does
+`Classical.choice` appear in the list?
 
 Now the audit's finding, stated exactly as the machine reports it.
 
@@ -865,11 +859,19 @@ dependency as exactly
 [propext, Quot.sound]
 ```
 
-and **never `Classical.choice`**. Not "we believe"; not "morally." The
-kernel of the proof assistant, asked directly, lists those two names and
-not the third, for every object that actually runs. The trusted base of
-every extracted computation is the proof assistant's kernel together with
-`propext` and `Quot.sound` — and nothing classical.
+and `Classical.choice` is not on the list. Not "we believe"; not
+"morally." The kernel of the proof assistant, asked directly, lists those
+two names and not the third, for every object that actually runs.
+
+So what *are* the two names that are there? Neither is the one the
+suspicion feared. **`propext`** and **`Quot.sound`** are the proof
+assistant's own two foundational axioms, and both are constructively
+harmless: neither lets you conjure an object you cannot build, neither
+implies the law of excluded middle. They are bookkeeping about when two
+propositions, or two quotient elements, count as equal — part of the
+machine's floor, computationally inert. The trusted base of every
+extracted computation is the proof assistant's kernel together with these
+two, and nothing classical.
 
 The suspicion is not merely soothed; it is *refuted, mechanically.* The
 recursion up to ε₀ that powers Goodstein and the Hydra does not smuggle in
@@ -879,7 +881,7 @@ deliberately, without any classical step. (That deliberateness is the
 Act VI discovery we have twice deferred.)
 
 Does `Classical.choice` appear *anywhere* in the project? Yes — and where
-it appears is the precise, illuminating boundary. It enters in exactly two
+it appears is a precise boundary. It enters in exactly two
 places, and neither of them runs.
 
 - It appears in some of the *correctness proofs* — the proofs that the
@@ -910,11 +912,10 @@ that side ever executes. The one non-constructive axiom in the whole
 development is quarantined on the far side of the wall from anything that
 computes.
 
-That is the payoff the entire tour was built toward. A proof needing
-strictly more than Peano arithmetic — transfinite induction to ε₀ —
-became a program, and the program is *constructive to the last axiom the
-machine can name*. The strength went into proving the theorem; none of it
-leaked into the thing that runs.
+A proof needing strictly more than Peano arithmetic — transfinite
+induction to ε₀ — became a program, and the program is *constructive to
+the last axiom the machine can name*. The strength went into proving the
+theorem; none of it leaked into the thing that runs.
 
 ---
 
@@ -1012,32 +1013,30 @@ honesty that only a machine-checked development makes fully visible.
 
 ## Act VII — Closing
 
-It would be easy to end by saying: one pipeline handled all of these — a
-Goodstein stopping-step function, a Hydra battle length, a gcd, a parity
-classifier, a first-crossing search, a Fibonacci iterator — from proofs
-that ranged from ordinary induction all the way up to transfinite
-recursion. That is true, but it is not the striking part.
+One pipeline handled all of these — a Goodstein stopping-step function, a
+Hydra battle length, a gcd, a parity classifier, a first-crossing search,
+a Fibonacci iterator — from proofs that ranged from ordinary induction all
+the way up to transfinite recursion. That is true. But that proofs contain
+programs is an old idea; nobody should be surprised, in the abstract, that
+a constructive proof of "something exists" can be made to cough up the
+something. What this tour exhibits instead is how few moving parts it took
+to make that real, across such a range.
 
-The striking part is how *little* there was. That proofs contain programs
-is an old idea; nobody should be surprised, in the abstract, that a
-constructive proof of "something exists" can be made to cough up the
-something. What this tour actually exhibits is how few moving parts it
-took to make that real, across such a range. A realizer is a witness, or
-a pair, or a tag, or a procedure — four shapes. A level counts how much
-consuming a formula's realizers do. `extract` walks a proof and, at each
-rule, does the one small thing that rule calls for. Soundness checks each
-rule once. Ordinary induction extracts to ordinary recursion; transfinite
-induction extracts to recursion along the ordinals; an existential
-extracts to its witness. Different mathematics — Hanoi's branching, Pascal's
-parity, gcd's substitution dance, Sperner's scan, Goodstein's ordinals,
-the Hydra's boundary — ran through the *same* handful of moving parts,
-unchanged, and came out the other side as programs whose every runtime
-axiom the machine can name, and none of them classical.
+A realizer is a witness, or a pair, or a tag, or a procedure — four shapes.
+A level counts how much consuming a formula's realizers do. `extract` walks
+a proof and, at each rule, does the one small thing that rule calls for;
+soundness checks each rule once. Ordinary induction extracts to ordinary
+recursion; transfinite induction extracts to recursion along the ordinals;
+an existential extracts to its witness. Hanoi's branching, Pascal's parity,
+gcd's substitution dance, Sperner's scan, Goodstein's ordinals, the Hydra's
+boundary — all of it ran through that same handful of parts, unchanged, and
+came out as programs whose every runtime axiom the machine can name, none
+of them classical.
 
-That economy is the thing to take away. Not that the box could be opened,
-but that, once opened, it held so simple a mechanism, and that the same
-simple mechanism reached from `2, 2, 1, 0` all the way to the edge of what
-a language without function variables can say.
+The same four shapes, the same level count, the same proof-walking
+translation carried from the one hand-built existential of Act II —
+`∃s. good(3, s) = 0`, a single witness read back as 5 — to the edge of
+what a language without function variables can say.
 
 Everything above has a fully formal counterpart — the actual Lean
 development, every theorem machine-checked, every axiom dependency the
