@@ -1,4 +1,12 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Hydra.HydraGeneral
+import Realizability.Theorems.Hydra.HydraDisplay
+
+/-!
 # Phase H9: a second strategy, for free
 
 Phase H7 proved that *every* play terminates, whatever Hercules chops.
@@ -42,8 +50,6 @@ their lengths agree at the three published instances.  STATUS.md
 previously reported that agreement on the authority of a research pass —
 the build now checks it.
 -/
-import Realizability.Theorems.Hydra.HydraGeneral
-import Realizability.Theorems.Hydra.HydraDisplay
 
 namespace Realizability
 
@@ -54,6 +60,8 @@ instead of the first.  The `Bool` means what it means in `cutH` — "the
 head I chopped was a direct member of this forest" — so the owner of the
 forest learns whether it is the grandparent and must grow the copies. -/
 
+/-- The rightmost-head cut on a forest: the new forest, and whether this
+level is the grandparent that must grow `n` copies. -/
 def cutRightF (n : ℕ) : Forest → Forest × Bool
   | .nil => (.nil, false)
   | .cons (.node .nil) .nil => (.nil, true)
@@ -93,7 +101,7 @@ theorem cutRightF_cut (n : ℕ) : ∀ f : Forest, (cutRightF n f).2 = true →
     simp only [cutRightF]
     exact CutF.here
   | .cons (.node (.cons c₀ cs)) .nil, hf => by
-    rcases decEm ((cutRightF n (.cons c₀ cs)).2 = true) with hc | hc
+    rcases dec_em ((cutRightF n (.cons c₀ cs)).2 = true) with hc | hc
     · simp [cutRightF, hc] at hf
     · simp only [Bool.not_eq_true] at hc
       simp [cutRightF, hc] at hf
@@ -111,7 +119,7 @@ theorem cutRightF_move (n : ℕ) : ∀ f : Forest, f ≠ .nil →
   | .nil, hne, _ => absurd rfl hne
   | .cons (.node .nil) .nil, _, hf => by simp [cutRightF] at hf
   | .cons (.node (.cons c₀ cs)) .nil, _, _ => by
-    rcases decEm ((cutRightF n (.cons c₀ cs)).2 = true) with hc | hc
+    rcases dec_em ((cutRightF n (.cons c₀ cs)).2 = true) with hc | hc
     · -- the child reports a direct cut, so this forest's owner is the
       -- grandparent and the copies grow here
       have hcut := cutRightF_cut n (.cons c₀ cs) hc
@@ -137,8 +145,8 @@ theorem rightStep_play (n : ℕ) (h : Hydra) (hne : h ≠ Hydra.leaf) :
     Play n h (rightStep n h) := by
   cases h with
   | node f =>
-    have hfne : f ≠ .nil := fun h0 => hne (by rw [h0]; rfl)
-    rcases decEm ((cutRightF n f).2 = true) with hc | hc
+    have hfne : f ≠ .nil := fun h0 ↦ hne (by rw [h0]; rfl)
+    rcases dec_em ((cutRightF n f).2 = true) with hc | hc
     · exact Play.root (cutRightF_cut n f hc)
     · simp only [Bool.not_eq_true] at hc
       exact Play.inner (cutRightF_move n f hfne hc)
@@ -156,7 +164,7 @@ battle", at an arbitrary replication schedule. -/
 theorem no_infinite_right_battle (F : ℕ → Hydra) (sched : ℕ → ℕ)
     (hF : ∀ i, F i ≠ Hydra.leaf ∧ F (i + 1) = rightStep (sched i) (F i)) :
     False :=
-  no_infinite_play F fun i =>
+  no_infinite_play F fun i ↦
     ⟨sched i, (hF i).2 ▸ rightStep_play (sched i) (F i) (hF i).1⟩
 
 /-! ## The two strategies, run against each other -/

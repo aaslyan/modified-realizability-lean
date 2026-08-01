@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Core.Transport
+
+/-!
 # Extraction: a realizing term for each derivation rule
 
 Extraction recurses on the derivation, carrying the context as a list of
@@ -31,7 +38,6 @@ Every rule has its own named combinator, listed in STATUS.md:
 `derivBound` assigns each derivation the ambient level above which its
 extracted family realizes the conclusion (`Soundness.lean`).
 -/
-import Realizability.Core.Transport
 
 namespace Realizability
 
@@ -43,7 +49,7 @@ def Fam : Type :=
 
 /-- The junk family (never consulted where it matters). -/
 def defaultFam : Fam :=
-  fun n => defaultPT (n + 1)
+  fun n ↦ defaultPT (n + 1)
 
 /-- Context realization: each hypothesis' family realizes it above its
 formula's level. -/
@@ -59,29 +65,29 @@ def axC (env : List Fam) : Fam :=
 
 /-- `andI`: pointwise pairing. -/
 def andIC (f g : Fam) : Fam :=
-  fun n => pairPT (f n) (g n)
+  fun n ↦ pairPT (f n) (g n)
 
 /-- `andE₁`: pointwise first projection. -/
 def andE₁C (f : Fam) : Fam :=
-  fun n => fstPT (f n)
+  fun n ↦ fstPT (f n)
 
 /-- `andE₂`: pointwise second projection. -/
 def andE₂C (f : Fam) : Fam :=
-  fun n => sndPT (f n)
+  fun n ↦ sndPT (f n)
 
 /-- `orI₁`: tag `0`. -/
 def orI₁C (f : Fam) : Fam :=
-  fun n => pairPT (fun _ => (0 : ℕ)) (f n)
+  fun n ↦ pairPT (fun _ ↦ (0 : ℕ)) (f n)
 
 /-- `orI₂`: tag `1`. -/
 def orI₂C (f : Fam) : Fam :=
-  fun n => pairPT (fun _ => (1 : ℕ)) (f n)
+  fun n ↦ pairPT (fun _ ↦ (1 : ℕ)) (f n)
 
 /-- `orE`: pointwise tag-split on the major premise; each branch rebuilds
 its hypothesis family from the payload at the current ambient. -/
 def orEC (φ ψ : Formula) (d : Fam)
     (b₁ b₂ : Fam → Fam) : Fam :=
-  fun n =>
+  fun n ↦
     if fstPT (d n) (defaultPT n) = 0 then
       b₁ (famOf φ (sndPT (d n))) n
     else
@@ -91,14 +97,14 @@ def orEC (φ ψ : Formula) (d : Fam)
 realizer. -/
 def impIC (φ : Formula) (body : List Fam → Fam)
     (env : List Fam) : Fam :=
-  fun n =>
+  fun n ↦
     match n with
     | 0 => defaultPT 1
-    | m + 1 => abs₁ (fun x => body (famOf φ x :: env) m)
+    | m + 1 => abs₁ (fun x ↦ body (famOf φ x :: env) m)
 
 /-- `impE`: application, major premise one ambient up. -/
 def impEC (f g : Fam) : Fam :=
-  fun n => app₁ (f (n + 1)) (g n)
+  fun n ↦ app₁ (f (n + 1)) (g n)
 
 /-- `botE`: vacuous. -/
 def botEC : Fam :=
@@ -106,14 +112,14 @@ def botEC : Fam :=
 
 /-- `allI`: abstraction reading the numeral off the argument. -/
 def allIC (bodyAt : ℕ → Fam) : Fam :=
-  fun n =>
+  fun n ↦
     match n with
     | 0 => defaultPT 1
-    | m + 1 => abs₁ (fun z => bodyAt (z (defaultPT m)) m)
+    | m + 1 => abs₁ (fun z ↦ bodyAt (z (defaultPT m)) m)
 
 /-- `allE`: application at the numeral of the term's value. -/
 def allEC (f : Fam) (k : ℕ) : Fam :=
-  fun n => app₁ (f (n + 1)) (natPT (n + 1) k)
+  fun n ↦ app₁ (f (n + 1)) (natPT (n + 1) k)
 
 /-- **The type-indexed primitive recursor at a fixed ambient `m`**
 (rule `ind`): from the base realizer `a` and the step functional `b` —
@@ -143,7 +149,7 @@ by `allIC` exactly as `∀`-introduction packages its uniform families:
 the concluded formula has the same `∀x. φ` shape, so the same packaging
 (abstraction reading the numeral off the argument) applies verbatim. -/
 def indC (a b : Fam) : Fam :=
-  allIC fun k => fun m => indRecC (a m) (b (m + 2)) k
+  allIC fun k ↦ fun m ↦ indRecC (a m) (b (m + 2)) k
 
 /-- **The transfinite recursor at a fixed ambient** (rule `tiEps0`) —
 combinator 40, and the second combinator that recurses (the first being
@@ -169,9 +175,9 @@ non-dependent restatement used by both `MR_tiRecC` (`Soundness.lean`)
 and `tiC_tracked` (`GenericContinuity.lean`). -/
 def tiRecC (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) :
     ℕ → PureType (m₂ + 3) :=
-  oLt_wf.fix fun k rec =>
+  oLt_wf.fix fun k rec ↦
     app₁ (app₁ b (natPT (m₂ + 4) k))
-      (abs₁ fun ζ => abs₁ fun _w =>
+      (abs₁ fun ζ ↦ abs₁ fun _w ↦
         if h : OLt (ζ (defaultPT (m₂ + 1))) k then
           dropR φ (dropR φ (rec (ζ (defaultPT (m₂ + 1))) h))
         else defaultPT (m₂ + 1))
@@ -182,7 +188,7 @@ so `WellFounded.fix_eq` plus `dite_eq_ite` removes it). -/
 theorem tiRecC_eq (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) (k : ℕ) :
     tiRecC φ b k =
       app₁ (app₁ b (natPT (m₂ + 4) k))
-        (abs₁ fun ζ => abs₁ fun _w =>
+        (abs₁ fun ζ ↦ abs₁ fun _w ↦
           if OLt (ζ (defaultPT (m₂ + 1))) k then
             dropR φ (dropR φ (tiRecC φ b (ζ (defaultPT (m₂ + 1)))))
           else defaultPT (m₂ + 1)) := by
@@ -265,9 +271,9 @@ re-enter the memo path with a fresh table and could not terminate.  This
 copy is compiled as written. -/
 def tiRecCRaw (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) :
     ℕ → PureType (m₂ + 3) :=
-  oLt_wf.fix fun k rec =>
+  oLt_wf.fix fun k rec ↦
     app₁ (app₁ b (natPT (m₂ + 4) k))
-      (abs₁ fun ζ => abs₁ fun _w =>
+      (abs₁ fun ζ ↦ abs₁ fun _w ↦
         if h : OLt (ζ (defaultPT (m₂ + 1))) k then
           dropR φ (dropR φ (rec (ζ (defaultPT (m₂ + 1))) h))
         else defaultPT (m₂ + 1))
@@ -308,7 +314,7 @@ already-computed value instead of recomputing it. -/
 def tiBodyWith (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5))
     (tbl : MemoTbl m₂) (k : ℕ) : PureType (m₂ + 3) :=
   app₁ (app₁ b (natPT (m₂ + 4) k))
-    (abs₁ fun ζ => abs₁ fun _w =>
+    (abs₁ fun ζ ↦ abs₁ fun _w ↦
       if OLt (ζ (defaultPT (m₂ + 1))) k then
         dropR φ (dropR φ (memoVal φ b tbl (ζ (defaultPT (m₂ + 1)))))
       else defaultPT (m₂ + 1))
@@ -327,6 +333,8 @@ code is computed at most once across the whole build.  Candidates are the
 codes `≤ B` lying `≺ k`; a code outside that range is simply recomputed,
 which costs time and never correctness. -/
 
+/-- Fuelled memoised evaluator for `tiRecC` (the D6 memo path, kept with
+its `csimp` lemmas detached — measured to change nothing). -/
 def memoRec (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) (B : ℕ) :
     ℕ → ℕ → MemoTbl m₂ → PureType (m₂ + 3) × MemoTbl m₂
   | 0, k, tbl => (tiRecCRaw φ b k, tbl)
@@ -335,7 +343,7 @@ def memoRec (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) (B : ℕ) :
       | some v => (v, tbl)
       | none =>
           let tbl' := (List.range (B + 1)).foldl
-            (fun t j => if oltB j k then (memoRec φ b B fuel j t).2 else t) tbl
+            (fun t j ↦ if oltB j k then (memoRec φ b B fuel j t).2 else t) tbl
           let v := tiBodyWith φ b tbl' k
           (v, (k, v) :: tbl')
 
@@ -359,11 +367,11 @@ theorem memo_ok (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) (B : ℕ) 
       ∧ (memoRec φ b B fuel k tbl).1 = tiRecC φ b k := by
   intro fuel
   induction fuel with
-  | zero => exact fun k tbl h => ⟨h, tiRecCRaw_eq φ b k⟩
+  | zero => exact fun k tbl h ↦ ⟨h, tiRecCRaw_eq φ b k⟩
   | succ fuel ih =>
     intro k tbl h
     have hstep : ∀ (t : MemoTbl m₂) (j : ℕ), MemoOK φ b t →
-        MemoOK φ b ((fun t j => if oltB j k then (memoRec φ b B fuel j t).2 else t) t j) := by
+        MemoOK φ b ((fun t j ↦ if oltB j k then (memoRec φ b B fuel j t).2 else t) t j) := by
       intro t j ht
       by_cases hj : oltB j k = true
       · simpa [hj] using (ih j t ht).1
@@ -376,7 +384,7 @@ theorem memo_ok (φ : Formula) {m₂ : ℕ} (b : PureType (m₂ + 5)) (B : ℕ) 
       exact ⟨h, h k v hm⟩
     | none =>
       set tbl' := (List.range (B + 1)).foldl
-        (fun t j => if oltB j k then (memoRec φ b B fuel j t).2 else t) tbl with htbl'
+        (fun t j ↦ if oltB j k then (memoRec φ b B fuel j t).2 else t) tbl with htbl'
       have hseed : MemoOK φ b tbl' := memoFold_ok hstep _ tbl h
       have he : memoRec φ b B (fuel + 1) k tbl
           = (tiBodyWith φ b tbl' k, (k, tiBodyWith φ b tbl' k) :: tbl') := by
@@ -436,6 +444,8 @@ def tiFamAt (φ : Formula) (b : Fam) (k : ℕ) : Fam
   | 1 => defaultPT 2
   | m₂ + 2 => tiRecC φ (b (m₂ + 4)) k
 
+/-- The `tiEps0` combinator: the transfinite recursor `tiRecC` packaged as
+a `∀`-realizer by `allIC`. -/
 def tiC (φ : Formula) (b : Fam) : Fam :=
   allIC (tiFamAt φ b)
 
@@ -458,7 +468,7 @@ and `tiCFast` is `tiC` with the lookup in place of the recomputation. -/
 Built once and captured. -/
 def tiCTable (φ : Formula) (b : Fam) (B : ℕ) (m : ℕ) :
     List (ℕ × PureType (m + 1)) :=
-  (List.range (B + 1)).map fun k => (k, tiFamAt φ b k m)
+  (List.range (B + 1)).map fun k ↦ (k, tiFamAt φ b k m)
 
 /-- Lookup with the honest computation as fallback. -/
 def tiCFind {m : ℕ} : List (ℕ × PureType (m + 1)) → ℕ →
@@ -466,6 +476,7 @@ def tiCFind {m : ℕ} : List (ℕ × PureType (m + 1)) → ℕ →
   | [], _ => none
   | (j, v) :: t, k => if j = k then some v else tiCFind t k
 
+/-- Table-driven value of the memoised transfinite recursor at a code. -/
 def tiCVal (φ : Formula) (b : Fam) {m : ℕ}
     (tbl : List (ℕ × PureType (m + 1))) (k : ℕ) : PureType (m + 1) :=
   match tiCFind tbl k with
@@ -476,7 +487,7 @@ def tiCVal (φ : Formula) (b : Fam) {m : ℕ}
 for — the invariant, proved rather than assumed. -/
 theorem tiCFind_sound (φ : Formula) (b : Fam) (m : ℕ) :
     ∀ (js : List ℕ) (k : ℕ) (v : PureType (m + 1)),
-      tiCFind (js.map fun k => (k, tiFamAt φ b k m)) k = some v →
+      tiCFind (js.map fun k ↦ (k, tiFamAt φ b k m)) k = some v →
       v = tiFamAt φ b k m
   | [], k, v, h => by simp [tiCFind] at h
   | j :: js, k, v, h => by
@@ -500,12 +511,12 @@ theorem tiCVal_eq (φ : Formula) (b : Fam) (B m k : ℕ) :
 
 /-- `tiC`, evaluated through a table built once per ambient. -/
 def tiCFast (φ : Formula) (b : Fam) : Fam :=
-  fun n =>
+  fun n ↦
     match n with
     | 0 => defaultPT 1
     | m + 1 =>
         let tbl := tiCTable φ b memoBound m
-        abs₁ fun z => tiCVal φ b tbl (z (defaultPT m))
+        abs₁ fun z ↦ tiCVal φ b tbl (z (defaultPT m))
 
 /-- **The equivalence**, at every ambient and every code. -/
 theorem tiCFast_eq (φ : Formula) (b : Fam) : tiCFast φ b = tiC φ b := by
@@ -513,8 +524,8 @@ theorem tiCFast_eq (φ : Formula) (b : Fam) : tiCFast φ b = tiC φ b := by
   cases n with
   | zero => rfl
   | succ m =>
-    show (abs₁ fun z => tiCVal φ b (tiCTable φ b memoBound m) (z (defaultPT m)))
-      = abs₁ fun z => tiFamAt φ b (z (defaultPT m)) m
+    show (abs₁ fun z ↦ tiCVal φ b (tiCTable φ b memoBound m) (z (defaultPT m)))
+      = abs₁ fun z ↦ tiFamAt φ b (z (defaultPT m)) m
     simp only [tiCVal_eq]
 
 /-- The same switch one level up.  `tiCFast` builds its table *outside*
@@ -537,7 +548,7 @@ deliberately the *same* pairing device (`pairPT`): the realizability
 clause for `∃` is the clause for `∨` with the tag generalized from two
 values to `ℕ`, so no second pairing mechanism is introduced. -/
 def exIC (k : ℕ) (f : Fam) : Fam :=
-  fun n => pairPT (natPT (n + 1) k) (f n)
+  fun n ↦ pairPT (natPT (n + 1) k) (f n)
 
 /-- `exE`: read the witness off the major premise, then run the body with
 the witness *in the environment* and the payload as the hypothesis
@@ -545,14 +556,14 @@ family — combinator 44.  Structurally `orEC` with the two-way tag split
 replaced by passing the witness along, so again nothing new: `famOf`
 rebuilds the hypothesis family at each ambient exactly as there. -/
 def exEC (φ : Formula) (d : Fam) (body : ℕ → Fam → Fam) : Fam :=
-  fun n => body (fstPT (d n) (defaultPT n)) (famOf φ (sndPT (d n))) n
+  fun n ↦ body (fstPT (d n) (defaultPT n)) (famOf φ (sndPT (d n))) n
 
 /-- `eqDec`: tag by the (meta-level) decision of the equation; the
 payloads are contentless. -/
 def eqDecC (t : Bool) : Fam :=
-  fun n =>
-    if t then pairPT (fun _ => (0 : ℕ)) (defaultPT (n + 1))
-    else pairPT (fun _ => (1 : ℕ)) (defaultPT (n + 1))
+  fun n ↦
+    if t then pairPT (fun _ ↦ (0 : ℕ)) (defaultPT (n + 1))
+    else pairPT (fun _ ↦ (1 : ℕ)) (defaultPT (n + 1))
 
 /-- `succNeZero` and `succInj` — and, since Phase A, the equational-logic
 schemas and the recursion equations for `+`/`×`: contentless realizers
@@ -575,14 +586,14 @@ def extract : {Γ : List Formula} → {φ : Formula} →
   | _, _, .orI₂ D, ρ, env => orI₂C (extract D ρ env)
   | _, _, @Deriv.orE _ φ ψ _ D D₁ D₂, ρ, env =>
       orEC φ ψ (extract D ρ env)
-        (fun p => extract D₁ ρ (p :: env))
-        (fun p => extract D₂ ρ (p :: env))
+        (fun p ↦ extract D₁ ρ (p :: env))
+        (fun p ↦ extract D₂ ρ (p :: env))
   | _, _, @Deriv.impI _ φ _ D, ρ, env =>
-      impIC φ (fun env' => extract D ρ env') env
+      impIC φ (fun env' ↦ extract D ρ env') env
   | _, _, .impE D₁ D₂, ρ, env => impEC (extract D₁ ρ env) (extract D₂ ρ env)
   | _, _, .botE _, _, _ => botEC
   | _, _, @Deriv.allI _ y _ D _, ρ, env =>
-      allIC (fun k => extract D (Function.update ρ y k) env)
+      allIC (fun k ↦ extract D (Function.update ρ y k) env)
   | _, _, .allE u D _, ρ, env => allEC (extract D ρ env) (u.eval ρ)
   | _, _, .ind D₁ D₂ _, ρ, env => indC (extract D₁ ρ env) (extract D₂ ρ env)
   | _, _, .eqDec s t, ρ, _ => eqDecC (decide (s.eval ρ = t.eval ρ))
@@ -620,7 +631,7 @@ def extract : {Γ : List Formula} → {φ : Formula} →
   | _, _, .exI u D _, ρ, env => exIC (u.eval ρ) (extract D ρ env)
   | _, _, @Deriv.exE _ x φ _ D₁ D₂ _ _, ρ, env =>
       exEC φ (extract D₁ ρ env)
-        (fun w p => extract D₂ (Function.update ρ x w) (p :: env))
+        (fun w p ↦ extract D₂ (Function.update ρ x w) (p :: env))
   -- Phase H4: the Hydra schemas are contentless, like every other
   -- equation/implication axiom of the fragment.
   | _, _, .hydraZero _, _, _ => axiomC
@@ -681,7 +692,7 @@ theorem extract_exE {Γ : List Formula} {x : ℕ} {φ ψ : Formula}
     (ρ : ℕ → ℕ) (env : List Fam) :
     extract (.exE D₁ D₂ hfresh hnf) ρ env
       = exEC φ (extract D₁ ρ env)
-          (fun w p => extract D₂ (Function.update ρ x w) (p :: env)) := rfl
+          (fun w p ↦ extract D₂ (Function.update ρ x w) (p :: env)) := rfl
 
 /-- The ambient level above which a derivation's extracted family
 realizes its conclusion. -/

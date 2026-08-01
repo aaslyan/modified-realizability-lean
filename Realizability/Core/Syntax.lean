@@ -1,4 +1,16 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Signature.OrdinalAssignment
+import Realizability.Signature.Hydra
+import Realizability.Signature.Hanoi
+import Realizability.Signature.Pascal
+import Realizability.Signature.Coloring
+import Realizability.Signature.Fibonacci
+
+/-!
 # Syntax: terms, formulas, and derivations for the fragment
 
 The fragment of the project brief: intuitionistic propositional logic
@@ -47,12 +59,6 @@ formula (no capture), `∀`-intro the usual freshness condition for
 the context, and `ind` the same no-capture condition as `∀`-elim for
 `succ x` — the term its step case substitutes.
 -/
-import Realizability.Signature.OrdinalAssignment
-import Realizability.Signature.Hydra
-import Realizability.Signature.Hanoi
-import Realizability.Signature.Pascal
-import Realizability.Signature.Coloring
-import Realizability.Signature.Fibonacci
 
 namespace Realizability
 
@@ -214,85 +220,85 @@ theorem eval_congr {ρ ρ' : ℕ → ℕ} :
   | plus s t ihs iht =>
     intro h
     simp only [eval]
-    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
-      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+    rw [ihs fun y hy ↦ h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy ↦ h y (List.mem_append.mpr (Or.inr hy))]
   | times s t ihs iht =>
     intro h
     simp only [eval]
-    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
-      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+    rw [ihs fun y hy ↦ h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy ↦ h y (List.mem_append.mpr (Or.inr hy))]
   | pred t ih => intro h; simp only [eval]; rw [ih h]
   | exp s t ihs iht =>
     intro h
     simp only [eval]
-    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
-      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+    rw [ihs fun y hy ↦ h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy ↦ h y (List.mem_append.mpr (Or.inr hy))]
   | bump s t ihs iht =>
     intro h
     simp only [eval]
-    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
-      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+    rw [ihs fun y hy ↦ h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy ↦ h y (List.mem_append.mpr (Or.inr hy))]
   | good s t ihs iht =>
     intro h
     simp only [eval]
-    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
-      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+    rw [ihs fun y hy ↦ h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy ↦ h y (List.mem_append.mpr (Or.inr hy))]
   | prec s t ihs iht =>
     intro h
     simp only [eval]
-    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
-      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+    rw [ihs fun y hy ↦ h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy ↦ h y (List.mem_append.mpr (Or.inr hy))]
   | ord s t ihs iht =>
     intro h
     simp only [eval]
-    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
-      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+    rw [ihs fun y hy ↦ h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy ↦ h y (List.mem_append.mpr (Or.inr hy))]
   | hcut s t ihs iht =>
     intro h
     simp only [eval]
-    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
-      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+    rw [ihs fun y hy ↦ h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy ↦ h y (List.mem_append.mpr (Or.inr hy))]
   | hydra s t ihs iht =>
     intro h
     simp only [eval]
-    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
-      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+    rw [ihs fun y hy ↦ h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy ↦ h y (List.mem_append.mpr (Or.inr hy))]
   | hord t ih => intro h; simp only [eval]; rw [ih h]
   | hcons s t ihs iht =>
     intro h
     simp only [eval]
-    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
-      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+    rw [ihs fun y hy ↦ h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy ↦ h y (List.mem_append.mpr (Or.inr hy))]
   | happ s t ihs iht =>
     intro h
     simp only [eval]
-    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
-      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+    rw [ihs fun y hy ↦ h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy ↦ h y (List.mem_append.mpr (Or.inr hy))]
   | mvcount t ih => intro h; simp only [eval]; rw [ih h]
   | solves n f t v k ihn ihf iht ihv ihk =>
     intro h
     simp only [eval]
     simp only [vars, List.mem_append] at h
-    rw [ihn fun y hy => h y (Or.inl (Or.inl (Or.inl (Or.inl hy)))),
-      ihf fun y hy => h y (Or.inl (Or.inl (Or.inl (Or.inr hy)))),
-      iht fun y hy => h y (Or.inl (Or.inl (Or.inr hy))),
-      ihv fun y hy => h y (Or.inl (Or.inr hy)),
-      ihk fun y hy => h y (Or.inr hy)]
+    rw [ihn fun y hy ↦ h y (Or.inl (Or.inl (Or.inl (Or.inl hy)))),
+      ihf fun y hy ↦ h y (Or.inl (Or.inl (Or.inl (Or.inr hy)))),
+      iht fun y hy ↦ h y (Or.inl (Or.inl (Or.inr hy))),
+      ihv fun y hy ↦ h y (Or.inl (Or.inr hy)),
+      ihk fun y hy ↦ h y (Or.inr hy)]
   | xor s t ihs iht =>
     intro h
     simp only [eval]
-    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
-      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+    rw [ihs fun y hy ↦ h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy ↦ h y (List.mem_append.mpr (Or.inr hy))]
   | pas s t ihs iht =>
     intro h
     simp only [eval]
-    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
-      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+    rw [ihs fun y hy ↦ h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy ↦ h y (List.mem_append.mpr (Or.inr hy))]
   | look s t ihs iht =>
     intro h
     simp only [eval]
-    rw [ihs fun y hy => h y (List.mem_append.mpr (Or.inl hy)),
-      iht fun y hy => h y (List.mem_append.mpr (Or.inr hy))]
+    rw [ihs fun y hy ↦ h y (List.mem_append.mpr (Or.inl hy)),
+      iht fun y hy ↦ h y (List.mem_append.mpr (Or.inr hy))]
   | fib t ih => intro h; simp only [eval]; rw [ih h]
 
 end Term

@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Goodstein.Goodstein
+
+/-!
 # Phase C: transfinite induction up to `ε₀` (`tiEps0`)
 
 The rule
@@ -77,7 +84,6 @@ machinery, and the missing `∃` — see QUESTIONS.md); any conservativity,
 consistency, or other metatheoretic claim about the extended fragment;
 ordinals beyond `ε₀`.
 -/
-import Realizability.Theorems.Goodstein.Goodstein
 
 namespace Realizability
 
@@ -229,13 +235,13 @@ def tiDemoPremise :
       ((Formula.all 2 ((Formula.eq (.prec (.var 2) (.var 1)) (.succ .zero)).imp
         (Formula.subst 1 (.var 2) (Formula.eq .zero .zero)))).imp
         (Formula.eq .zero .zero))) :=
-  .allI (.impI (.eqRefl .zero)) (fun _ h => absurd h List.not_mem_nil)
+  .allI (.impI (.eqRefl .zero)) (fun _ h ↦ absurd h List.not_mem_nil)
 
 /-- **The rule in action**: `⊢ ∀x. 0 = 0`, by transfinite induction along
 `≺`.  (Provable far more cheaply, of course — the point is that the
 derivation goes *through* `tiEps0`, hence through `tiRecC`.) -/
 def tiDemoDeriv : Deriv [] (Formula.all 1 (Formula.eq .zero .zero)) :=
-  .tiEps0 tiDemoPremise (by decide) (fun _ _ h => by simp [Formula.binders] at h)
+  .tiEps0 tiDemoPremise (by decide) (fun _ _ h ↦ by simp [Formula.binders] at h)
     (by simp [Formula.FreeIn, Term.vars])
 
 /-! ## Extraction and certification

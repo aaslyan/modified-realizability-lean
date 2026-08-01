@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Common.StrongInduction
+
+/-!
 # Sperner's Lemma (1D) / the discrete intermediate value theorem
 
     ⊢ ∀n ∀c. (c 0 = 0) → (c n = 1) → ∃k. k < n ∧ c k ≠ c (k+1)
@@ -40,7 +47,6 @@ the left disjunct, forcing a crossing.  The extracted witness is a genuine
 left-to-right scan returning the **first** crossing (see
 `SpernerExtraction.lean`).
 -/
-import Realizability.Common.StrongInduction
 
 namespace Realizability
 

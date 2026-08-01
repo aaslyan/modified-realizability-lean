@@ -1,4 +1,12 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Core.Soundness
+import Realizability.Core.GenericContinuity
+
+/-!
 # Phase A: `+` and `×`, their defining equations as `ind` theorems
 
 The four briefed equations
@@ -38,8 +46,6 @@ variables `2`, `3` — derived from it by instantiate-and-regeneralize,
 not re-proved.  `plusRightCommDeriv` binds `2`, `3`, `4` for the same
 reason.
 -/
-import Realizability.Core.Soundness
-import Realizability.Core.GenericContinuity
 
 namespace Realizability
 
@@ -86,7 +92,7 @@ def Deriv.congPlusR {Γ : List Formula} {s t : Term} (u : Term)
 
 /-- Any variable is fresh for the empty context. -/
 theorem freshIn_nil (x : ℕ) : FreshIn x [] :=
-  fun _ h => nomatch h
+  fun _ h ↦ nomatch h
 
 /-- A variable is fresh for the singleton context that binds it at the
 head — the step-case context of every two-variable induction below. -/
@@ -95,7 +101,7 @@ theorem freshIn_singleton_all (x : ℕ) (ψ : Formula) :
   intro χ hχ
   rw [List.mem_singleton] at hχ
   subst hχ
-  exact fun hf => hf.1 rfl
+  exact fun hf ↦ hf.1 rfl
 
 /-- `SubstOK`, from its unfolded (decidable, for concrete data)
 statement. -/

@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Common.Exists
+
+/-!
 # Phase E3: the Tower of Hanoi, inside the fragment
 
     ⊢ ∀n ∀f ∀t ∀v. ∃k. Solves(n, f, t, v, k) ∧ MoveCount k = 2^n − 1
@@ -48,7 +55,6 @@ A second, smaller instance of the same issue: both sub-solutions must be
 in scope at once, so the second existential's witness variable is renamed
 from `5` to `9` before elimination (`ihSecond`).
 -/
-import Realizability.Common.Exists
 
 namespace Realizability
 

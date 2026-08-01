@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Signature.Pascal
+
+/-!
 # Phase G1: Kummer/Lucas at `p = 2`
 
 The stretch goal of the Pascal brief, and unlike Phase F's theorems this
@@ -41,7 +48,6 @@ value, which is `0` or `1`.
 The `&&&` form is proved too (`pasN_eq_one_iff_land`), since that is how
 the theorem is usually quoted.
 -/
-import Realizability.Signature.Pascal
 
 namespace Realizability
 
@@ -208,7 +214,7 @@ theorem digit_of_zero (i : ℕ) : digit 0 i = 0 := by
 
 /-- A number all of whose binary digits vanish is `0`. -/
 theorem eq_zero_of_digits : ∀ k : ℕ, (∀ i, digit k i = 0) → k = 0 := by
-  refine nat_strong_ind (fun k ih => ?_)
+  refine nat_strong_ind (fun k ih ↦ ?_)
   intro h
   rcases Nat.eq_zero_or_pos k with h0 | h0
   · exact h0
@@ -234,7 +240,7 @@ peels the low bit off both arguments, and `digit_succ` shifts the digit
 condition to match. -/
 theorem pasN_eq_one_iff :
     ∀ (n k : ℕ), pasN n k = 1 ↔ ∀ i, digit k i ≤ digit n i := by
-  refine nat_strong_ind (fun n ih => ?_)
+  refine nat_strong_ind (fun n ih ↦ ?_)
   intro k
   rcases Nat.eq_zero_or_pos n with h0 | h0
   · subst h0
@@ -322,7 +328,7 @@ theorem land_eq_self_iff (n k : ℕ) :
       have hn := (hbit n i).mp ht
       omega
   · intro h
-    refine Nat.eq_of_testBit_eq fun i => ?_
+    refine Nat.eq_of_testBit_eq fun i ↦ ?_
     rw [Nat.testBit_and]
     cases hkt : k.testBit i with
     | false => simp
@@ -348,8 +354,8 @@ unmemoised Pascal recursion, so a cell in row `n` costs about `C(n,k)`
 calls, and 16 rows is what fits comfortably in a build.  The digit form
 needs no separate check — it *is* `pasN_eq_one_iff`. -/
 
-#guard (List.range 17).all fun n =>
-  (List.range (n + 1)).all fun k => (pasN n k == 1) == (k &&& n == k)
+#guard (List.range 17).all fun n ↦
+  (List.range (n + 1)).all fun k ↦ (pasN n k == 1) == (k &&& n == k)
 
 /-! Two named instances: row 8 is `1 0 0 0 0 0 0 0 1` because the only
 submasks of `1000₂` are `0` and itself; row 7 is all ones because

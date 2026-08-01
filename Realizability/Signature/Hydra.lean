@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Ordinals.Epsilon0
+
+/-!
 # Phase H1: finite rooted trees as natural numbers
 
 The Kirby–Paris Hydra game needs the fragment to quantify over *trees*,
@@ -60,7 +67,6 @@ all three reports *does not depend on any axioms*.  Proofs in this file
 are unconstrained (they reach `soundness`, whose budget allows choice);
 only the definitions are.
 -/
-import Realizability.Ordinals.Epsilon0
 
 namespace Realizability
 
@@ -145,7 +151,7 @@ theorem decodeF_eq_of_le : ∀ (fuel n : ℕ), n ≤ fuel →
     subst hn
     rfl
   | fuel + 1, n, h => by
-    rcases decEm (n = fuel + 1) with he | he
+    rcases dec_em (n = fuel + 1) with he | he
     · rw [he]
     · have hf : n ≤ fuel := by omega
       rw [decodeF_succ_eq fuel n hf, decodeF_eq_of_le fuel n hf]
@@ -457,7 +463,7 @@ theorem insertExpAux_eq_of_le (e : ℕ) : ∀ (fuel c : ℕ), c ≤ fuel →
     subst hc
     rfl
   | fuel + 1, c, h => by
-    rcases decEm (c = fuel + 1) with he | he
+    rcases dec_em (c = fuel + 1) with he | he
     · rw [he]; rfl
     · have hf : c ≤ fuel := by omega
       rw [insertExpAux_succ_eq e fuel c hf, insertExpAux_eq_of_le e fuel c hf]
@@ -485,16 +491,16 @@ head) or the old head (when it recurses into the remainder).  Needed for
 normality: the new remainder's head must still sit below the old head. -/
 theorem oE_insertExp (e c : ℕ) :
     oE (insertExp e c) = e ∨ oE (insertExp e c) = oE c := by
-  rcases decEm (c = 0) with hc | hc
+  rcases dec_em (c = 0) with hc | hc
   · subst hc
     left
     rw [insertExp_zero, oE_mkO]
   · rw [insertExp_pos hc]
-    rcases decEm (e = oE c) with he | he
+    rcases dec_em (e = oE c) with he | he
     · rw [if_pos he, oE_mkO]
       exact Or.inr rfl
     · rw [if_neg he]
-      rcases decEm (precB (oE c) e = true) with hp | hp
+      rcases dec_em (precB (oE c) e = true) with hp | hp
       · rw [if_pos hp, oE_mkO]
         exact Or.inl rfl
       · rw [if_neg hp, oE_mkO]
@@ -502,15 +508,15 @@ theorem oE_insertExp (e c : ℕ) :
 
 /-- An insertion is never zero: every branch builds an `mkO`. -/
 theorem insertExp_ne_zero (e c : ℕ) : insertExp e c ≠ 0 := by
-  rcases decEm (c = 0) with hc | hc
+  rcases dec_em (c = 0) with hc | hc
   · subst hc
     rw [insertExp_zero]
     exact mkO_ne_zero _ _ _
   · rw [insertExp_pos hc]
-    rcases decEm (e = oE c) with he | he
+    rcases dec_em (e = oE c) with he | he
     · rw [if_pos he]; exact mkO_ne_zero _ _ _
     · rw [if_neg he]
-      rcases decEm (precB (oE c) e = true) with hp | hp
+      rcases dec_em (precB (oE c) e = true) with hp | hp
       · rw [if_pos hp]; exact mkO_ne_zero _ _ _
       · rw [if_neg hp]; exact mkO_ne_zero _ _ _
 
@@ -521,18 +527,18 @@ an exponent neither equal to nor above the head sits below it, so the new
 remainder still fits under the old head. -/
 theorem nfB_insertExp {e : ℕ} (he : nfB e = true) :
     ∀ c : ℕ, nfB c = true → nfB (insertExp e c) = true := by
-  refine nat_strong_ind (fun c ih => ?_)
+  refine nat_strong_ind (fun c ih ↦ ?_)
   intro hnc
-  rcases decEm (c = 0) with hc | hc
+  rcases dec_em (c = 0) with hc | hc
   · subst hc
     rw [insertExp_zero]
     exact nfB_mkO he nfB_zero (Or.inl rfl)
   · rw [insertExp_pos hc]
-    rcases decEm (e = oE c) with heq | heq
+    rcases dec_em (e = oE c) with heq | heq
     · rw [if_pos heq]
       exact nfB_mkO (nfB_exp hc hnc) (nfB_rem hc hnc) (nfB_below hc hnc)
     · rw [if_neg heq]
-      rcases decEm (precB (oE c) e = true) with hp | hp
+      rcases dec_em (precB (oE c) e = true) with hp | hp
       · rw [if_pos hp]
         exact nfB_mkO he hnc (Or.inr hp)
       · rw [if_neg hp]
@@ -543,7 +549,7 @@ theorem nfB_insertExp {e : ℕ} (he : nfB e = true) :
         have hrec : nfB (insertExp e (oR c)) = true :=
           ih (oR c) (oR_lt hc) (nfB_rem hc hnc)
         refine nfB_mkO (nfB_exp hc hnc) hrec (Or.inr ?_)
-        rcases decEm (oR c = 0) with hr0 | hr0
+        rcases dec_em (oR c = 0) with hr0 | hr0
         · rw [hr0, insertExp_zero, oE_mkO]
           exact hlt
         · rcases oE_insertExp e (oR c) with hoe | hoe
@@ -562,20 +568,20 @@ follow the three order constructors — bigger coefficient, bigger head
 exponent, bigger remainder — with the last recursing. -/
 theorem precB_insertExp_self (e : ℕ) :
     ∀ c : ℕ, precB c (insertExp e c) = true := by
-  refine nat_strong_ind (fun c ih => ?_)
-  rcases decEm (c = 0) with hc | hc
+  refine nat_strong_ind (fun c ih ↦ ?_)
+  rcases dec_em (c = 0) with hc | hc
   · subst hc
     rw [insertExp_zero]
     exact precB_zero_mkO _ _ _
   · have hA : mkO (oE c) (oC c) (oR c) = c := mkO_oE_oC_oR hc
     rw [insertExp_pos hc]
-    rcases decEm (e = oE c) with heq | heq
+    rcases dec_em (e = oE c) with heq | heq
     · rw [if_pos heq]
       have h := precB_mkO_coeff (oE c) (oR c) (oR c)
         (show oC c < oC c + 1 by omega)
       rwa [hA] at h
     · rw [if_neg heq]
-      rcases decEm (precB (oE c) e = true) with hp | hp
+      rcases dec_em (precB (oE c) e = true) with hp | hp
       · rw [if_pos hp]
         have h := precB_mkO_exp (oC c) (oR c) 0 c hp
         rwa [hA] at h
@@ -593,23 +599,23 @@ the induction hypothesis; the smaller-head rows need transitivity to place
 theorem precB_insertExp_mono {e : ℕ} (he : nfB e = true) :
     ∀ c₂ c₁ : ℕ, nfB c₁ = true → nfB c₂ = true → precB c₁ c₂ = true →
       precB (insertExp e c₁) (insertExp e c₂) = true := by
-  refine nat_strong_ind (fun c₂ ih => ?_)
+  refine nat_strong_ind (fun c₂ ih ↦ ?_)
   intro c₁ hn₁ hn₂ h12
   have hc₂ : c₂ ≠ 0 := by
     intro h0
     rw [h0, precB_zero_right] at h12
     exact absurd h12 (by simp)
   rw [insertExp_pos hc₂]
-  rcases decEm (c₁ = 0) with hc₁ | hc₁
+  rcases dec_em (c₁ = 0) with hc₁ | hc₁
   · -- row Z
     subst hc₁
     rw [insertExp_zero]
-    rcases decEm (e = oE c₂) with hb | hb
+    rcases dec_em (e = oE c₂) with hb | hb
     · rw [if_pos hb]
       conv => lhs; rw [hb]
       exact precB_mkO_coeff _ _ _ (by omega)
     · rw [if_neg hb]
-      rcases decEm (precB (oE c₂) e = true) with hp | hp
+      rcases dec_em (precB (oE c₂) e = true) with hp | hp
       · rw [if_pos hp]
         exact precB_mkO_rem _ _ (precB_zero_left hc₂)
       · rw [if_neg hp]
@@ -618,7 +624,7 @@ theorem precB_insertExp_mono {e : ℕ} (he : nfB e = true) :
   · rw [insertExp_pos hc₁]
     rcases precB_cases hc₁ hc₂ h12 with hexp | ⟨heq, hrest⟩
     · -- smaller head exponent
-      rcases decEm (e = oE c₂) with hb | hb
+      rcases dec_em (e = oE c₂) with hb | hb
       · rw [if_pos hb]
         have hp₁ : precB (oE c₁) e = true := by rw [hb]; exact hexp
         have hne₁ : ¬ (e = oE c₁) := by
@@ -628,7 +634,7 @@ theorem precB_insertExp_mono {e : ℕ} (he : nfB e = true) :
         rw [if_neg hne₁, if_pos hp₁]
         conv => lhs; rw [hb]
         exact precB_mkO_coeff _ _ _ (by omega)
-      · rcases decEm (precB (oE c₂) e = true) with hp | hp
+      · rcases dec_em (precB (oE c₂) e = true) with hp | hp
         · rw [if_neg hb, if_pos hp]
           have hp₁ : precB (oE c₁) e = true := precB_trans hexp hp
           have hne₁ : ¬ (e = oE c₁) := by
@@ -640,25 +646,25 @@ theorem precB_insertExp_mono {e : ℕ} (he : nfB e = true) :
         · rw [if_neg hb, if_neg hp]
           have hlt : precB e (oE c₂) = true :=
             precB_of_ne_of_not_precB he (nfB_exp hc₂ hn₂) hb (by simpa using hp)
-          rcases decEm (e = oE c₁) with hb₁ | hb₁
+          rcases dec_em (e = oE c₁) with hb₁ | hb₁
           · rw [if_pos hb₁]
             exact precB_mkO_exp _ _ _ _ (hb₁ ▸ hlt)
           · rw [if_neg hb₁]
-            rcases decEm (precB (oE c₁) e = true) with hp₁ | hp₁
+            rcases dec_em (precB (oE c₁) e = true) with hp₁ | hp₁
             · rw [if_pos hp₁]
               exact precB_mkO_exp _ _ _ _ hlt
             · rw [if_neg hp₁]
               exact precB_mkO_exp _ _ _ _ hexp
     · -- equal head exponents: both take the same branch
       rw [heq]
-      rcases decEm (e = oE c₂) with hb | hb
+      rcases dec_em (e = oE c₂) with hb | hb
       · rw [if_pos hb, if_pos hb]
         rcases hrest with hcc | ⟨hcc, hrr⟩
         · exact precB_mkO_coeff _ _ _ (by omega)
         · rw [hcc]
           exact precB_mkO_rem _ _ hrr
       · rw [if_neg hb, if_neg hb]
-        rcases decEm (precB (oE c₂) e = true) with hp | hp
+        rcases dec_em (precB (oE c₂) e = true) with hp | hp
         · rw [if_pos hp, if_pos hp]
           exact precB_mkO_rem _ _ h12
         · rw [if_neg hp, if_neg hp]
@@ -680,14 +686,14 @@ induction hypothesis finishes it. -/
 theorem precB_insertExp_mono_exp {a b : ℕ} (ha : nfB a = true)
     (hb : nfB b = true) (hab : precB a b = true) :
     ∀ X : ℕ, nfB X = true → precB (insertExp a X) (insertExp b X) = true := by
-  refine nat_strong_ind (fun X ih => ?_)
+  refine nat_strong_ind (fun X ih ↦ ?_)
   intro hnX
-  rcases decEm (X = 0) with hX | hX
+  rcases dec_em (X = 0) with hX | hX
   · subst hX
     rw [insertExp_zero, insertExp_zero]
     exact precB_mkO_exp _ _ _ _ hab
   · rw [insertExp_pos hX, insertExp_pos hX]
-    rcases decEm (b = oE X) with hbE | hbE
+    rcases dec_em (b = oE X) with hbE | hbE
     · rw [if_pos hbE]
       have haX : precB a (oE X) = true := hbE ▸ hab
       have hane : ¬ (a = oE X) := by
@@ -701,13 +707,13 @@ theorem precB_insertExp_mono_exp {a b : ℕ} (ha : nfB a = true)
       rw [if_neg hane, if_neg hnp]
       exact precB_mkO_coeff _ _ _ (by omega)
     · rw [if_neg hbE]
-      rcases decEm (precB (oE X) b = true) with hpb | hpb
+      rcases dec_em (precB (oE X) b = true) with hpb | hpb
       · rw [if_pos hpb]
-        rcases decEm (a = oE X) with haE | haE
+        rcases dec_em (a = oE X) with haE | haE
         · rw [if_pos haE]
           exact precB_mkO_exp _ _ _ _ (haE ▸ hab)
         · rw [if_neg haE]
-          rcases decEm (precB (oE X) a = true) with hpa | hpa
+          rcases dec_em (precB (oE X) a = true) with hpa | hpa
           · rw [if_pos hpa]
             exact precB_mkO_exp _ _ _ _ hab
           · rw [if_neg hpa]
@@ -735,6 +741,7 @@ arbitrarily many copies harmless, and note where `n` appears in its
 proof: only as a coefficient, in the two places the order constructors
 ignore coefficients.  The induction is on `X`, with `n` general. -/
 
+/-- Insert `n` copies of `ω^e` into the CNF sum `X` (iterated `insertExp`). -/
 def insertIter (e : ℕ) : ℕ → ℕ → ℕ
   | 0, X => X
   | n + 1, X => insertExp e (insertIter e n X)
@@ -787,13 +794,13 @@ theorem precB_insertIter_lt {a b : ℕ} (ha : nfB a = true) (hb : nfB b = true)
     (hab : precB a b = true) :
     ∀ X : ℕ, nfB X = true → ∀ n : ℕ,
       precB (insertIter a n X) (insertExp b X) = true := by
-  refine nat_strong_ind (fun X ih => ?_)
+  refine nat_strong_ind (fun X ih ↦ ?_)
   intro hnX n
   have hbne : b ≠ 0 := by
     intro h0
     rw [h0, precB_zero_right] at hab
     exact absurd hab (by simp)
-  rcases decEm (precB (oE X) b = true) with hpb | hpb
+  rcases dec_em (precB (oE X) b = true) with hpb | hpb
   · -- `b` is above `X`'s head: the right side prepends, and the left
     -- side's head is `a` or `oE X`, both below `b`
     have hbE : ¬ (b = oE X) := by
@@ -801,11 +808,11 @@ theorem precB_insertIter_lt {a b : ℕ} (ha : nfB a = true) (hb : nfB b = true)
       rw [hEq, precB_irrefl] at hpb
       exact absurd hpb (by simp)
     have hRHS : insertExp b X = mkO b 0 X := by
-      rcases decEm (X = 0) with hX | hX
+      rcases dec_em (X = 0) with hX | hX
       · rw [hX, insertExp_zero]
       · rw [insertExp_pos hX, if_neg hbE, if_pos hpb]
     rw [hRHS]
-    rcases decEm (insertIter a n X = 0) with hz | hz
+    rcases dec_em (insertIter a n X = 0) with hz | hz
     · rw [hz]
       exact precB_zero_mkO _ _ _
     · have hd := mkO_oE_oC_oR hz
@@ -816,7 +823,7 @@ theorem precB_insertIter_lt {a b : ℕ} (ha : nfB a = true) (hb : nfB b = true)
       have hgoal := precB_mkO_exp (oC (insertIter a n X))
         (oR (insertIter a n X)) 0 X hlt
       rwa [hd] at hgoal
-  · rcases decEm (b = oE X) with hbE | hbE
+  · rcases dec_em (b = oE X) with hbE | hbE
     · -- `b` equals the head: coefficient comparison, `n` ignored
       have haX : precB a (oE X) = true := hbE ▸ hab
       have hX : X ≠ 0 := by
@@ -912,7 +919,7 @@ theorem cutH_descends (n : ℕ) : ∀ h : Hydra, h ≠ Hydra.leaf →
     have hnf₁ := nfB_ordOfHydra (cutH n (Hydra.node (.cons c₀ cs))).1
     have hnf₂ := nfB_ordOfHydra (Hydra.node (.cons c₀ cs))
     have hnfR := nfB_ordOfForest rest
-    rcases decEm ((cutH n (Hydra.node (.cons c₀ cs))).2 = true) with hflag | hflag
+    rcases dec_em ((cutH n (Hydra.node (.cons c₀ cs))).2 = true) with hflag | hflag
     · simp only [cutH, hflag, if_true, ordOfHydra_node, ordOfForest_cons,
         ordOfForest_append_replicate]
       exact precB_insertIter_lt hnf₁ hnf₂ IH _ hnfR (n + 1)
@@ -942,7 +949,7 @@ dead".  Everything below is stated that way. -/
 /-- The dead hydra is exactly code `0` — one direction of the bijection,
 read as the fragment's termination test. -/
 theorem hydraOf_eq_leaf_iff {code : ℕ} : hydraOf code = Hydra.leaf ↔ code = 0 := by
-  refine ⟨fun h => ?_, fun h => by subst h; rfl⟩
+  refine ⟨fun h ↦ ?_, fun h ↦ by subst h; rfl⟩
   have h2 : encodeH (hydraOf code) = encodeH Hydra.leaf := by rw [h]
   rw [encodeH_hydraOf, encodeH_leaf] at h2
   exact h2
@@ -955,7 +962,7 @@ battle — the analogue of `ordPredLt` in the Goodstein layer. -/
 theorem olt_ordOfHydraN_step (n code : ℕ) (h : code ≠ 0) :
     OLt (ordOfHydraN (hydraStepN n code)) (ordOfHydraN code) :=
   olt_of (nfB_ordOfHydra _) (nfB_ordOfHydra _)
-    (hydraStepN_descends n code fun hl => h (hydraOf_eq_leaf_iff.mp hl))
+    (hydraStepN_descends n code fun hl ↦ h (hydraOf_eq_leaf_iff.mp hl))
 
 /-- The battle's own recursion, in the two forms the fragment's schemas
 `hydraZero`/`hydraSucc` assert.  Both hold by definition; they are named

@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Goodstein.TransfiniteInduction
+
+/-!
 # Phase D5: the Goodstein descent, derived instead of imported
 
 Phase D2 gave the fragment its Goodstein proof but imported one composite
@@ -44,7 +51,6 @@ So the gap is narrowed from "the theorem's core lemma is assumed" to
 "three general properties of the ordinal assignment are assumed", and the
 Goodstein-specific reasoning is now entirely the fragment's own.
 -/
-import Realizability.Theorems.Goodstein.TransfiniteInduction
 
 namespace Realizability
 
@@ -134,7 +140,7 @@ theorem ord_descent_via_fragment {k n : ℕ} (hk : 2 ≤ k) (hn : n ≠ 0) :
     OLt (ordOf (k + 1) (bumpN k n - 1)) (ordOf k n) := by
   obtain ⟨b, hb⟩ : ∃ b, k = b + 2 := ⟨k - 2, by omega⟩
   subst hb
-  have hreal := ord_descent_realized (numeral b) (numeral n) (fun _ => 0)
+  have hreal := ord_descent_realized (numeral b) (numeral n) (fun _ ↦ 0)
     (m := derivBound (Deriv.ordDescent (Γ := []) (numeral b) (numeral n)) + 2)
     (Nat.le_add_right _ _)
   -- the antecedent `n ≠ 0` is realized by anything: its own antecedent is
@@ -142,18 +148,18 @@ theorem ord_descent_via_fragment {k n : ℕ} (hk : 2 ≤ k) (hn : n ≠ 0) :
   obtain ⟨p, hp⟩ : ∃ p, derivBound (Deriv.ordDescent (Γ := []) (numeral b)
       (numeral n)) + 2 = p + 1 + 1 := ⟨_, rfl⟩
   rw [hp] at hreal
-  have hante : MR (fun _ => 0) (Formula.eq (numeral n) .zero).neg (p + 1)
+  have hante : MR (fun _ ↦ 0) (Formula.eq (numeral n) .zero).neg (p + 1)
       (defaultPT (p + 2)) := by
     intro y hy
-    have hy' : (numeral n).eval (fun _ => 0) = (0 : ℕ) := hy
+    have hy' : (numeral n).eval (fun _ ↦ 0) = (0 : ℕ) := hy
     rw [numeral_eval] at hy'
     exact absurd hy' hn
   have hconc := hreal _ hante
-  have hval : Term.eval (fun _ => 0)
+  have hval : Term.eval (fun _ ↦ 0)
       (.prec (.ord (.succ (.succ (.succ (numeral b))))
           (.pred (.bump (.succ (.succ (numeral b))) (numeral n))))
         (.ord (.succ (.succ (numeral b))) (numeral n)))
-      = Term.eval (fun _ => 0) (.succ .zero) := hconc
+      = Term.eval (fun _ ↦ 0) (.succ .zero) := hconc
   simp only [Term.eval, numeral_eval] at hval
   refine oltN_eq_one_iff.mp ?_
   show oltN (ordOf (b + 1 + 1 + 1) (bumpN (b + 1 + 1) n - 1))

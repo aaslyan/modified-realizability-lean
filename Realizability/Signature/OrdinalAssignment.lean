@@ -1,4 +1,12 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Ordinals.Epsilon0
+import Mathlib.Data.Nat.Basic
+
+/-!
 # The value-level layer between the notations and the fragment
 
 Everything the fragment's function symbols evaluate by, that is not pure
@@ -41,8 +49,6 @@ in `GoodsteinTheorem.lean`, where the *induction* is performed.  What (3)
 does need is (2) plus monotonicity, and monotonicity is the same
 digit-comparison work as (1), so (1) and (3) share their hard core.
 -/
-import Realizability.Ordinals.Epsilon0
-import Mathlib.Data.Nat.Basic
 
 namespace Realizability
 
@@ -188,7 +194,7 @@ theorem hlogAux_succ_eq (b : ℕ) : ∀ (fuel n : ℕ), n ≤ fuel →
   | fuel + 1, n, h => by
     show (if 1 < b ∧ b ≤ n then hlogAux b (fuel + 1) (n / b) + 1 else 0)
       = (if 1 < b ∧ b ≤ n then hlogAux b fuel (n / b) + 1 else 0)
-    rcases decEm (1 < b ∧ b ≤ n) with hc | hc
+    rcases dec_em (1 < b ∧ b ≤ n) with hc | hc
     · have hdiv : n / b ≤ fuel := by
         have : n / b < n := Nat.div_lt_self (by omega) hc.1
         omega
@@ -202,7 +208,7 @@ theorem hlogAux_eq_of_le (b : ℕ) : ∀ (fuel n : ℕ), n ≤ fuel →
     subst hn
     rfl
   | fuel + 1, n, h => by
-    rcases decEm (n = fuel + 1) with he | he
+    rcases dec_em (n = fuel + 1) with he | he
     · rw [he]; rfl
     · have hf : n ≤ fuel := by omega
       rw [hlogAux_succ_eq b fuel n hf, hlogAux_eq_of_le b fuel n hf]
@@ -229,8 +235,8 @@ theorem hlog_eq_zero {b n : ℕ} (h : n < b) : hlog b n = 0 := by
 /-- **Maximality**: `n` is strictly below the next power. -/
 theorem lt_pow_hlog_succ {b : ℕ} (hb : 2 ≤ b) :
     ∀ n : ℕ, n < b ^ (hlog b n + 1) := by
-  refine nat_strong_ind (fun n ih => ?_)
-  rcases decEm (n < b) with h | h
+  refine nat_strong_ind (fun n ih ↦ ?_)
+  rcases dec_em (n < b) with h | h
   · rw [hlog_eq_zero h, Nat.pow_one]
     exact h
   · have hn : b ≤ n := by omega
@@ -262,7 +268,7 @@ theorem hlog_lt_of_lt_pow {b n e : ℕ} (hb : 2 ≤ b) (hn : 1 ≤ n)
 /-- The logarithm is monotone. -/
 theorem hlog_le_hlog {b a c : ℕ} (hb : 2 ≤ b) (hac : a ≤ c) :
     hlog b a ≤ hlog b c := by
-  rcases decEm (a = 0) with h0 | h0
+  rcases dec_em (a = 0) with h0 | h0
   · subst h0
     show hlog b 0 ≤ _
     rw [hlog_eq_zero (by omega)]
@@ -380,7 +386,7 @@ theorem bumpNAux_eq_of_le (k : ℕ) : ∀ (fuel n : ℕ), n ≤ fuel →
     subst hn
     rfl
   | fuel + 1, n, h => by
-    rcases decEm (n = fuel + 1) with he | he
+    rcases dec_em (n = fuel + 1) with he | he
     · rw [he]; rfl
     · have hf : n ≤ fuel := by omega
       rw [bumpNAux_succ_eq k fuel n hf, bumpNAux_eq_of_le k fuel n hf]
@@ -417,10 +423,10 @@ below `b`. -/
 theorem bumpN_mono_bound {k : ℕ} (hk : 2 ≤ k) : ∀ b : ℕ,
     (∀ a, a < b → bumpN k a < bumpN k b) ∧
       bumpN k b < (k + 1) ^ (bumpN k (hlog k b) + 1) := by
-  refine nat_strong_ind (fun b ih => ?_)
-  rcases decEm (b = 0) with hb0 | hb0
+  refine nat_strong_ind (fun b ih ↦ ?_)
+  rcases dec_em (b = 0) with hb0 | hb0
   · subst hb0
-    refine ⟨fun a ha => absurd ha (by omega), ?_⟩
+    refine ⟨fun a ha ↦ absurd ha (by omega), ?_⟩
     have h1 : (1 : ℕ) ≤ (k + 1) ^ (bumpN k (hlog k 0) + 1) :=
       Nat.one_le_pow _ _ (by omega)
     rw [bumpN_zero]
@@ -439,7 +445,7 @@ theorem bumpN_mono_bound {k : ℕ} (hk : 2 ≤ k) : ∀ b : ℕ,
     have hkey : ∀ r : ℕ, r < b → r < k ^ hlog k b →
         bumpN k r < (k + 1) ^ bumpN k (hlog k b) := by
       intro r hrb hrp
-      rcases decEm (r = 0) with h0 | h0
+      rcases dec_em (r = 0) with h0 | h0
       · subst h0
         rw [bumpN_zero]
         exact Nat.lt_of_lt_of_le Nat.zero_lt_one (Nat.one_le_pow _ _ (by omega))
@@ -465,7 +471,7 @@ theorem bumpN_mono_bound {k : ℕ} (hk : 2 ≤ k) : ∀ b : ℕ,
       omega
     refine ⟨?_, hbound⟩
     intro a hab
-    rcases decEm (a = 0) with ha0 | ha0
+    rcases dec_em (a = 0) with ha0 | ha0
     · subst ha0
       have h4 : (k + 1) ^ bumpN k (hlog k b) * 1
           ≤ (k + 1) ^ bumpN k (hlog k b) * (b / k ^ hlog k b) :=
@@ -475,7 +481,7 @@ theorem bumpN_mono_bound {k : ℕ} (hk : 2 ≤ k) : ∀ b : ℕ,
     · have ha1 : 1 ≤ a := by omega
       have hEa : hlog k a ≤ hlog k b := hlog_le_hlog hk (by omega)
       have hBa := bumpN_pos_eq (k := k) ha1
-      rcases decEm (hlog k a < hlog k b) with hlt | hnlt
+      rcases dec_em (hlog k a < hlog k b) with hlt | hnlt
       · have h1 := (ih a hab).2
         have h2 : bumpN k (hlog k a) < bumpN k (hlog k b) := (ih _ hEb).1 _ hlt
         have h3 : (k + 1) ^ (bumpN k (hlog k a) + 1)
@@ -493,7 +499,7 @@ theorem bumpN_mono_bound {k : ℕ} (hk : 2 ≤ k) : ∀ b : ℕ,
           Nat.mod_lt _ (pow_hlog_pos k b)
         have hdeca := Nat.div_add_mod a (k ^ hlog k b)
         have hdecb := Nat.div_add_mod b (k ^ hlog k b)
-        rcases decEm (a / k ^ hlog k b < b / k ^ hlog k b) with hdlt | hdnlt
+        rcases dec_em (a / k ^ hlog k b < b / k ^ hlog k b) with hdlt | hdnlt
         · have hBRa := hkey (a % k ^ hlog k b) (by omega) hmodp
           have h1 : (k + 1) ^ bumpN k (hlog k b) * (a / k ^ hlog k b + 1)
               = (k + 1) ^ bumpN k (hlog k b) * (a / k ^ hlog k b)
@@ -526,7 +532,7 @@ theorem bumpN_ne_zero {k n : ℕ} (hk : 2 ≤ k) (hn : n ≠ 0) : bumpN k n ≠ 
 /-- The digit bound, in the form the base-change theorem uses. -/
 theorem bumpN_lt_pow {k r e : ℕ} (hk : 2 ≤ k) (h : r < k ^ e) :
     bumpN k r < (k + 1) ^ bumpN k e := by
-  rcases decEm (r = 0) with h0 | h0
+  rcases dec_em (r = 0) with h0 | h0
   · subst h0
     rw [bumpN_zero]
     exact Nat.lt_of_lt_of_le Nat.zero_lt_one (Nat.one_le_pow _ _ (by omega))
@@ -587,7 +593,7 @@ theorem ordOfAux_eq_of_le (k : ℕ) : ∀ (fuel n : ℕ), n ≤ fuel →
     subst hn
     rfl
   | fuel + 1, n, h => by
-    rcases decEm (n = fuel + 1) with he | he
+    rcases dec_em (n = fuel + 1) with he | he
     · rw [he]; rfl
     · have hf : n ≤ fuel := by omega
       rw [ordOfAux_succ_eq k fuel n hf, ordOfAux_eq_of_le k fuel n hf]
@@ -623,14 +629,14 @@ three cases of the digit comparison are the three constructors of the
 order (`precB_mkO_exp`, `precB_mkO_coeff`, `precB_mkO_rem`). -/
 theorem precB_ordOf_of_lt {k : ℕ} (hk : 2 ≤ k) :
     ∀ b a : ℕ, a < b → precB (ordOf k a) (ordOf k b) = true := by
-  refine nat_strong_ind (fun b ih => ?_)
+  refine nat_strong_ind (fun b ih ↦ ?_)
   intro a hab
   have hb1 : 1 ≤ b := by omega
   have hEb : hlog k b < b := hlog_lt k b hb1
   have hRb : b % k ^ hlog k b < b := rem_lt hb1
   have hd1b : 1 ≤ b / k ^ hlog k b := one_le_digit hk hb1
   rw [ordOf_pos hb1]
-  rcases decEm (a = 0) with ha0 | ha0
+  rcases dec_em (a = 0) with ha0 | ha0
   · subst ha0
     rw [ordOf_zero]
     exact precB_zero_mkO _ _ _
@@ -638,7 +644,7 @@ theorem precB_ordOf_of_lt {k : ℕ} (hk : 2 ≤ k) :
     have hd1a : 1 ≤ a / k ^ hlog k a := one_le_digit hk ha1
     have hEa : hlog k a ≤ hlog k b := hlog_le_hlog hk (by omega)
     rw [ordOf_pos ha1]
-    rcases decEm (hlog k a < hlog k b) with hlt | hnlt
+    rcases dec_em (hlog k a < hlog k b) with hlt | hnlt
     · exact precB_mkO_exp _ _ _ _ (ih _ hEb _ hlt)
     · have hEeq : hlog k a = hlog k b := by omega
       rw [hEeq]
@@ -647,7 +653,7 @@ theorem precB_ordOf_of_lt {k : ℕ} (hk : 2 ≤ k) :
       have hdeca := Nat.div_add_mod a (k ^ hlog k b)
       have hdecb := Nat.div_add_mod b (k ^ hlog k b)
       have hd1a' : 1 ≤ a / k ^ hlog k b := by rw [← hEeq]; exact hd1a
-      rcases decEm (a / k ^ hlog k b < b / k ^ hlog k b) with hdlt | hdnlt
+      rcases dec_em (a / k ^ hlog k b < b / k ^ hlog k b) with hdlt | hdnlt
       · exact precB_mkO_coeff _ _ _ (by omega)
       · have hdd : a / k ^ hlog k b = b / k ^ hlog k b := by omega
         have hRlt : a % k ^ hlog k b < b % k ^ hlog k b := by
@@ -661,8 +667,8 @@ clause is where monotonicity is consumed: a normal form needs its
 remainder's head exponent strictly below its own, and that is exactly
 `hlog_rem_lt` transported along the assignment. -/
 theorem nfB_ordOf {k : ℕ} (hk : 2 ≤ k) : ∀ n : ℕ, nfB (ordOf k n) = true := by
-  refine nat_strong_ind (fun n ih => ?_)
-  rcases decEm (n = 0) with h0 | h0
+  refine nat_strong_ind (fun n ih ↦ ?_)
+  rcases dec_em (n = 0) with h0 | h0
   · subst h0
     rw [ordOf_zero]
     exact nfB_zero
@@ -671,7 +677,7 @@ theorem nfB_ordOf {k : ℕ} (hk : 2 ≤ k) : ∀ n : ℕ, nfB (ordOf k n) = true
     have hRn : n % k ^ hlog k n < n := rem_lt hn1
     rw [ordOf_pos hn1]
     refine nfB_mkO (ih _ hEn) (ih _ hRn) ?_
-    rcases decEm (n % k ^ hlog k n = 0) with hR0 | hR0
+    rcases dec_em (n % k ^ hlog k n = 0) with hR0 | hR0
     · rw [hR0, ordOf_zero]
       exact Or.inl rfl
     · refine Or.inr ?_
@@ -693,8 +699,8 @@ remainder — which is exactly what `hlog_of_digits`/`div_of_digits`/
 `mod_of_digits` certify, given `bumpN_lt_pow` for the remainder bound. -/
 theorem ordOf_bumpN {k : ℕ} (hk : 2 ≤ k) :
     ∀ n : ℕ, ordOf (k + 1) (bumpN k n) = ordOf k n := by
-  refine nat_strong_ind (fun n ih => ?_)
-  rcases decEm (n = 0) with h0 | h0
+  refine nat_strong_ind (fun n ih ↦ ?_)
+  rcases dec_em (n = 0) with h0 | h0
   · subst h0
     rw [bumpN_zero, ordOf_zero, ordOf_zero]
   · have hn1 : 1 ≤ n := by omega

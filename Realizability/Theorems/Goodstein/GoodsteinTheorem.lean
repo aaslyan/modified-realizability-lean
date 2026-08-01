@@ -1,4 +1,12 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Common.Exists
+import Realizability.Theorems.Goodstein.OrdinalDescent
+
+/-!
 # Phase D2: Goodstein's theorem, inside the fragment
 
     ⊢ ∀m. ∃t. good(m, t) = 0
@@ -56,8 +64,6 @@ exact accounting of what remains metatheoretic.  Everything here — the
 case split, the gluing of `goodSucc` with the descent, the induction
 itself, and the extraction of the witness — is the fragment's own.
 -/
-import Realizability.Common.Exists
-import Realizability.Theorems.Goodstein.OrdinalDescent
 
 namespace Realizability
 

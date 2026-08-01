@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Common.StrongInduction
+
+/-!
 # Phase E2 (Euclid): the divisibility foundation
 
 The Euclid roadmap's E2 proves the full greatest-common-divisor
@@ -15,7 +22,6 @@ characterisation rests on, all in the fragment with **no new symbols**:
 realizer *is* the gcd and no `gcd` symbol is needed — the same
 witness-carrying design as Goodstein and Hanoi.
 -/
-import Realizability.Common.StrongInduction
 
 namespace Realizability
 

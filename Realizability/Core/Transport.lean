@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Core.ModifiedRealizes
+
+/-!
 # Formula-indexed level transports
 
 The infrastructure identified in STATUS.md as the sole blocker for
@@ -25,7 +32,6 @@ single realizer into the bounded family (`FR`) that extraction's
 binder-cases need: this closes exactly the "binders provide one
 ambient, bodies consume several" gap.
 -/
-import Realizability.Core.ModifiedRealizes
 
 namespace Realizability
 
@@ -45,15 +51,15 @@ def liftR : (φ : Formula) → {m : ℕ} →
       pairPT (liftR φ (fstPT x)) (liftR ψ (sndPT x))
   | .or φ ψ, m, x =>
       if fstPT x (defaultPT m) = 0 then
-        pairPT (fun _ => (0 : ℕ)) (liftR φ (sndPT x))
+        pairPT (fun _ ↦ (0 : ℕ)) (liftR φ (sndPT x))
       else
-        pairPT (fun _ => (1 : ℕ)) (liftR ψ (sndPT x))
+        pairPT (fun _ ↦ (1 : ℕ)) (liftR ψ (sndPT x))
   | .imp φ ψ, 0, _ => defaultPT 2
   | .imp φ ψ, m' + 1, F =>
-      abs₁ (fun x => liftR ψ (app₁ F (dropR φ x)))
+      abs₁ (fun x ↦ liftR ψ (app₁ F (dropR φ x)))
   | .all _ φ, 0, _ => defaultPT 2
   | .all _ φ, m' + 1, F =>
-      abs₁ (fun x => liftR φ (app₁ F (natPT (m' + 1) (x (defaultPT (m' + 1))))))
+      abs₁ (fun x ↦ liftR φ (app₁ F (natPT (m' + 1) (x (defaultPT (m' + 1))))))
   | .ex _ φ, m, x =>
       pairPT (natPT (m + 2) (fstPT x (defaultPT m))) (liftR φ (sndPT x))
 
@@ -66,15 +72,15 @@ def dropR : (φ : Formula) → {m : ℕ} →
       pairPT (dropR φ (fstPT y)) (dropR ψ (sndPT y))
   | .or φ ψ, m, y =>
       if fstPT y (defaultPT (m + 1)) = 0 then
-        pairPT (fun _ => (0 : ℕ)) (dropR φ (sndPT y))
+        pairPT (fun _ ↦ (0 : ℕ)) (dropR φ (sndPT y))
       else
-        pairPT (fun _ => (1 : ℕ)) (dropR ψ (sndPT y))
+        pairPT (fun _ ↦ (1 : ℕ)) (dropR ψ (sndPT y))
   | .imp φ ψ, 0, _ => defaultPT 1
   | .imp φ ψ, m' + 1, H =>
-      abs₁ (fun x => dropR ψ (app₁ H (liftR φ x)))
+      abs₁ (fun x ↦ dropR ψ (app₁ H (liftR φ x)))
   | .all _ φ, 0, _ => defaultPT 1
   | .all _ φ, m' + 1, H =>
-      abs₁ (fun x => dropR φ (app₁ H (natPT (m' + 2) (x (defaultPT m')))))
+      abs₁ (fun x ↦ dropR φ (app₁ H (natPT (m' + 2) (x (defaultPT m')))))
   | .ex _ φ, m, y =>
       pairPT (natPT (m + 1) (fstPT y (defaultPT (m + 1)))) (dropR φ (sndPT y))
 
@@ -103,10 +109,10 @@ theorem MR_liftR_dropR :
   induction φ with
   | bot =>
     intro ρ m _
-    exact ⟨fun x hx => hx.elim, fun y hy => hy.elim⟩
+    exact ⟨fun x hx ↦ hx.elim, fun y hy ↦ hy.elim⟩
   | eq s t =>
     intro ρ m _
-    exact ⟨fun x hx => hx, fun y hy => hy⟩
+    exact ⟨fun x hx ↦ hx, fun y hy ↦ hy⟩
   | and φ ψ ihφ ihψ =>
     intro ρ m hm
     have hφ : lvl φ ≤ m := le_trans (le_max_left _ _) hm
@@ -184,12 +190,12 @@ theorem MR_liftR_dropR :
       constructor
       · intro F hF x hx
         show MR ρ ψ (m' + 1)
-          (app₁ (abs₁ fun z => liftR ψ (app₁ F (dropR φ z))) x)
+          (app₁ (abs₁ fun z ↦ liftR ψ (app₁ F (dropR φ z))) x)
         rw [app₁_abs₁]
         exact (ihψ ρ m' hψ).1 _ (hF _ ((ihφ ρ m' hφ).2 _ hx))
       · intro H hH x hx
         show MR ρ ψ m'
-          (app₁ (abs₁ fun z => dropR ψ (app₁ H (liftR φ z))) x)
+          (app₁ (abs₁ fun z ↦ dropR ψ (app₁ H (liftR φ z))) x)
         rw [app₁_abs₁]
         exact (ihψ ρ m' hψ).2 _ (hH _ ((ihφ ρ m' hφ).1 _ hx))
   | ex y φ ih =>
@@ -220,7 +226,7 @@ theorem MR_liftR_dropR :
       constructor
       · intro F hF k
         show MR (Function.update ρ y k) φ (m' + 1)
-          (app₁ (abs₁ fun z => liftR φ
+          (app₁ (abs₁ fun z ↦ liftR φ
             (app₁ F (natPT (m' + 1) (z (defaultPT (m' + 1))))))
             (natPT (m' + 2) k))
         rw [app₁_abs₁]
@@ -231,7 +237,7 @@ theorem MR_liftR_dropR :
         exact (ih (Function.update ρ y k) m' hφ).1 _ (hF k)
       · intro H hH k
         show MR (Function.update ρ y k) φ m'
-          (app₁ (abs₁ fun z => dropR φ
+          (app₁ (abs₁ fun z ↦ dropR φ
             (app₁ H (natPT (m' + 2) (z (defaultPT m')))))
             (natPT (m' + 1) k))
         rw [app₁_abs₁]
@@ -288,7 +294,7 @@ base ambient, iterated drops between the formula's level and the base,
 junk below the formula's level (never consulted). -/
 def famOf (φ : Formula) {m : ℕ} (x : PureType (m + 1)) :
     (n : ℕ) → PureType (n + 1) :=
-  fun n =>
+  fun n ↦
     if h : m ≤ n then
       (Nat.add_sub_cancel' h) ▸ liftIter φ (n - m) x
     else

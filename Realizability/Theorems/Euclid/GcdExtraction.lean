@@ -1,4 +1,12 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Euclid.GcdTheorem
+import Realizability.Core.CollapseDemo
+
+/-!
 # Phase E2 (Euclid), the extracted gcd
 
 `gcdTheorem` is a closed derivation of
@@ -22,8 +30,6 @@ it is walled by the level, exactly as `hanoiSolution 5`'s encoding and the
 Hydra code-2 battle are walled elsewhere.  The value-level facts are
 therefore read off the *realized specification*, not off evaluation.
 -/
-import Realizability.Theorems.Euclid.GcdTheorem
-import Realizability.Core.CollapseDemo
 
 namespace Realizability
 
@@ -53,7 +59,7 @@ then read the witness component of the existential.  Ambient 41 is the
 derivation's own bound, so this is the realizer at the level where it is
 certified. -/
 def gcdWitness (a b : ℕ) : ℕ :=
-  fstPT (app₁ (app₁ (extract gcdTheorem (fun _ => 0) [] 41) (natPT 41 a)) (natPT 40 b))
+  fstPT (app₁ (app₁ (extract gcdTheorem (fun _ ↦ 0) [] 41) (natPT 41 a)) (natPT 40 b))
     (defaultPT 39)
 
 /-- **The extracted number is a common divisor of `a` and `b`** — read
@@ -63,7 +69,7 @@ evaluation cannot reach).  That it is the *greatest* common divisor is the
 third conjunct of `gcd_realized'`; it, and the witnessing quotients, are
 carried by the same realizer. -/
 theorem gcdWitness_dvd (a b : ℕ) : gcdWitness a b ∣ a ∧ gcdWitness a b ∣ b := by
-  have h := gcd_realized' (fun _ => 0) (n := 41) (le_refl 41)
+  have h := gcd_realized' (fun _ ↦ 0) (n := 41) (le_refl 41)
   exact ⟨⟨_, (h a b).1⟩, ⟨_, (h a b).2.1⟩⟩
 
 /-- Generic continuity applies with no modification: `extract_continuous`

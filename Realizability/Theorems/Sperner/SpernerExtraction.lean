@@ -1,4 +1,12 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Sperner.SpernerTheorem
+import Realizability.Core.CollapseDemo
+
+/-!
 # Sperner (1D), the extracted search
 
 `spernerBody` (`SpernerTheorem.lean`) is a closed derivation of
@@ -24,8 +32,6 @@ at ambient 5, which the interpreter can evaluate, and the `#guard`s below
 run the extracted search on concrete colorings — including two with
 multiple crossings, confirming it returns the **first**.
 -/
-import Realizability.Theorems.Sperner.SpernerTheorem
-import Realizability.Core.CollapseDemo
 
 namespace Realizability
 
@@ -33,7 +39,7 @@ open ContinuousFunctionals
 
 /-- The environment carrying the endpoint `n` (variable `1`) and the
 coloring code `w` (variable `2`). -/
-def spEnv (n w : ℕ) : ℕ → ℕ := fun i => if i = 1 then n else if i = 2 then w else 0
+def spEnv (n w : ℕ) : ℕ → ℕ := fun i ↦ if i = 1 then n else if i = 2 then w else 0
 
 /-- The bound above which the extracted realizer realizes `spernerBody`. -/
 theorem sperner_derivBound : derivBound spernerBody = 11 := rfl
@@ -72,6 +78,8 @@ ambient-independent above), so the interpreter can evaluate it.  Colorings
 are `colorCode`-encoded lists of colours; the extracted search returns the
 first crossing. -/
 
+/-- The extracted Sperner search read at the low ambient 5 (the witness is
+ambient-independent); returns the first crossing. -/
 def spernerScan (n w : ℕ) : ℕ :=
   fstPT (app₁ (app₁ (extract spernerBody (spEnv n w) [] 5) (defaultPT 5))
     (defaultPT 4)) (defaultPT 3)

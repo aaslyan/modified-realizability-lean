@@ -747,7 +747,7 @@ things had to be dealt with:
 * **The `by_cases` tactic can fall back on `Classical.byCases`.**  It did,
   inside the strong-induction helper, and quietly cost `Classical.choice`
   for the whole module.  Every case split in `Epsilon0.lean` now goes
-  through the explicit decidable split `decEm`, and the file's strong
+  through the explicit decidable split `dec_em`, and the file's strong
   induction is proved locally rather than imported.  This is a standing
   invariant of that module, not a one-off cleanup.
 
@@ -3398,6 +3398,22 @@ Zeckendorf needs.  The next phase is refinement.
   and `KleeneTree/` are not reachable and were not copied, and fixes belong
   upstream, not here. (This supersedes the earlier "do not vendor" note — the
   user's decision settled toward a self-contained, reproducible repository.)
+- **Mathlib-conventions pass over the project's own 41 files** (the vendored
+  mirror left untouched). Applied, each stage compile-verified: `fun … =>` →
+  `↦` (533 arrows), the 4 over-limit lines wrapped, doc-strings added to the
+  ~19 undocumented defs, Mathlib copyright headers + a `/-!` module docstring
+  after the imports on every file (with an Apache-2.0 `LICENSE`, author
+  *Ara Aslyan* — change the license here if a different one is wanted), and
+  the one genuine naming drift `decEm → dec_em`. The auditor's residual
+  flags are all false positives or deliberate vocabulary kept on purpose:
+  the acronym-prefixed proofs (`MR_*`, `FR_*`, `CtxR_*` — `MR` = *Modified
+  Realizes*, an acronym, rule 6) and the correctly-`UpperCamelCase`
+  predicates/types (`PureType`, `CtQ`, `Tracked`, `FreeIn`, …) are **not**
+  renamed — that would erase the project's own vocabulary, which the
+  convention guide explicitly warns against. Axiom budgets and the
+  choice-free `Epsilon0`/Hydra definitions are unchanged (cosmetic edits +
+  a rename). Note: line-number citations inside `DOSSIER.md` drifted by the
+  header additions; the declaration **names** and facts remain valid.
 
 **Remaining targets** noticed while building E2/S1, to be worked from real
 uses rather than speculation:

@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Common.Arithmetic
+
+/-!
 # Phase B: hereditary base-`k` notation and the Goodstein sequence
 
 This phase makes Goodstein's theorem *expressible* in the fragment.  It
@@ -50,7 +57,6 @@ and `Goodstein/Goodstein.lean` there; reference only, no code reuse)
   with values `4, 26, 41, 60, …` from `m = 4` (checked below,
   `goodN_four`, kernel-verified by `rfl`).
 -/
-import Realizability.Common.Arithmetic
 
 namespace Realizability
 
@@ -158,7 +164,7 @@ at base `k` recovers `n` — for *every* `k` and `n` (degenerate bases
 the deferred canonicity layer.  Counterpart of evaluation-correctness
 of `WilliamAngus/Goodstein`'s `ofNat` (their `eval ∘ ofNat = id`). -/
 theorem hrepAux_eval_self (k : ℕ) : ∀ (fuel n : ℕ), n ≤ fuel →
-    (hrepAux k fuel n).eval (fun _ => k) = n
+    (hrepAux k fuel n).eval (fun _ ↦ k) = n
   | 0, 0, _ => rfl
   | 0, n + 1, h => absurd h (by omega)
   | fuel + 1, 0, _ => rfl
@@ -175,7 +181,7 @@ theorem hrepAux_eval_self (k : ℕ) : ∀ (fuel n : ℕ), n ≤ fuel →
     exact Nat.div_add_mod (n + 1) (k ^ hlog k (n + 1))
 
 /-- Existence at the adequate fuel. -/
-theorem hrep_eval_self (k n : ℕ) : (hrep k n).eval (fun _ => k) = n :=
+theorem hrep_eval_self (k n : ℕ) : (hrep k n).eval (fun _ ↦ k) = n :=
   hrepAux_eval_self k n n (Nat.le_refl n)
 
 /-- **What bumping means, meta level**: the value-level `bumpN` of
@@ -186,7 +192,7 @@ behind `bumpHrepDeriv` below, and the exact counterpart of
 `WilliamAngus/Goodstein`'s base-replacement `f` (which also leaves the
 tree untouched and reinterprets the base). -/
 theorem hrepAux_eval_bump (k : ℕ) : ∀ fuel n : ℕ,
-    (hrepAux k fuel n).eval (fun _ => k + 1) = bumpNAux k fuel n
+    (hrepAux k fuel n).eval (fun _ ↦ k + 1) = bumpNAux k fuel n
   | 0, 0 => rfl
   | 0, _ + 1 => rfl
   | fuel + 1, 0 => rfl
@@ -196,7 +202,7 @@ theorem hrepAux_eval_bump (k : ℕ) : ∀ fuel n : ℕ,
 
 /-- Bump at the adequate fuel. -/
 theorem hrep_eval_bump (k n : ℕ) :
-    (hrep k n).eval (fun _ => k + 1) = bumpN k n :=
+    (hrep k n).eval (fun _ ↦ k + 1) = bumpN k n :=
   hrepAux_eval_bump k n n
 
 /-! ## Derivation-formers for the Phase-B congruence schemas -/
@@ -291,7 +297,7 @@ value.  Recursion mirroring `hrepAux` itself; each layer is one
 congruence step plus one numeral-computation derivation. -/
 def hrepSubstDeriv (k b : ℕ) : (fuel n : ℕ) →
     Deriv [] (.eq (Term.subst 0 (numeral b) (hrepAux k fuel n))
-      (numeral ((hrepAux k fuel n).eval fun _ => b)))
+      (numeral ((hrepAux k fuel n).eval fun _ ↦ b)))
   | 0, 0 => .eqRefl .zero
   | 0, _ + 1 => .eqRefl .zero
   | _ + 1, 0 => .eqRefl .zero

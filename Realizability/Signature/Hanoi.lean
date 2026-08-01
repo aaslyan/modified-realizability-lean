@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Ordinals.Epsilon0
+
+/-!
 # Phase E1: the Tower of Hanoi, at the value level
 
 The third independence-flavoured showpiece of this development — except
@@ -51,7 +58,6 @@ whole of `k` is such a solution.  This is a genuine *validator* — it
 checks the shape of an arbitrary `k` — not "`k` equals the canonical
 answer", which is what makes the existence theorem say something.
 -/
-import Realizability.Ordinals.Epsilon0
 
 namespace Realizability
 
@@ -181,6 +187,7 @@ theorem solvesN_hanoiN (n f t v : ℕ) : solvesN n f t v (hanoiN n f t v) = 1 :=
 Needed only because the fragment's induction step receives its two
 sub-solutions as opaque values and must join them. -/
 
+/-- Fuelled worker for `happN`: concatenate two encoded move-sequences. -/
 def happAux : ℕ → ℕ → ℕ → ℕ
   | 0, _, r => r
   | _ + 1, 0, r => r
@@ -211,7 +218,7 @@ theorem happAux_eq_of_le : ∀ (fuel k r : ℕ), k ≤ fuel →
     have hk : k = 0 := by omega
     subst hk; rfl
   | fuel + 1, k, r, h => by
-    rcases decEm (k = fuel + 1) with he | he
+    rcases dec_em (k = fuel + 1) with he | he
     · rw [he]
     · have hf : k ≤ fuel := by omega
       rw [happAux_succ_eq fuel k r hf, happAux_eq_of_le fuel k r hf]
@@ -263,10 +270,10 @@ theorem hcheck_happN : ∀ (n f t v k s r : ℕ), hcheck n f t v k = some s →
     | none => rw [hcheck_succ_none n f t v k hk] at h; exact absurd h (by simp)
     | some k' =>
       rw [hcheck_succ_some n f t v k k' hk] at h
-      rcases decEm (k' = 0) with h0 | h0
+      rcases dec_em (k' = 0) with h0 | h0
       · rw [if_pos h0] at h; exact absurd h (by simp)
       · rw [if_neg h0] at h
-        rcases decEm (hhead k' = mvN f t) with hh | hh
+        rcases dec_em (hhead k' = mvN f t) with hh | hh
         · rw [if_pos hh] at h
           obtain ⟨m, w, hmw⟩ : ∃ m w, k' = hconsN m w :=
             ⟨hhead k', htail k', (hcons_eta h0).symm⟩
@@ -330,10 +337,10 @@ theorem hcheck_eq_hanoiAux : ∀ (n f t v k s : ℕ), hcheck n f t v k = some s 
     | none => rw [hcheck_succ_none n f t v k hk] at h; exact absurd h (by simp)
     | some k' =>
       rw [hcheck_succ_some n f t v k k' hk] at h
-      rcases decEm (k' = 0) with h0 | h0
+      rcases dec_em (k' = 0) with h0 | h0
       · rw [if_pos h0] at h; exact absurd h (by simp)
       · rw [if_neg h0] at h
-        rcases decEm (hhead k' = mvN f t) with hh | hh
+        rcases dec_em (hhead k' = mvN f t) with hh | hh
         · rw [if_pos hh] at h
           have e₁ : k = hanoiAux n f v t k' := hcheck_eq_hanoiAux n f v t k k' hk
           have e₂ : htail k' = hanoiAux n v t f s :=
@@ -358,6 +365,7 @@ theorem solvesN_unique {n f t v k : ℕ} (h : solvesN n f t v k = 1) :
 
 /-! ## The move count -/
 
+/-- Fuelled worker for `hlen`: the length of an encoded move-sequence. -/
 def hlenAux : ℕ → ℕ → ℕ
   | 0, _ => 0
   | _ + 1, 0 => 0
@@ -388,7 +396,7 @@ theorem hlenAux_eq_of_le : ∀ (fuel k : ℕ), k ≤ fuel →
     have hk : k = 0 := by omega
     subst hk; rfl
   | fuel + 1, k, h => by
-    rcases decEm (k = fuel + 1) with he | he
+    rcases dec_em (k = fuel + 1) with he | he
     · rw [he]
     · have hf : k ≤ fuel := by omega
       rw [hlenAux_succ_eq fuel k hf, hlenAux_eq_of_le fuel k hf]
@@ -409,9 +417,9 @@ theorem hlenAux_eq_of_le : ∀ (fuel k : ℕ), k ≤ fuel →
 /-- Concatenation adds lengths.  Strong induction on the first argument,
 whose tail strictly decreases (`htail_lt`). -/
 theorem hlen_happN : ∀ (k r : ℕ), hlen (happN k r) = hlen k + hlen r := by
-  refine nat_strong_ind (fun k ih => ?_)
+  refine nat_strong_ind (fun k ih ↦ ?_)
   intro r
-  rcases decEm (k = 0) with h0 | h0
+  rcases dec_em (k = 0) with h0 | h0
   · subst h0; simp
   · obtain ⟨m, w, hmw⟩ : ∃ m w, k = hconsN m w :=
       ⟨hhead k, htail k, (hcons_eta h0).symm⟩

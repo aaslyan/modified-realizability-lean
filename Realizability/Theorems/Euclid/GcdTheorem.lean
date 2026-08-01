@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Euclid.Euclid
+
+/-!
 # Phase E2 (Euclid), the theorem: greatest common divisor as an existential
 
     ⊢ ∀a ∀b. ∃g. g ∣ a  ∧  g ∣ b  ∧  ∀d. (d ∣ a → d ∣ b → d ∣ g)
@@ -60,7 +67,6 @@ lemmas of `Euclid.lean` emit quotient variables in `{1,3,4,5,6,7}`, all kept
 clear of the term variables above; `dvdRename` bridges to the quotient `12`
 this file uses.
 -/
-import Realizability.Theorems.Euclid.Euclid
 
 namespace Realizability
 

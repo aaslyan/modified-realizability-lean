@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Signature.Hydra
+
+/-!
 # Phase H7: Hercules wins *whatever he does*
 
 Phase H5 proved termination inside the fragment, for the battle the
@@ -56,7 +63,6 @@ Still the metatheory, not the fragment.  The fragment cannot state this:
 quantifying over plays means quantifying over functions.  And independence
 from PA remains unformalized and unclaimed, exactly as in H5.
 -/
-import Realizability.Signature.Hydra
 
 namespace Realizability
 
@@ -150,7 +156,7 @@ chops at each step, and however many heads grow back.
 This is `oLt_wf` pulled back along the ordinal assignment; the entire
 mathematical content is `play_descends`. -/
 theorem hercules_wins : WellFounded PlayRel :=
-  Subrelation.wf (fun {_ _} ⟨_, hp⟩ => play_descends hp)
+  Subrelation.wf (fun {_ _} ⟨_, hp⟩ ↦ play_descends hp)
     (InvImage.wf ordOfHydra oLt_wf)
 
 /-- The same fact in sequence form: **no infinite play exists**. -/
@@ -163,7 +169,7 @@ theorem no_infinite_play (F : ℕ → Hydra)
   induction hacc with
   | intro x _ ih =>
     intro G hG0 hG
-    refine ih (G 1) ?_ (fun i => G (i + 1)) rfl (fun i => hG (i + 1))
+    refine ih (G 1) ?_ (fun i ↦ G (i + 1)) rfl (fun i ↦ hG (i + 1))
     obtain ⟨n, hstep⟩ := hG 0
     exact ⟨n, hG0 ▸ hstep⟩
 
@@ -187,7 +193,7 @@ theorem cutH_flag_cut (n : ℕ) : ∀ g : Forest, (cutH n (.node g)).2 = true �
   | .nil, hf => by simp [cutH] at hf
   | .cons (.node .nil) rest, _ => ⟨rest, rfl, CutF.here⟩
   | .cons (.node (.cons c₀ cs)) rest, hf => by
-    rcases decEm ((cutH n (Hydra.node (.cons c₀ cs))).2 = true) with hc | hc
+    rcases dec_em ((cutH n (Hydra.node (.cons c₀ cs))).2 = true) with hc | hc
     · simp [cutH, hc] at hf
     · simp only [Bool.not_eq_true] at hc
       simp [cutH, hc] at hf
@@ -200,7 +206,7 @@ theorem cutH_flag_move (n : ℕ) : ∀ h : Hydra, h ≠ Hydra.leaf →
   | .node .nil, hne, _ => absurd rfl hne
   | .node (.cons (.node .nil) rest), _, hf => by simp [cutH] at hf
   | .node (.cons (.node (.cons c₀ cs)) rest), _, _ => by
-    rcases decEm ((cutH n (Hydra.node (.cons c₀ cs))).2 = true) with hc | hc
+    rcases dec_em ((cutH n (Hydra.node (.cons c₀ cs))).2 = true) with hc | hc
     · -- the child reports a direct cut, so *this* node is the grandparent
       obtain ⟨g'', hg₁, hg₂⟩ := cutH_flag_cut n (.cons c₀ cs) hc
       refine ⟨_, _, rfl, ?_, MoveF.grand hg₂⟩
@@ -221,7 +227,7 @@ theorem is an instance of `hercules_wins`, not a separate claim about a
 differently-defined game. -/
 theorem hydraStep_play (n : ℕ) (h : Hydra) (hne : h ≠ Hydra.leaf) :
     Play n h (hydraStep n h) := by
-  rcases decEm ((cutH n h).2 = true) with hf | hf
+  rcases dec_em ((cutH n h).2 = true) with hf | hf
   · obtain ⟨g, hg⟩ : ∃ g, h = .node g := by cases h with | node g => exact ⟨g, rfl⟩
     subst hg
     obtain ⟨g', hg₁, hg₂⟩ := cutH_flag_cut n g hf
@@ -250,7 +256,7 @@ theorem play_stuck_iff_leaf {n : ℕ} {h : Hydra} :
         exact absurd ⟨_, hydraStep_play n _ (by simp [Hydra.leaf])⟩ hstuck
   · intro hleaf
     subst hleaf
-    exact fun ⟨_, hp⟩ => not_play_leaf hp
+    exact fun ⟨_, hp⟩ ↦ not_play_leaf hp
 
 /-! ## The relation is genuinely nondeterministic
 

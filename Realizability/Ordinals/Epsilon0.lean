@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Mathlib.Logic.Function.Basic
+
+/-!
 # Phase C: ordinal notations below `ε₀` and their order, at the value level
 
 The value-level layer of the transfinite-induction rule `tiEps0`: the
@@ -64,11 +71,10 @@ is also structural, the whole notation layer computes in the kernel.
 The *realizer* combinator `tiRecC` (`Extraction.lean`) is the one place
 genuine well-founded recursion is used — it is noncomputable and never
 asked to reduce.  That is also why every proof in this file avoids
-`Classical` (see `decEm`): `tiRecC`'s **definition** mentions `oLt_wf`,
+`Classical` (see `dec_em`): `tiRecC`'s **definition** mentions `oLt_wf`,
 so this file's axiom footprint is inherited by every continuity theorem
 downstream.  It stays at `[propext, Quot.sound]`.
 -/
-import Mathlib.Logic.Function.Basic
 
 namespace Realizability
 
@@ -77,7 +83,7 @@ fall back on `Classical.byCases`, and everything in this module feeds the
 *definition* of the recursor `tiRecC` — so a stray `Classical.choice`
 here would show up in the axioms of every continuity theorem downstream.
 Each case split below goes through this instead. -/
-theorem decEm (p : Prop) [Decidable p] : p ∨ ¬ p :=
+theorem dec_em (p : Prop) [Decidable p] : p ∨ ¬ p :=
   if h : p then Or.inl h else Or.inr h
 
 /-! ## A choice-free, kernel-computable pairing
@@ -119,7 +125,7 @@ theorem tri_le_tri : ∀ {m n : ℕ}, m ≤ n → tri m ≤ tri n := by
     subst this
     exact Nat.le_refl _
   | succ n ih =>
-    rcases decEm (m = n + 1) with hm | hm
+    rcases dec_em (m = n + 1) with hm | hm
     · subst hm; exact Nat.le_refl _
     · have h' : m ≤ n := by omega
       have := ih h'
@@ -164,7 +170,7 @@ theorem tri_unTriAux_le : ∀ (f n : ℕ), tri (unTriAux f n) ≤ n
   | 0, n => Nat.zero_le n
   | f + 1, n => by
     show tri (if tri (f + 1) ≤ n then f + 1 else unTriAux f n) ≤ n
-    rcases decEm (tri (f + 1) ≤ n) with h | h
+    rcases dec_em (tri (f + 1) ≤ n) with h | h
     · rw [if_pos h]; exact h
     · rw [if_neg h]; exact tri_unTriAux_le f n
 
@@ -172,11 +178,11 @@ theorem unTriAux_ge : ∀ (f n t : ℕ), t ≤ f → tri t ≤ n → t ≤ unTri
   | 0, n, t, hf, _ => by omega
   | f + 1, n, t, hf, ht => by
     show t ≤ if tri (f + 1) ≤ n then f + 1 else unTriAux f n
-    rcases decEm (tri (f + 1) ≤ n) with h | h
+    rcases dec_em (tri (f + 1) ≤ n) with h | h
     · rw [if_pos h]; exact hf
     · rw [if_neg h]
       have htf : t ≤ f := by
-        rcases decEm (t = f + 1) with he | he
+        rcases dec_em (t = f + 1) with he | he
         · exact absurd (he ▸ ht) h
         · omega
       exact unTriAux_ge f n t htf ht
@@ -232,14 +238,14 @@ theorem unTriBin_spec : ∀ (fuel n lo hi : ℕ), hi - lo ≤ fuel → tri lo �
     exact ⟨hlo, by omega⟩
   | fuel + 1, n, lo, hi, hf, hlo, hhi => by
     rw [unTriBin_succ]
-    rcases decEm (hi ≤ lo) with hc | hc
+    rcases dec_em (hi ≤ lo) with hc | hc
     · rw [if_pos hc]
       have h : tri (hi + 1) ≤ tri (lo + 1) := tri_le_tri (by omega)
       exact ⟨hlo, by omega⟩
     · rw [if_neg hc]
       have hmid1 : lo + 1 ≤ (lo + hi + 1) / 2 := by omega
       have hmid2 : (lo + hi + 1) / 2 ≤ hi := by omega
-      rcases decEm (tri ((lo + hi + 1) / 2) ≤ n) with ht | ht
+      rcases dec_em (tri ((lo + hi + 1) / 2) ≤ n) with ht | ht
       · rw [if_pos ht]
         exact unTriBin_spec fuel n _ hi (by omega) ht hhi
       · rw [if_neg ht]
@@ -256,8 +262,8 @@ theorem unTri_unique {n t : ℕ} (h1 : tri t ≤ n) (h2 : n < tri (t + 1)) :
     t = unTri n := by
   have hu1 := tri_unTri_le n
   have hu2 := lt_tri_unTri_succ n
-  rcases decEm (t ≤ unTri n) with hle | hle
-  · rcases decEm (t = unTri n) with he | he
+  rcases dec_em (t ≤ unTri n) with hle | hle
+  · rcases dec_em (t = unTri n) with he | he
     · exact he
     · have : tri (t + 1) ≤ tri (unTri n) := tri_le_tri (by omega)
       omega
@@ -431,9 +437,9 @@ theorem precAux_succ_eq : ∀ (f a b : ℕ), a + b ≤ f →
     simp [precAux]
   | f + 1, a, b, h => by
     rw [precAux_succ (f + 1) a b, precAux_succ f a b]
-    rcases decEm (b = 0) with hb | hb
+    rcases dec_em (b = 0) with hb | hb
     · rw [if_pos hb, if_pos hb]
-    · rcases decEm (a = 0) with ha | ha
+    · rcases dec_em (a = 0) with ha | ha
       · rw [if_neg hb, if_neg hb, if_pos ha, if_pos ha]
       · have hE : oE a + oE b ≤ f := by
           have h1 := oE_lt ha
@@ -454,7 +460,7 @@ theorem precAux_eq_of_le : ∀ (f a b : ℕ), a + b ≤ f →
     have hb : b = 0 := by omega
     subst ha; subst hb; rfl
   | f + 1, a, b, h => by
-    rcases decEm (a + b = f + 1) with he | he
+    rcases dec_em (a + b = f + 1) with he | he
     · rw [he]
     · have hf : a + b ≤ f := by omega
       rw [precAux_succ_eq f a b hf, precAux_eq_of_le f a b hf]
@@ -528,7 +534,7 @@ theorem nfAux_succ_eq : ∀ (f n : ℕ), n ≤ f → nfAux (f + 1) n = nfAux f n
     subst hn; simp [nfAux]
   | f + 1, n, h => by
     rw [nfAux_succ (f + 1) n, nfAux_succ f n]
-    rcases decEm (n = 0) with hn | hn
+    rcases dec_em (n = 0) with hn | hn
     · rw [if_pos hn, if_pos hn]
     · have hE : oE n ≤ f := by
         have := oE_lt hn
@@ -544,7 +550,7 @@ theorem nfAux_eq_of_le : ∀ (f n : ℕ), n ≤ f → nfAux f n = nfAux n n
     have hn : n = 0 := by omega
     subst hn; rfl
   | f + 1, n, h => by
-    rcases decEm (n = f + 1) with he | he
+    rcases dec_em (n = f + 1) with he | he
     · rw [he]
     · have hf : n ≤ f := by omega
       rw [nfAux_succ_eq f n hf, nfAux_eq_of_le f n hf]
@@ -596,7 +602,7 @@ def oltN (a b : ℕ) : ℕ := if oltB a b then 1 else 0
 
 theorem oltN_eq_one_iff {a b : ℕ} : oltN a b = 1 ↔ OLt a b := by
   simp only [oltN, OLt]
-  rcases decEm (oltB a b = true) with h | h
+  rcases dec_em (oltB a b = true) with h | h
   · simp [h]
   · simp only [Bool.not_eq_true] at h
     simp [h]
@@ -656,13 +662,13 @@ theorem precB_cases {y x : ℕ} (hy : y ≠ 0) (hx : x ≠ 0)
       (oE y = oE x ∧
         (oC y < oC x ∨ (oC y = oC x ∧ precB (oR y) (oR x) = true))) := by
   rw [precB_pos hy hx] at h
-  rcases decEm (oE y = oE x) with he | he
+  rcases dec_em (oE y = oE x) with he | he
   · rw [if_pos he] at h
     refine Or.inr ⟨he, ?_⟩
-    rcases decEm (oC y < oC x) with hc | hc
+    rcases dec_em (oC y < oC x) with hc | hc
     · exact Or.inl hc
     · rw [if_neg hc] at h
-      rcases decEm (oC x < oC y) with hc' | hc'
+      rcases dec_em (oC x < oC y) with hc' | hc'
       · rw [if_pos hc'] at h
         exact absurd h (by simp)
       · rw [if_neg hc'] at h
@@ -695,7 +701,7 @@ continuity theorems' axiom budget at `[propext, Quot.sound]` even
 though `tiRecC` is defined by well-founded recursion on `OLt`. -/
 
 theorem acc_zero : Acc OLt 0 :=
-  Acc.intro 0 fun _ hy => absurd hy.prec (by simp [precB_zero_right])
+  Acc.intro 0 fun _ hy ↦ absurd hy.prec (by simp [precB_zero_right])
 
 theorem acc_mkO : ∀ {e : ℕ}, Acc OLt e → nfB e = true →
     ∀ (c r : ℕ), nfB r = true → OBelow e r → Acc OLt (mkO e c r) := by
@@ -703,12 +709,12 @@ theorem acc_mkO : ∀ {e : ℕ}, Acc OLt e → nfB e = true →
   induction he with
   | intro e hpred ih =>
     intro hNFe
-    refine nat_strong_ind (fun c ihc => ?_)
+    refine nat_strong_ind (fun c ihc ↦ ?_)
     -- The remainder is accessible: its head exponent is below `e`, so
     -- the *outer* induction hypothesis applies to it.
     have haccr : ∀ r, nfB r = true → OBelow e r → Acc OLt r := by
       intro r hNFr hbel
-      rcases decEm (r = 0) with hr0 | hr0
+      rcases dec_em (r = 0) with hr0 | hr0
       · subst hr0; exact acc_zero
       · have hbel' : precB (oE r) e = true := by
           rcases hbel with h | h
@@ -728,7 +734,7 @@ theorem acc_mkO : ∀ {e : ℕ}, Acc OLt e → nfB e = true →
         intro hNFr hbel
         refine Acc.intro _ ?_
         intro y hy
-        rcases decEm (y = 0) with hy0 | hy0
+        rcases dec_em (y = 0) with hy0 | hy0
         · subst hy0; exact acc_zero
         · have hNFy : nfB y = true := hy.nf_left
           have hNFyE : nfB (oE y) = true := nfB_exp hy0 hNFy
@@ -762,9 +768,9 @@ theorem acc_mkO : ∀ {e : ℕ}, Acc OLt e → nfB e = true →
     exact key r (haccr r hNFr hbel) hNFr hbel
 
 theorem acc_of_nf : ∀ (n : ℕ), nfB n = true → Acc OLt n := by
-  refine nat_strong_ind (fun n ihn => ?_)
+  refine nat_strong_ind (fun n ihn ↦ ?_)
   intro hn
-  rcases decEm (n = 0) with h0 | h0
+  rcases dec_em (n = 0) with h0 | h0
   · subst h0; exact acc_zero
   · have haccE : Acc OLt (oE n) :=
       ihn (oE n) (oE_lt h0) (nfB_exp h0 hn)
@@ -776,10 +782,10 @@ theorem acc_of_nf : ∀ (n : ℕ), nfB n = true → Acc OLt n := by
 one theorem the transfinite recursor rests on; everything else about
 `≺` is decidable computation. -/
 theorem oLt_wf : WellFounded OLt := by
-  refine ⟨fun n => ?_⟩
-  rcases decEm (nfB n = true) with h | h
+  refine ⟨fun n ↦ ?_⟩
+  rcases dec_em (nfB n = true) with h | h
   · exact acc_of_nf n h
-  · exact Acc.intro n fun _ hy => absurd hy.nf_right h
+  · exact Acc.intro n fun _ hy ↦ absurd hy.nf_right h
 
 /-! ## Constructors for the order
 
@@ -790,8 +796,8 @@ what Phase D needs — go through these. -/
 
 /-- Nothing precedes itself. -/
 theorem precB_irrefl : ∀ (a : ℕ), precB a a = false := by
-  refine nat_strong_ind (fun a ih => ?_)
-  rcases decEm (a = 0) with h | h
+  refine nat_strong_ind (fun a ih ↦ ?_)
+  rcases dec_em (a = 0) with h | h
   · subst h; exact precB_zero_right 0
   · rw [precB_pos h h, if_pos rfl, if_neg (Nat.lt_irrefl _),
       if_neg (Nat.lt_irrefl _)]
@@ -913,12 +919,12 @@ theorem precB_trichotomy : ∀ (s a b : ℕ), a + b ≤ s → nfB a = true →
     nfB b = true → a = b ∨ precB a b = true ∨ precB b a = true
   | 0, a, b, h, _, _ => Or.inl (by omega)
   | s + 1, a, b, h, hna, hnb => by
-    rcases decEm (a = 0) with ha | ha
+    rcases dec_em (a = 0) with ha | ha
     · subst ha
-      rcases decEm (b = 0) with hb | hb
+      rcases dec_em (b = 0) with hb | hb
       · exact Or.inl hb.symm
       · exact Or.inr (Or.inl (precB_zero_left hb))
-    · rcases decEm (b = 0) with hb | hb
+    · rcases dec_em (b = 0) with hb | hb
       · subst hb
         exact Or.inr (Or.inr (precB_zero_left ha))
       · have hE : oE a + oE b ≤ s := by
@@ -934,11 +940,11 @@ theorem precB_trichotomy : ∀ (s a b : ℕ), a + b ≤ s → nfB a = true →
         rcases precB_trichotomy s (oE a) (oE b) hE (nfB_exp ha hna)
             (nfB_exp hb hnb) with he | he | he
         · -- equal head exponents: compare coefficients
-          rcases decEm (oC a < oC b) with hc | hc
+          rcases dec_em (oC a < oC b) with hc | hc
           · refine Or.inr (Or.inl ?_)
             rw [← hA, ← hB, he]
             exact precB_mkO_coeff _ _ _ hc
-          · rcases decEm (oC b < oC a) with hc' | hc'
+          · rcases dec_em (oC b < oC a) with hc' | hc'
             · refine Or.inr (Or.inr ?_)
               rw [← hA, ← hB, he]
               exact precB_mkO_coeff _ _ _ hc'
@@ -983,7 +989,7 @@ theorem precB_trans_aux : ∀ (s a b c : ℕ), a + b + c ≤ s →
       intro h0
       rw [h0, precB_zero_right] at hbc
       exact absurd hbc (by simp)
-    rcases decEm (a = 0) with ha | ha
+    rcases dec_em (a = 0) with ha | ha
     · rw [ha]
       exact precB_zero_left hc
     · have hA := mkO_oE_oC_oR ha
@@ -1024,7 +1030,7 @@ theorem precB_trans {a b c : ℕ} (hab : precB a b = true) (hbc : precB b c = tr
 
 /-- **Asymmetry**, from transitivity and irreflexivity. -/
 theorem precB_asymm {a b : ℕ} (hab : precB a b = true) : precB b a = false := by
-  rcases decEm (precB b a = true) with hba | hba
+  rcases dec_em (precB b a = true) with hba | hba
   · have := precB_trans hab hba
     rw [precB_irrefl] at this
     exact absurd this (by simp)

@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Goodstein.Goodstein
+
+/-!
 # Phase F3: Pascal's triangle mod 2, inside the fragment
 
 Four theorems, all by **ordinary induction** — no `TI(ε₀)`, no ordinals,
@@ -40,7 +47,6 @@ or in the fragment; it is used only in `PascalExtraction.lean`, as an
 independent reference for cross-checking, exactly the role
 `WilliamAngus/Goodstein` played in Phase B.
 -/
-import Realizability.Theorems.Goodstein.Goodstein
 
 namespace Realizability
 

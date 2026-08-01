@@ -511,7 +511,7 @@ Summary, Evidence, Dependencies, and Notes.)*
 - **EXT-027** [E0] *`extract_tracked`* — tracking threaded through every rule, one per-combinator preservation lemma per case (same shape as `soundness`).
 - **EXT-028** [E3] *One `*_tracked` lemma per combinator* (incl. a separate `axiomC_<rule>_tracked := defaultFam_tracked` for each contentless schema).
 - **EXT-029** [E0] *`indC_tracked` + `tracked_apply_nat`* — continuous-index absorption for `ind` (recursor tracked by induction on the count; oracle-read count locally constant).
-- **EXT-030** [E0] *`tiRecC_tracked`/`tiC_tracked`* — transfinite recursor tracked by `≺`-induction; uses `decEm` (not `by_cases`), consistent with the Classical-free discipline.
+- **EXT-030** [E0] *`tiRecC_tracked`/`tiC_tracked`* — transfinite recursor tracked by `≺`-induction; uses `dec_em` (not `by_cases`), consistent with the Classical-free discipline.
 - **EXT-031** [E0] *`Continuous2` closure kit* (`const`, `comp₁/₂/₅`, `eval`, `apply_nat`, `ite`) with explicit moduli; `comp₅` is "the arity Phase E2's `solves` needs."
 - **EXT-032** [E0] *`termEval_continuous`* — term evaluation in a tracked environment is continuous, one arm per symbol (each `continuous2_comp` on the value function).
 - **EXT-033** [E0] *`famOf_tracked` + transport tracking* (`liftR_dropR_tracked`, mutual formula induction, "no level side condition" unlike `MR_liftR_dropR`).
@@ -530,7 +530,7 @@ Summary, Evidence, Dependencies, and Notes.)*
 - **ORD-002** [E0] *The coding is a bijection* (`mkO_oE_oC_oR`, `oE_mkO`, …, `mkO_ne_zero`). `∀x` ranges over precisely the notations, no unused codes.
 - **ORD-003** [E4] *Design: hand-rolled triangular pairing, NOT Mathlib `Nat.pair`* (quoted: `Nat.unpair` goes through `Nat.sqrt`, "every Mathlib lemma about that pairing depends on `Classical.choice`" and doesn't reduce in the kernel; the coding enters `tiRecC`'s definition, hence the continuity budget `[propext, Quot.sound]`).
 - **ORD-004** [E4] *Both pairing directions reduce in the kernel, `propext`-only* (`pr1_pr`, `pr2_pr`, `pr_pr1_pr2`; "nothing below depends on any axiom beyond `propext`").
-- **ORD-005** [E4] *Design: `by_cases` banned; `decEm` used* (`decEm (p) [Decidable p] : p ∨ ¬p`; quoted: `by_cases` can fall back on `Classical.byCases` and everything feeds `tiRecC`'s definition).
+- **ORD-005** [E4] *Design: `by_cases` banned; `dec_em` used* (`dec_em (p) [Decidable p] : p ∨ ¬p`; quoted: `by_cases` can fall back on `Classical.byCases` and everything feeds `tiRecC`'s definition).
 - **ORD-006** [E3] *Fast pairing/log/triangular via `@[csimp]`* (`triFast`, `unTriFast` binary search; unary `tri`/`unTri` overflow the interpreter on the Hydra layer's large codes; kernel-facing defs + proofs untouched).
 - **ORD-007** [E0] *Destructor strictly decreases the code* (`oE_lt`, `oR_lt`) — the fuel measure for `precAux`/`nfAux`/`ordOfAux`.
 - **ORD-008** [E2] *CNF comparison `precB`* — compare exponents, then coefficients, then remainders; fueled at `a+b`.

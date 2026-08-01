@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Common.Arithmetic
+
+/-!
 # Fibonacci by a paired invariant — the on-ramp example
 
 The most recognizable recursive function there is, extracted from a
@@ -34,7 +41,6 @@ nothing captures.  `lvl` is unchanged: `∧`/`∃` over equations is `0`,
 the outer `∀` makes it `1` — the same level as every other theorem here,
 landing at `PureType 2` / `CtQ 2`.
 -/
-import Realizability.Common.Arithmetic
 
 namespace Realizability
 

@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Goodstein.OrdinalDescent
+
+/-!
 # Phase H4: the Hydra game inside the fragment
 
 `Hydra.lean` (Phases H1–H3) is pure metatheory: trees coded as naturals,
@@ -12,7 +19,7 @@ way Phase D2 proved Goodstein's theorem.
 
 | symbol | arity | evaluated by | reading |
 |---|---|---|---|
-| `hcut n c` | 2 | `hydraStepN` | one move on the hydra coded `c`, growing `n` copies at the grandparent |
+| `hcut n c` | 2 | `hydraStepN` | one move on hydra `c`, growing `n` copies at the grandparent |
 | `hydra s t` | 2 | `hydraSeqN` | the state after `t` moves from the hydra coded `s` |
 | `hord c` | 1 | `ordOfHydraN` | the ordinal notation assigned to the hydra coded `c` |
 
@@ -63,7 +70,6 @@ language.  The round trip `hydra_descent_via_fragment` below checks the
 import is faithful — reading the schema back through `soundness` returns
 exactly the H3 theorem — and STATUS.md records the gap.
 -/
-import Realizability.Theorems.Goodstein.OrdinalDescent
 
 namespace Realizability
 
@@ -179,7 +185,7 @@ fragment's `hordCutLt`, passed through the realizability interpretation,
 statement. -/
 theorem hydra_descent_via_fragment {n code : ℕ} (hc : code ≠ 0) :
     OLt (ordOfHydraN (hydraStepN n code)) (ordOfHydraN code) := by
-  have hreal := hord_cut_lt_realized (numeral n) (numeral code) (fun _ => 0)
+  have hreal := hord_cut_lt_realized (numeral n) (numeral code) (fun _ ↦ 0)
     (m := derivBound (Deriv.hordCutLt (Γ := []) (numeral n) (numeral code)) + 2)
     (Nat.le_add_right _ _)
   obtain ⟨p, hp⟩ : ∃ p, derivBound (Deriv.hordCutLt (Γ := []) (numeral n)
@@ -187,16 +193,16 @@ theorem hydra_descent_via_fragment {n code : ℕ} (hc : code ≠ 0) :
   rw [hp] at hreal
   -- the antecedent `code ≠ 0` is realized by anything: its own antecedent
   -- is the false equation `code = 0`
-  have hante : MR (fun _ => 0) (Formula.eq (numeral code) .zero).neg (p + 1)
+  have hante : MR (fun _ ↦ 0) (Formula.eq (numeral code) .zero).neg (p + 1)
       (defaultPT (p + 2)) := by
     intro y hy
-    have hy' : (numeral code).eval (fun _ => 0) = (0 : ℕ) := hy
+    have hy' : (numeral code).eval (fun _ ↦ 0) = (0 : ℕ) := hy
     rw [numeral_eval] at hy'
     exact absurd hy' hc
   have hconc := hreal _ hante
-  have hval : Term.eval (fun _ => 0)
+  have hval : Term.eval (fun _ ↦ 0)
       (.prec (.hord (.hcut (numeral n) (numeral code))) (.hord (numeral code)))
-      = Term.eval (fun _ => 0) (.succ .zero) := hconc
+      = Term.eval (fun _ ↦ 0) (.succ .zero) := hconc
   simp only [Term.eval, numeral_eval] at hval
   refine oltN_eq_one_iff.mp ?_
   show oltN (ordOfHydraN (hydraStepN n code)) (ordOfHydraN code) = 1

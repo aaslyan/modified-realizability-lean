@@ -1,4 +1,13 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Pascal.PascalTheorem
+import Realizability.Core.CollapseDemo
+import Mathlib.Data.Nat.Choose.Basic
+
+/-!
 # Phase F4: the extracted Sierpiński decider
 
 `pasTotal` is a closed derivation of
@@ -24,9 +33,6 @@ the fragment or in any proof: it is an *independent* reference against
 which the extracted decider is cross-checked, exactly the role
 `WilliamAngus/Goodstein` played for Phase B's Goodstein values.
 -/
-import Realizability.Theorems.Pascal.PascalTheorem
-import Realizability.Core.CollapseDemo
-import Mathlib.Data.Nat.Choose.Basic
 
 namespace Realizability
 
@@ -49,7 +55,7 @@ theorem pas_realized (ρ : ℕ → ℕ) {m : ℕ} (hm : 8 ≤ m) :
 /-- **The extracted decider's tag.**  `0` means the derivation proved the
 left disjunct, `pas(n,k) = 1`. -/
 def pasTag (n k : ℕ) : ℕ :=
-  fstPT (app₁ (app₁ (extract pasTotal (fun _ => 0) [] 8)
+  fstPT (app₁ (app₁ (extract pasTotal (fun _ ↦ 0) [] 8)
     (natPT 8 n)) (natPT 7 k)) (defaultPT 6)
 
 /-- The decider, as a bit. -/
@@ -60,7 +66,7 @@ Pascal's triangle mod 2.  From `soundness` — the disjunction's tag is
 sound by construction, which is exactly what makes the realizer a
 decision procedure. -/
 theorem pasDecide_eq (n k : ℕ) : pasDecide n k = pasN n k := by
-  have h := pas_realized (fun _ => 0) (m := 8) (Nat.le_refl 8) n k
+  have h := pas_realized (fun _ ↦ 0) (m := 8) (Nat.le_refl 8) n k
   rcases h with ⟨htag, heq⟩ | ⟨htag, heq⟩
   · have h1 : pasTag n k = 0 := htag
     have h2 : pasN n k = 1 := by simpa [Term.eval, Function.update] using heq
@@ -88,11 +94,12 @@ at every `(n,k)`, which matters below: the extracted realizer is far too
 slow to draw a large triangle, but the theorem covers exactly the gap
 that evaluation cannot. -/
 
+/-- `pasN n k` computed through the fragment's `pas` symbol at numerals. -/
 def pasFragment (n k : ℕ) : ℕ :=
-  Term.eval (fun _ => 0) (.pas (numeral n) (numeral k))
+  Term.eval (fun _ ↦ 0) (.pas (numeral n) (numeral k))
 
 theorem pasFragment_eq (n k : ℕ) : pasFragment n k = pasN n k := by
-  show pasN ((numeral n).eval (fun _ => 0)) ((numeral k).eval (fun _ => 0)) = _
+  show pasN ((numeral n).eval (fun _ ↦ 0)) ((numeral k).eval (fun _ ↦ 0)) = _
   rw [numeral_eval, numeral_eval]
 
 /-! ## Cross-checks against an independent reference
@@ -102,11 +109,11 @@ else — not in the fragment, not in any proof.  The first block checks the
 **extracted decider** (kept small: see the timings below); the second
 checks the fragment's symbol over the whole triangle that gets recorded. -/
 
-#guard (List.range 9).all fun n =>
-  (List.range (n + 1)).all fun k => pasDecide n k == Nat.choose n k % 2
+#guard (List.range 9).all fun n ↦
+  (List.range (n + 1)).all fun k ↦ pasDecide n k == Nat.choose n k % 2
 
-#guard (List.range 17).all fun n =>
-  (List.range (n + 1)).all fun k => pasFragment n k == Nat.choose n k % 2
+#guard (List.range 17).all fun n ↦
+  (List.range (n + 1)).all fun k ↦ pasFragment n k == Nat.choose n k % 2
 
 /-! A handful of named instances of the **extracted** decider, recorded
 explicitly. -/
@@ -140,7 +147,7 @@ def pasRow (n : ℕ) : List ℕ := (List.range (n + 1)).map (pasFragment n)
 def pasRowStr (rows n : ℕ) : String :=
   String.ofList (List.replicate (rows - n) ' ') ++
     String.intercalate " "
-      ((List.range (n + 1)).map fun k => if pasFragment n k = 1 then "#" else ".")
+      ((List.range (n + 1)).map fun k ↦ if pasFragment n k = 1 then "#" else ".")
 
 /-- The triangle, as a string. -/
 def pasTriangle (rows : ℕ) : String :=

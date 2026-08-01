@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Common.Exists
+
+/-!
 # Foundation phase: numeric order on `ℕ` and strong induction, inside the fragment
 
 The fragment has `ind` (ordinary induction along `succ`) but no order on
@@ -42,7 +49,6 @@ the progressiveness premise at `y` itself and discharging its antecedent
 (`z < y` and `y < succ n` give `z < n`).  The only arithmetic this needs
 that Phase A did not already prove is associativity of `+`.
 -/
-import Realizability.Common.Exists
 
 namespace Realizability
 
@@ -157,7 +163,7 @@ theorem Term.subst_notMem (x : ℕ) (u : Term) :
   | var i =>
       intro h
       simp only [Term.vars, List.mem_singleton] at h
-      simp only [Term.subst, if_neg (fun he : i = x => h he.symm)]
+      simp only [Term.subst, if_neg (fun he : i = x ↦ h he.symm)]
   | zero => intro _; rfl
   | succ a ih => intro h; simp only [Term.vars] at h; rw [Term.subst, ih h]
   | plus a b iha ihb =>
@@ -220,11 +226,12 @@ theorem Term.notMem_self_subst (x : ℕ) (u : Term) (hu : x ∉ u.vars) :
       by_cases h : i = x
       · simp only [Term.subst, if_pos h]; exact hu
       · simp only [Term.subst, if_neg h, Term.vars, List.mem_singleton]
-        exact fun he => h he.symm
+        exact fun he ↦ h he.symm
   | zero => simp [Term.subst, Term.vars]
   | succ a ih => simpa [Term.subst, Term.vars] using ih
   | plus a b iha ihb => simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
-  | times a b iha ihb => simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
+  | times a b iha ihb =>
+      simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
   | pred a ih => simpa [Term.subst, Term.vars] using ih
   | exp a b iha ihb => simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
   | bump a b iha ihb => simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
@@ -232,9 +239,11 @@ theorem Term.notMem_self_subst (x : ℕ) (u : Term) (hu : x ∉ u.vars) :
   | prec a b iha ihb => simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
   | ord a b iha ihb => simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
   | hcut a b iha ihb => simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
-  | hydra a b iha ihb => simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
+  | hydra a b iha ihb =>
+      simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
   | hord a ih => simpa [Term.subst, Term.vars] using ih
-  | hcons a b iha ihb => simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
+  | hcons a b iha ihb =>
+      simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
   | happ a b iha ihb => simp only [Term.subst, Term.vars, List.mem_append, not_or]; exact ⟨iha, ihb⟩
   | mvcount a ih => simpa [Term.subst, Term.vars] using ih
   | solves a b c d e iha ihb ihc ihd ihe =>
@@ -277,12 +286,12 @@ theorem Formula.subst_notFree (x : ℕ) (u : Term) :
       by_cases hy : y = x
       · simp [Formula.subst, hy]
       · simp only [Formula.FreeIn, not_and] at h
-        rw [Formula.subst, if_neg hy, Formula.subst_notFree x u a (h (fun he => hy he.symm))]
+        rw [Formula.subst, if_neg hy, Formula.subst_notFree x u a (h (fun he ↦ hy he.symm))]
   | .ex y a, h => by
       by_cases hy : y = x
       · simp [Formula.subst, hy]
       · simp only [Formula.FreeIn, not_and] at h
-        rw [Formula.subst, if_neg hy, Formula.subst_notFree x u a (h (fun he => hy he.symm))]
+        rw [Formula.subst, if_neg hy, Formula.subst_notFree x u a (h (fun he ↦ hy he.symm))]
 
 /-- Substituting `x` away (by a term not containing `x`) makes `x` free
 nowhere. -/
@@ -305,12 +314,12 @@ theorem Formula.notFree_self_subst (x : ℕ) (u : Term) (hu : x ∉ u.vars) :
       by_cases hy : y = x
       · simp [Formula.subst, Formula.FreeIn, hy]
       · simp only [Formula.subst, if_neg hy, Formula.FreeIn, not_and]
-        exact fun _ => Formula.notFree_self_subst x u hu a
+        exact fun _ ↦ Formula.notFree_self_subst x u hu a
   | .ex y a => by
       by_cases hy : y = x
       · simp [Formula.subst, Formula.FreeIn, hy]
       · simp only [Formula.subst, if_neg hy, Formula.FreeIn, not_and]
-        exact fun _ => Formula.notFree_self_subst x u hu a
+        exact fun _ ↦ Formula.notFree_self_subst x u hu a
 
 /-- Weakening a closed derivation into any context (iterated `wk`). -/
 def Deriv.wkNil {φ : Formula} : (Γ : List Formula) → Deriv [] φ → Deriv Γ φ
@@ -430,9 +439,13 @@ def leT (d : ℕ) (s t : Term) : Formula :=
 named so the derivation can pin them (the codebase idiom for
 multi-hypothesis proofs). -/
 private abbrev triLE : Formula := leT 2 (.var 0) (.var 1)
+/-- The strict branch `b < a`. -/
 private abbrev triLT : Formula := ltT 3 (.var 1) (.var 0)
+/-- Trichotomy's conclusion `∀b. a ≤ b ∨ b < a`. -/
 private abbrev triPhi : Formula := .all 1 (triLE.or triLT)
+/-- The `≤`-witness equation `a + d = b`. -/
 private abbrev triH2 : Formula := .eq (.plus (.var 0) (.var 2)) (.var 1)
+/-- The successor-split equation `d = succ d'`. -/
 private abbrev triH5 : Formula := .eq (.var 2) (.succ (.var 5))
 
 /-- **Order totality (trichotomy), `⊢ ∀a ∀b. a ≤ b ∨ b < a`** — the

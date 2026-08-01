@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Signature.Hydra
+
+/-!
 # Phase H8: running the battle, and seeing it
 
 Two things this module adds, both of which the earlier phases wanted and
@@ -51,7 +58,6 @@ factor, and `hercules_wins` (H7), which covers every play.  What the
 `#guard` adds is that the thing proved and the thing computed are visibly
 the same thing.
 -/
-import Realizability.Signature.Hydra
 
 namespace Realizability
 
@@ -84,11 +90,11 @@ theorem battleLen_eq_battleLenH : ∀ (fuel stage code : ℕ),
     battleLen fuel stage code = battleLenH fuel stage (hydraOf code)
   | 0, _, _ => rfl
   | fuel + 1, stage, code => by
-    rcases decEm (code = 0) with h0 | h0
+    rcases dec_em (code = 0) with h0 | h0
     · subst h0
       rfl
     · have hne : ¬ (hydraOf code).isLeaf = true :=
-        fun hl => h0 (hydraOf_eq_leaf_iff.mp (isLeaf_iff.mp hl))
+        fun hl ↦ h0 (hydraOf_eq_leaf_iff.mp (isLeaf_iff.mp hl))
       show (if code = 0 then 0 else battleLen fuel (stage + 1) _ + 1)
         = if (hydraOf code).isLeaf then 0 else battleLenH fuel (stage + 1) _ + 1
       rw [if_neg h0, if_neg hne, battleLen_eq_battleLenH fuel (stage + 1)
@@ -138,6 +144,7 @@ mutual
 def sizeH : Hydra → ℕ
   | .node f => sizeF f + 1
 
+/-- The number of nodes in a forest (mutual with `sizeH`). -/
 def sizeF : Forest → ℕ
   | .nil => 0
   | .cons h f => sizeH h + sizeF f
@@ -151,6 +158,7 @@ def renderH : Hydra → String
   | .node .nil => "o"
   | .node f => "(" ++ renderF f ++ ")"
 
+/-- Bracket notation for a forest (mutual with `renderH`). -/
 def renderF : Forest → String
   | .nil => ""
   | .cons h .nil => renderH h
@@ -172,7 +180,7 @@ def ordStr : ℕ → ℕ → String
         else
           let es := ordStr fuel e
           let b := if e = 1 then "ω"
-                   else if es.any (fun ch => ch == ' ' || ch == '·') then "ω^(" ++ es ++ ")"
+                   else if es.any (fun ch ↦ ch == ' ' || ch == '·') then "ω^(" ++ es ++ ")"
                    else "ω^" ++ es
           if c = 0 then b else b ++ "·" ++ toString (c + 1)
       if r = 0 then power else power ++ " + " ++ ordStr fuel r

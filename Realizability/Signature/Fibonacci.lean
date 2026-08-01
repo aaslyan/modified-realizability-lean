@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Mathlib.Logic.Function.Basic
+
+/-!
 # Fibonacci value layer
 
 The value-level function the `fib` symbol evaluates by.  Fibonacci is a
@@ -24,7 +31,6 @@ defining equation the fragment imports,
 holds here by `rfl` — `fibN_succ_succ` below — matching the paired
 invariant's step `(y, z) ↦ (z, y + z)` in the derivation.
 -/
-import Mathlib.Logic.Function.Basic
 
 namespace Realizability
 

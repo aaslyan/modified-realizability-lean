@@ -1,4 +1,12 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import ContinuousFunctionals.Hierarchy
+import Realizability.Core.Syntax
+
+/-!
 # Modified realizability over the pure-type hierarchy
 
 Realizers are drawn from the Kleene–Kreisel development's `PureType`
@@ -27,8 +35,6 @@ Devices (all small, all level-uniform):
   beta law `app₁_abs₁`;
 * `natPT` — numerals at every level (for the `∀` clause).
 -/
-import ContinuousFunctionals.Hierarchy
-import Realizability.Core.Syntax
 
 namespace Realizability
 
@@ -39,42 +45,42 @@ open ContinuousFunctionals
 /-- The canonical element of each pure type. -/
 def defaultPT : (n : ℕ) → PureType n
   | 0 => (0 : ℕ)
-  | _ + 1 => fun _ => (0 : ℕ)
+  | _ + 1 => fun _ ↦ (0 : ℕ)
 
 /-- A numeral at every level: the hereditarily constant functional. -/
 def natPT : (n : ℕ) → ℕ → PureType n
   | 0, k => k
-  | _ + 1, k => fun _ => k
+  | _ + 1, k => fun _ ↦ k
 
 mutual
   /-- The standard embedding of a pure type into the next level. -/
   def up : (n : ℕ) → PureType n → PureType (n + 1)
-    | 0, k => fun _ => k
-    | n + 1, F => fun G => F (down n G)
+    | 0, k => fun _ ↦ k
+    | n + 1, F => fun G ↦ F (down n G)
   /-- The standard projection of a pure type from the next level. -/
   def down : (n : ℕ) → PureType (n + 1) → PureType n
     | 0, f => f (0 : ℕ)
-    | n + 1, H => fun x => H (up n x)
+    | n + 1, H => fun x ↦ H (up n x)
 end
 
 /-- `down` retracts `up`: the embedding is a section. -/
 theorem down_up : ∀ (n : ℕ) (x : PureType n), down n (up n x) = x
   | 0, _ => rfl
-  | n + 1, F => funext fun x => by
+  | n + 1, F => funext fun x ↦ by
       show F (down n (up n x)) = F x
       rw [down_up n x]
 
 /-- Pointwise pairing of two objects of the same level `n + 1`. -/
 def pairPT {n : ℕ} (x y : PureType (n + 1)) : PureType (n + 1) :=
-  fun z => Nat.pair (x z) (y z)
+  fun z ↦ Nat.pair (x z) (y z)
 
 /-- First component of a pointwise pair. -/
 def fstPT {n : ℕ} (x : PureType (n + 1)) : PureType (n + 1) :=
-  fun z => (x z).unpair.1
+  fun z ↦ (x z).unpair.1
 
 /-- Second component of a pointwise pair. -/
 def sndPT {n : ℕ} (x : PureType (n + 1)) : PureType (n + 1) :=
-  fun z => (x z).unpair.2
+  fun z ↦ (x z).unpair.2
 
 @[simp] theorem fstPT_pairPT {n : ℕ} (x y : PureType (n + 1)) :
     fstPT (pairPT x y) = x := by
@@ -92,12 +98,12 @@ result.  The result's own argument is embedded by `up` and paired with
 `x` for `F` to consume. -/
 def app₁ {n : ℕ} (F : PureType (n + 2)) (x : PureType (n + 1)) :
     PureType (n + 1) :=
-  fun w => F (pairPT x (up n w))
+  fun w ↦ F (pairPT x (up n w))
 
 /-- Abstraction through pairing: the inverse device to `app₁`. -/
 def abs₁ {n : ℕ} (G : PureType (n + 1) → PureType (n + 1)) :
     PureType (n + 2) :=
-  fun z => G (fstPT z) (down n (sndPT z))
+  fun z ↦ G (fstPT z) (down n (sndPT z))
 
 /-- **Beta.**  `app₁ (abs₁ G) x = G x`. -/
 theorem app₁_abs₁ {n : ℕ} (G : PureType (n + 1) → PureType (n + 1))
@@ -170,16 +176,16 @@ theorem MR_congr :
   | eq s t =>
     intro ρ ρ' n x h
     show s.eval ρ = t.eval ρ ↔ s.eval ρ' = t.eval ρ'
-    rw [Term.eval_congr fun y hy => h y (Or.inl hy),
-      Term.eval_congr fun y hy => h y (Or.inr hy)]
+    rw [Term.eval_congr fun y hy ↦ h y (Or.inl hy),
+      Term.eval_congr fun y hy ↦ h y (Or.inr hy)]
   | and φ ψ ihφ ihψ =>
     intro ρ ρ' n x h
     show MR ρ φ n _ ∧ MR ρ ψ n _ ↔ MR ρ' φ n _ ∧ MR ρ' ψ n _
-    rw [ihφ n _ fun y hy => h y (Or.inl hy), ihψ n _ fun y hy => h y (Or.inr hy)]
+    rw [ihφ n _ fun y hy ↦ h y (Or.inl hy), ihψ n _ fun y hy ↦ h y (Or.inr hy)]
   | or φ ψ ihφ ihψ =>
     intro ρ ρ' n x h
     show (_ ∧ MR ρ φ n _) ∨ (_ ∧ MR ρ ψ n _) ↔ (_ ∧ MR ρ' φ n _) ∨ (_ ∧ MR ρ' ψ n _)
-    rw [ihφ n _ fun y hy => h y (Or.inl hy), ihψ n _ fun y hy => h y (Or.inr hy)]
+    rw [ihφ n _ fun y hy ↦ h y (Or.inl hy), ihψ n _ fun y hy ↦ h y (Or.inr hy)]
   | imp φ ψ ihφ ihψ =>
     intro ρ ρ' n x h
     cases n with
@@ -188,11 +194,11 @@ theorem MR_congr :
       show (∀ z, MR ρ φ m z → MR ρ ψ m _) ↔ ∀ z, MR ρ' φ m z → MR ρ' ψ m _
       constructor
       · intro hF z hz
-        rw [← ihψ m _ fun y hy => h y (Or.inr hy)]
-        exact hF z ((ihφ m z fun y hy => h y (Or.inl hy)).mpr hz)
+        rw [← ihψ m _ fun y hy ↦ h y (Or.inr hy)]
+        exact hF z ((ihφ m z fun y hy ↦ h y (Or.inl hy)).mpr hz)
       · intro hF z hz
-        rw [ihψ m _ fun y hy => h y (Or.inr hy)]
-        exact hF z ((ihφ m z fun y hy => h y (Or.inl hy)).mp hz)
+        rw [ihψ m _ fun y hy ↦ h y (Or.inr hy)]
+        exact hF z ((ihφ m z fun y hy ↦ h y (Or.inl hy)).mp hz)
   | all y φ ih =>
     intro ρ ρ' n x h
     cases n with
@@ -216,7 +222,7 @@ theorem MR_congr :
     intro ρ ρ' n x h
     show MR (Function.update ρ y (fstPT x (defaultPT n))) φ n (sndPT x) ↔
       MR (Function.update ρ' y (fstPT x (defaultPT n))) φ n (sndPT x)
-    refine ih n _ (fun z hz => ?_)
+    refine ih n _ (fun z hz ↦ ?_)
     by_cases hzy : z = y
     · subst hzy; simp [Function.update]
     · simp only [Function.update, dif_neg hzy]
@@ -240,9 +246,9 @@ theorem MR_subst {x : ℕ} {u : Term} :
     rfl
   | and φ ψ ihφ ihψ =>
     intro hok ρ n a
-    have hφ : Formula.SubstOK u φ := fun y hy hb =>
+    have hφ : Formula.SubstOK u φ := fun y hy hb ↦
       hok y hy (List.mem_append.mpr (Or.inl hb))
-    have hψ : Formula.SubstOK u ψ := fun y hy hb =>
+    have hψ : Formula.SubstOK u ψ := fun y hy hb ↦
       hok y hy (List.mem_append.mpr (Or.inr hb))
     show MR ρ ((φ.subst x u).and (ψ.subst x u)) n a ↔ _
     show MR ρ (φ.subst x u) n _ ∧ MR ρ (ψ.subst x u) n _ ↔ _
@@ -250,18 +256,18 @@ theorem MR_subst {x : ℕ} {u : Term} :
     rfl
   | or φ ψ ihφ ihψ =>
     intro hok ρ n a
-    have hφ : Formula.SubstOK u φ := fun y hy hb =>
+    have hφ : Formula.SubstOK u φ := fun y hy hb ↦
       hok y hy (List.mem_append.mpr (Or.inl hb))
-    have hψ : Formula.SubstOK u ψ := fun y hy hb =>
+    have hψ : Formula.SubstOK u ψ := fun y hy hb ↦
       hok y hy (List.mem_append.mpr (Or.inr hb))
     show (_ ∧ MR ρ (φ.subst x u) n _) ∨ (_ ∧ MR ρ (ψ.subst x u) n _) ↔ _
     rw [ihφ hφ, ihψ hψ]
     rfl
   | imp φ ψ ihφ ihψ =>
     intro hok ρ n a
-    have hφ : Formula.SubstOK u φ := fun y hy hb =>
+    have hφ : Formula.SubstOK u φ := fun y hy hb ↦
       hok y hy (List.mem_append.mpr (Or.inl hb))
-    have hψ : Formula.SubstOK u ψ := fun y hy hb =>
+    have hψ : Formula.SubstOK u ψ := fun y hy hb ↦
       hok y hy (List.mem_append.mpr (Or.inr hb))
     cases n with
     | zero => rfl
@@ -283,9 +289,9 @@ theorem MR_subst {x : ℕ} {u : Term} :
       show MR (Function.update ρ y _) φ n _ ↔
         MR (Function.update (Function.update ρ y (u.eval ρ)) y _) φ n _
       rw [Function.update_idem]
-    · have hok' : Formula.SubstOK u φ := fun z hz hb =>
+    · have hok' : Formula.SubstOK u φ := fun z hz hb ↦
         hok z hz (List.mem_cons_of_mem _ hb)
-      have hyu : y ∉ u.vars := fun hy =>
+      have hyu : y ∉ u.vars := fun hy ↦
         hok y hy (List.mem_cons_self ..)
       rw [show Formula.subst x u (.ex y φ) = .ex y (φ.subst x u) from by
         simp [Formula.subst, hyx]]
@@ -294,10 +300,10 @@ theorem MR_subst {x : ℕ} {u : Term} :
       rw [ih hok' (Function.update ρ y (fstPT a (defaultPT n))) n (sndPT a)]
       have h1 : u.eval (Function.update ρ y (fstPT a (defaultPT n)))
           = u.eval ρ :=
-        Term.eval_congr fun z hz => by
-          have : z ≠ y := fun h => hyu (h ▸ hz)
+        Term.eval_congr fun z hz ↦ by
+          have : z ≠ y := fun h ↦ hyu (h ▸ hz)
           simp [Function.update, this]
-      rw [h1, Function.update_comm (fun h => hyx h.symm)]
+      rw [h1, Function.update_comm (fun h ↦ hyx h.symm)]
   | all y φ ih =>
     intro hok ρ n a
     by_cases hyx : y = x
@@ -310,13 +316,13 @@ theorem MR_subst {x : ℕ} {u : Term} :
         show (∀ k, MR (Function.update ρ y k) φ m _) ↔
           ∀ k, MR (Function.update (Function.update ρ y (u.eval ρ)) y k) φ m _
         have hupd : ∀ k, Function.update (Function.update ρ y (u.eval ρ)) y k
-            = Function.update ρ y k := fun k => Function.update_idem ..
+            = Function.update ρ y k := fun k ↦ Function.update_idem ..
         constructor
         · intro h k; rw [hupd k]; exact h k
         · intro h k; have := h k; rwa [hupd k] at this
-    · have hok' : Formula.SubstOK u φ := fun z hz hb =>
+    · have hok' : Formula.SubstOK u φ := fun z hz hb ↦
         hok z hz (List.mem_cons_of_mem _ hb)
-      have hyu : y ∉ u.vars := fun hy =>
+      have hyu : y ∉ u.vars := fun hy ↦
         hok y hy (List.mem_cons_self ..)
       rw [show Formula.subst x u (.all y φ) = .all y (φ.subst x u) from by
         simp [Formula.subst, hyx]]
@@ -331,10 +337,10 @@ theorem MR_subst {x : ℕ} {u : Term} :
           intro k b
           rw [ih hok' (Function.update ρ y k) m b]
           have h1 : u.eval (Function.update ρ y k) = u.eval ρ :=
-            Term.eval_congr fun z hz => by
-              have : z ≠ y := fun h => hyu (h ▸ hz)
+            Term.eval_congr fun z hz ↦ by
+              have : z ≠ y := fun h ↦ hyu (h ▸ hz)
               simp [Function.update, this]
-          rw [h1, Function.update_comm (fun h => hyx h.symm)]
+          rw [h1, Function.update_comm (fun h ↦ hyx h.symm)]
         constructor
         · intro h k; exact (key k _).mp (h k)
         · intro h k; exact (key k _).mpr (h k)

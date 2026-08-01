@@ -1,4 +1,12 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Hanoi.HanoiTheorem
+import Realizability.Core.CollapseDemo
+
+/-!
 # Phase E4: the extracted Hanoi solver
 
 `hanoiTheorem` is a closed derivation of
@@ -12,8 +20,6 @@ actual move sequence, not merely a proof that one exists.
 Three certifications, as in every prior extraction phase, plus the
 decoded artifact the visualization needs.
 -/
-import Realizability.Theorems.Hanoi.HanoiTheorem
-import Realizability.Core.CollapseDemo
 
 namespace Realizability
 
@@ -43,7 +49,7 @@ the three pegs, then read the witness component of the existential.
 Ambient 26 is the derivation's own bound, so this is the realizer at the
 level where it is certified. -/
 def hanoiSolution (n f t v : ℕ) : ℕ :=
-  fstPT (app₁ (app₁ (app₁ (app₁ (extract hanoiTheorem (fun _ => 0) [] 26)
+  fstPT (app₁ (app₁ (app₁ (app₁ (extract hanoiTheorem (fun _ ↦ 0) [] 26)
     (natPT 26 n)) (natPT 25 f)) (natPT 24 t)) (natPT 23 v)) (defaultPT 22)
 
 /-! ## Reading the solution back
@@ -98,7 +104,7 @@ from computation, so it holds far beyond where evaluation reaches. -/
 theorem hanoiSolution_spec (n f t v : ℕ) :
     solvesN n f t v (hanoiSolution n f t v) = 1
     ∧ hlen (hanoiSolution n f t v) = 2 ^ n - 1 := by
-  have h := hanoi_realized (fun _ => 0) (m := 26) (Nat.le_refl 26)
+  have h := hanoi_realized (fun _ ↦ 0) (m := 26) (Nat.le_refl 26)
   have h4 := h n f t v
   obtain ⟨h1, h2⟩ := h4
   constructor

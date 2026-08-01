@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Hydra.HydraFragment
+
+/-!
 # Phase H5: Hercules wins, inside the fragment
 
     ⊢ ∀h. ∃t. hydra(h, t) = 0
@@ -57,7 +64,6 @@ independence half of Kirby–Paris is not formalized here, and no claim
 about it is made.  Nor is `hordCutLt` internalized; see
 `HydraFragment.lean` for that accounting.
 -/
-import Realizability.Theorems.Hydra.HydraFragment
 
 namespace Realizability
 

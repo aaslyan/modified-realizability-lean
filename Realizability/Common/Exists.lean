@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Goodstein.TransfiniteInduction
+
+/-!
 # Phase D0: the existential quantifier
 
 Goodstein's theorem is `∀m ∃s. good(m, s) = 0`.  Before this phase the
@@ -42,7 +49,6 @@ witness must not escape its scope, so `exE` carries `FreshIn x Γ` and
 is written into the environment at `x`) and `MR_congr` carry the
 conclusion back.
 -/
-import Realizability.Theorems.Goodstein.TransfiniteInduction
 
 namespace Realizability
 
@@ -92,7 +98,7 @@ def goodThreeExRoundTrip :
       simp only [Term.vars, List.mem_singleton] at hy
       subst hy
       simp [Formula.binders]))
-    (fun _ h => absurd h List.not_mem_nil)
+    (fun _ h ↦ absurd h List.not_mem_nil)
     (by simp [Formula.FreeIn, Term.vars, numeral_vars])
 
 /-! ## Certification -/

@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Core.Extraction
+
+/-!
 # Soundness: every derivation extracts a realizer
 
 The main theorem of the milestone's logical half: for every derivation
@@ -15,7 +22,6 @@ one: `MR_indRecC` (closure of `MR` under primitive recursion along
 `succ`, rule `ind`) and `MR_tiRecC` (closure under transfinite recursion
 along `≺`, rule `tiEps0`).
 -/
-import Realizability.Core.Extraction
 
 namespace Realizability
 
@@ -32,7 +38,7 @@ theorem CtxR_congr {ρ ρ' : ℕ → ℕ} :
   | nil => intro env _ _; trivial
   | cons ψ Γ ih =>
     intro env h hc
-    refine ⟨?_, ih env.tail (fun χ hχ => h χ (List.mem_cons_of_mem _ hχ)) hc.2⟩
+    refine ⟨?_, ih env.tail (fun χ hχ ↦ h χ (List.mem_cons_of_mem _ hχ)) hc.2⟩
     intro n hn
     exact (MR_congr ψ n _ (h ψ (List.mem_cons_self ..))).mp (hc.1 n hn)
 
@@ -64,7 +70,7 @@ theorem MR_indRecC {ρ : ℕ → ℕ} {x : ℕ} {φ : Formula}
   -- The small induction: on the numeral, at the fixed ambient `m`.
   induction k with
   | zero =>
-    have h0 : Formula.SubstOK Term.zero φ := fun y hy => by
+    have h0 : Formula.SubstOK Term.zero φ := fun y hy ↦ by
       simp [Term.vars] at hy
     exact (MR_subst φ h0 ρ m a).mp ha
   | succ k ih =>
@@ -117,7 +123,7 @@ theorem MR_tiRecC {ρ : ℕ → ℕ} {x y : ℕ} {φ : Formula}
     ∀ k : ℕ, MR (Function.update ρ x k) φ (m₂ + 2) (tiRecC φ b k) := by
   intro k
   refine oLt_wf.induction
-    (C := fun k => MR (Function.update ρ x k) φ (m₂ + 2) (tiRecC φ b k)) k ?_
+    (C := fun k ↦ MR (Function.update ρ x k) φ (m₂ + 2) (tiRecC φ b k)) k ?_
   intro k ih
   rw [tiRecC_eq]
   -- The premise at the code `k`, then its `→` clause: it wants a
@@ -158,7 +164,7 @@ theorem MR_tiRecC {ρ : ℕ → ℕ} {x y : ℕ} {φ : Formula}
   by_cases hzx : z = x
   · subst hzx
     simp [Function.update, Term.eval]
-  · have hzy : z ≠ y := fun h => hfree (h ▸ hz)
+  · have hzy : z ≠ y := fun h ↦ hfree (h ▸ hz)
     show Function.update ρ x j z
       = Function.update (Function.update (Function.update ρ x k) y j) x
           (Term.eval (Function.update (Function.update ρ x k) y j) (.var y)) z
@@ -196,21 +202,21 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
     intro ρ env henv n hn
     left
     refine ⟨?_, ?_⟩
-    · show fstPT (pairPT (fun _ => (0 : ℕ)) (extract D ρ env n))
+    · show fstPT (pairPT (fun _ ↦ (0 : ℕ)) (extract D ρ env n))
         (defaultPT n) = 0
       rw [fstPT_pairPT]
-    · show MR ρ φ n (sndPT (pairPT (fun _ => (0 : ℕ)) (extract D ρ env n)))
+    · show MR ρ φ n (sndPT (pairPT (fun _ ↦ (0 : ℕ)) (extract D ρ env n)))
       rw [sndPT_pairPT]
       exact ih ρ env henv n hn
   | @orI₂ Γ φ ψ D ih =>
     intro ρ env henv n hn
     right
     refine ⟨?_, ?_⟩
-    · show fstPT (pairPT (fun _ => (1 : ℕ)) (extract D ρ env n))
+    · show fstPT (pairPT (fun _ ↦ (1 : ℕ)) (extract D ρ env n))
         (defaultPT n) ≠ 0
       rw [fstPT_pairPT]
       exact one_ne_zero
-    · show MR ρ ψ n (sndPT (pairPT (fun _ => (1 : ℕ)) (extract D ρ env n)))
+    · show MR ρ ψ n (sndPT (pairPT (fun _ ↦ (1 : ℕ)) (extract D ρ env n)))
       rw [sndPT_pairPT]
       exact ih ρ env henv n hn
   | @orE Γ φ ψ χ D D₁ D₂ ih ih₁ ih₂ =>
@@ -242,7 +248,7 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
     | succ m =>
       intro x hx
       show MR ρ ψ m
-        (app₁ (abs₁ fun z => extract D ρ (famOf φ z :: env) m) x)
+        (app₁ (abs₁ fun z ↦ extract D ρ (famOf φ z :: env) m) x)
       rw [app₁_abs₁]
       exact ih ρ (famOf φ x :: env)
         ⟨FR_famOf φ ρ (by omega) x hx, henv⟩ m (by omega)
@@ -261,7 +267,7 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
     | succ m =>
       intro k
       show MR (Function.update ρ y k) φ m
-        (app₁ (abs₁ fun z =>
+        (app₁ (abs₁ fun z ↦
           extract D (Function.update ρ y (z (defaultPT m))) env m)
           (natPT (m + 1) k))
       rw [app₁_abs₁]
@@ -270,7 +276,7 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
           env m)
       rw [show natPT (m + 1) k (defaultPT m) = k from rfl]
       refine ih (Function.update ρ y k) env
-        (CtxR_congr Γ env (fun ψ hψ z hz => ?_) henv) m (by omega)
+        (CtxR_congr Γ env (fun ψ hψ z hz ↦ ?_) henv) m (by omega)
       by_cases hzy : z = y
       · exact absurd (hzy ▸ hz) (hfresh ψ hψ)
       · simp [Function.update, hzy]
@@ -292,7 +298,7 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
     | succ m =>
       intro k
       show MR (Function.update ρ x k) φ m
-        (app₁ (abs₁ fun z =>
+        (app₁ (abs₁ fun z ↦
           indRecC (extract D₁ ρ env m) (extract D₂ ρ env (m + 2))
             (z (defaultPT m)))
           (natPT (m + 1) k))
@@ -316,7 +322,7 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
         rw [hdec]
         left
         refine ⟨?_, heq⟩
-        show fstPT (pairPT (fun _ => (0 : ℕ)) (defaultPT (m + 2)))
+        show fstPT (pairPT (fun _ ↦ (0 : ℕ)) (defaultPT (m + 2)))
           (defaultPT (m + 1)) = 0
         rw [fstPT_pairPT]
       | false =>
@@ -326,7 +332,7 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
         rw [hdec]
         right
         refine ⟨?_, ?_⟩
-        · show fstPT (pairPT (fun _ => (1 : ℕ)) (defaultPT (m + 2)))
+        · show fstPT (pairPT (fun _ ↦ (1 : ℕ)) (defaultPT (m + 2)))
             (defaultPT (m + 1)) ≠ 0
           rw [fstPT_pairPT]
           exact one_ne_zero
@@ -542,7 +548,7 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
         | succ m₂ =>
           intro k
           show MR (Function.update ρ x k) φ (m₂ + 2)
-            (app₁ (abs₁ fun z =>
+            (app₁ (abs₁ fun z ↦
               tiFamAt φ (extract D ρ env) (z (defaultPT (m₂ + 2))) (m₂ + 2))
               (natPT (m₂ + 3) k))
           rw [app₁_abs₁,
@@ -634,14 +640,14 @@ theorem soundness {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) :
       (extract D₂ (Function.update ρ x
         (fstPT (extract D₁ ρ env n) (defaultPT n)))
         (famOf φ (sndPT (extract D₁ ρ env n)) :: env) n)
-    refine (MR_congr ψ n _ (fun z hz => ?_)).mp
+    refine (MR_congr ψ n _ (fun z hz ↦ ?_)).mp
       (ih₂ (Function.update ρ x (fstPT (extract D₁ ρ env n) (defaultPT n)))
         (famOf φ (sndPT (extract D₁ ρ env n)) :: env)
         ⟨FR_famOf φ _ (by omega) _ hmaj,
-          CtxR_congr Γ env (fun χ hχ z hz => ?_) henv⟩ n (by omega))
-    · have hzx : z ≠ x := fun h => hnf (h ▸ hz)
+          CtxR_congr Γ env (fun χ hχ z hz ↦ ?_) henv⟩ n (by omega))
+    · have hzx : z ≠ x := fun h ↦ hnf (h ▸ hz)
       simp [Function.update, hzx]
-    · have hzx : z ≠ x := fun h => absurd (h ▸ hz) (hfresh χ hχ)
+    · have hzx : z ≠ x := fun h ↦ absurd (h ▸ hz) (hfresh χ hχ)
       simp [Function.update, hzx]
   | eqCongPrec s₁ t₁ s₂ t₂ =>
     intro ρ env henv n hn

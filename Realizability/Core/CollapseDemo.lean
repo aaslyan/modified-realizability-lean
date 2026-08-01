@@ -1,4 +1,13 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import ContinuousFunctionals.CtQ
+import Realizability.Core.Soundness
+import Realizability.Core.GenericContinuity
+
+/-!
 # The collapse payoff: two derivations, one program
 
 `RealizesCtQ` sends a closed derivation to the class of its extracted
@@ -26,9 +35,6 @@ corollaries of the general theorem; the concrete value computation
 functional is continuous: it reads its argument at position `0` and at
 one further position determined by the answer.
 -/
-import ContinuousFunctionals.CtQ
-import Realizability.Core.Soundness
-import Realizability.Core.GenericContinuity
 
 namespace Realizability
 
@@ -44,6 +50,7 @@ noncomputable def RealizesCtQ {φ : Formula} (D : Deriv [] φ)
 
 /-- The demo's atomic formulas (any atoms would do). -/
 def demoA : Formula := .eq (.var 0) (.var 1)
+/-- The demo's second atomic formula. -/
 def demoB : Formula := .eq (.var 2) (.var 3)
 
 /-- The direct derivation of `A ∧ B → B ∧ A`. -/
@@ -86,7 +93,7 @@ theorem demo_extract_apply (ρ : ℕ → ℕ) (z : PureType 1) :
         ((z ((z (0 : ℕ)).unpair.2)).unpair.1.unpair.1) := by
   unfold demoDeriv₁
   simp only [extract, impIC, andIC, andE₁C, andE₂C, axC, List.headD]
-  show (abs₁ fun x =>
+  show (abs₁ fun x ↦
     pairPT (sndPT (famOf (demoA.and demoB) x 0))
       (fstPT (famOf (demoA.and demoB) x 0))) z = _
   show pairPT (sndPT (famOf (demoA.and demoB) (fstPT z) 0))

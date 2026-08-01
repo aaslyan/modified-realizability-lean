@@ -20,7 +20,7 @@ Two headline theorems are derived *inside* the fragment, each with its witness f
 
 - **Zero `sorry`/`admit`.** The build must stay green with no placeholders.
 - **Axiom budget**: realization theorems report exactly `[propext, Classical.choice, Quot.sound]`; continuity theorems only `[propext, Quot.sound]`. The embedded `#print axioms` commands enforce this.
-- **`Epsilon0.lean` must stay `Classical`-free** (`[propext, Quot.sound]`). Its `oLt_wf` is used in the *definition* of `tiRecC`, so any `Classical.choice` there propagates into `extract` and breaks every continuity theorem's budget. Two concrete consequences: never use Mathlib's `Nat.pair`/`Nat.unpair` (its entire lemma set is choice-dependent — that is why the pairing is hand-rolled), and never use the `by_cases` tactic in that module (it can fall back on `Classical.byCases`; use the local `decEm` instead).
+- **`Epsilon0.lean` must stay `Classical`-free** (`[propext, Quot.sound]`). Its `oLt_wf` is used in the *definition* of `tiRecC`, so any `Classical.choice` there propagates into `extract` and breaks every continuity theorem's budget. Two concrete consequences: never use Mathlib's `Nat.pair`/`Nat.unpair` (its entire lemma set is choice-dependent — that is why the pairing is hand-rolled), and never use the `by_cases` tactic in that module (it can fall back on `Classical.byCases`; use the local `dec_em` instead).
 - **`Hydra.lean`'s *definitions* carry the same constraint** (its proofs do not): since H4 they sit inside `Term.eval`, hence inside `extract`. `#print axioms hydraStepN`/`hydraSeqN`/`ordOfHydraN` must keep reporting *does not depend on any axioms*.
 - `autoImplicit` is off (set in `lakefile.lean`); bind all variables explicitly.
 

@@ -1,4 +1,12 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Fibonacci.FibonacciTheorem
+import Realizability.Core.CollapseDemo
+
+/-!
 # Fibonacci: the extracted function
 
 `fibPairedTheorem` is a closed derivation of
@@ -28,8 +36,6 @@ evaluated.  The `#print axioms fibonacci` line confirms the extracted
 function's own footprint is `[propext, Quot.sound]` — traced, not assumed
 to transfer from the pipeline.
 -/
-import Realizability.Theorems.Fibonacci.FibonacciTheorem
-import Realizability.Core.CollapseDemo
 
 namespace Realizability
 
@@ -58,7 +64,7 @@ conjunct), and read its witness — the first component at the canonical
 point, where `exIC` puts it.  Ambient 5 is the derivation's own bound, so
 this is the realizer at the level where it is certified. -/
 def fibonacci (n : ℕ) : ℕ :=
-  fstPT (fstPT (app₁ (extract fibPairedTheorem (fun _ => 0) [] 5) (natPT 5 n)))
+  fstPT (fstPT (app₁ (extract fibPairedTheorem (fun _ ↦ 0) [] 5) (natPT 5 n)))
     (defaultPT 4)
 
 /-- **The extracted function is correct**, at every input: it computes the
@@ -66,15 +72,15 @@ def fibonacci (n : ℕ) : ℕ :=
 the first existential's witness clause *is* `fib n = fibonacci n` — so it
 needs no computation and holds far beyond where evaluation reaches. -/
 theorem fibonacci_spec (n : ℕ) : fibonacci n = fibN n := by
-  have h := fib_realized (fun _ => 0) (m := 5) (Nat.le_refl 5) n
+  have h := fib_realized (fun _ ↦ 0) (m := 5) (Nat.le_refl 5) n
   have h2 : Term.eval
-      (Function.update (Function.update (fun _ => 0) 0 n) 3
-        (fstPT (fstPT (app₁ (extract fibPairedTheorem (fun _ => 0) [] 5)
+      (Function.update (Function.update (fun _ ↦ 0) 0 n) 3
+        (fstPT (fstPT (app₁ (extract fibPairedTheorem (fun _ ↦ 0) [] 5)
           (natPT 5 n))) (defaultPT 4)))
       (.fib (.var 0))
     = Term.eval
-      (Function.update (Function.update (fun _ => 0) 0 n) 3
-        (fstPT (fstPT (app₁ (extract fibPairedTheorem (fun _ => 0) [] 5)
+      (Function.update (Function.update (fun _ ↦ 0) 0 n) 3
+        (fstPT (fstPT (app₁ (extract fibPairedTheorem (fun _ ↦ 0) [] 5)
           (natPT 5 n))) (defaultPT 4)))
       (.var 3) := h.1
   simpa [Term.eval, Function.update, fibonacci] using h2.symm
@@ -85,21 +91,21 @@ reads the second — the `sndPT` half of the `∧`-pair — which is `fib (n+1)`
 Together they are the exact pair the two-line iterative Fibonacci threads,
 `(a, b) ↦ (b, a+b)`. -/
 def fibNext (n : ℕ) : ℕ :=
-  fstPT (sndPT (app₁ (extract fibPairedTheorem (fun _ => 0) [] 5) (natPT 5 n)))
+  fstPT (sndPT (app₁ (extract fibPairedTheorem (fun _ ↦ 0) [] 5) (natPT 5 n)))
     (defaultPT 4)
 
 /-- `fibNext` is the *next* Fibonacci number, read from the second conjunct
 of soundness — the mirror of `fibonacci_spec`. -/
 theorem fibNext_spec (n : ℕ) : fibNext n = fibN (n + 1) := by
-  have h := fib_realized (fun _ => 0) (m := 5) (Nat.le_refl 5) n
+  have h := fib_realized (fun _ ↦ 0) (m := 5) (Nat.le_refl 5) n
   have h2 : Term.eval
-      (Function.update (Function.update (fun _ => 0) 0 n) 4
-        (fstPT (sndPT (app₁ (extract fibPairedTheorem (fun _ => 0) [] 5)
+      (Function.update (Function.update (fun _ ↦ 0) 0 n) 4
+        (fstPT (sndPT (app₁ (extract fibPairedTheorem (fun _ ↦ 0) [] 5)
           (natPT 5 n))) (defaultPT 4)))
       (.fib (.succ (.var 0)))
     = Term.eval
-      (Function.update (Function.update (fun _ => 0) 0 n) 4
-        (fstPT (sndPT (app₁ (extract fibPairedTheorem (fun _ => 0) [] 5)
+      (Function.update (Function.update (fun _ ↦ 0) 0 n) 4
+        (fstPT (sndPT (app₁ (extract fibPairedTheorem (fun _ ↦ 0) [] 5)
           (natPT 5 n))) (defaultPT 4)))
       (.var 4) := h.2
   simpa [Term.eval, Function.update, fibNext] using h2.symm
@@ -144,10 +150,10 @@ that a proof exists.  It stops at `n = 3` because evaluation is exponential
 (see the header); the larger values are the certified
 `fibonacci_five`/`fibonacci_ten`. -/
 
-#guard (List.range 4).map (fun k => (fibonacci k, fibNext k))
+#guard (List.range 4).map (fun k ↦ (fibonacci k, fibNext k))
   == [(0, 1), (1, 1), (1, 2), (2, 3)]
 
-#eval (List.range 4).map (fun k => (fibonacci k, fibNext k))
+#eval (List.range 4).map (fun k ↦ (fibonacci k, fibNext k))
 
 #print axioms fib_realized
 #print axioms fibonacci_spec

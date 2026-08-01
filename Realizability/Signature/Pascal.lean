@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Ordinals.Epsilon0
+
+/-!
 # Phase F1: Pascal's triangle mod 2, at the value level
 
 The simplest of the development's showpieces, and deliberately so: the
@@ -42,7 +49,6 @@ a sum) is not a first-order equation schema over the fragment's terms.
 The case analysis then happens where it belongs, in the *proofs*, driven
 by the totality theorem rather than by four conditional axioms.
 -/
-import Realizability.Ordinals.Epsilon0
 
 namespace Realizability
 

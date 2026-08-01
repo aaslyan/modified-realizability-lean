@@ -1,4 +1,12 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Goodstein.GoodsteinTheorem
+import Realizability.Core.CollapseDemo
+
+/-!
 # Phase D3: the extracted function
 
 What the roadmap was for.  `goodsteinTheorem` (Phase D2) is a closed
@@ -20,8 +28,6 @@ ways:
 And it runs: see the `#eval`s at the end, and the timings recorded in
 STATUS.md.
 -/
-import Realizability.Theorems.Goodstein.GoodsteinTheorem
-import Realizability.Core.CollapseDemo
 
 namespace Realizability
 
@@ -49,7 +55,7 @@ first component at the canonical point, which is exactly where `exIC`
 puts it.  Ambient 12 is the derivation's own bound, so this is the
 realizer *at the level where it is certified*. -/
 def goodsteinStopTime (m : ℕ) : ℕ :=
-  fstPT (app₁ (extract goodsteinTheorem (fun _ => 0) [] 12) (natPT 12 m))
+  fstPT (app₁ (extract goodsteinTheorem (fun _ ↦ 0) [] 12) (natPT 12 m))
     (defaultPT 11)
 
 /-- **The extracted function is correct**, at every start value: the
@@ -58,15 +64,15 @@ This is soundness instantiated at the theorem — the realizer's witness
 clause *is* this statement — so it needs no computation and holds far
 beyond where evaluation could reach. -/
 theorem goodsteinStopTime_spec (m : ℕ) : goodN m (goodsteinStopTime m) = 0 := by
-  have h := goodstein_realized (fun _ => 0) (n := 12) (Nat.le_refl 12) m
+  have h := goodstein_realized (fun _ ↦ 0) (n := 12) (Nat.le_refl 12) m
   have h2 : Term.eval
-      (Function.update (Function.update (fun _ => 0) 2 m) 4
-        (fstPT (app₁ (extract goodsteinTheorem (fun _ => 0) [] 12)
+      (Function.update (Function.update (fun _ ↦ 0) 2 m) 4
+        (fstPT (app₁ (extract goodsteinTheorem (fun _ ↦ 0) [] 12)
           (natPT 12 m)) (defaultPT 11)))
       (.good (.var 2) (.var 4))
       = Term.eval
-      (Function.update (Function.update (fun _ => 0) 2 m) 4
-        (fstPT (app₁ (extract goodsteinTheorem (fun _ => 0) [] 12)
+      (Function.update (Function.update (fun _ ↦ 0) 2 m) 4
+        (fstPT (app₁ (extract goodsteinTheorem (fun _ ↦ 0) [] 12)
           (natPT 12 m)) (defaultPT 11))) .zero := h
   simpa [Term.eval, Function.update, goodsteinStopTime] using h2
 

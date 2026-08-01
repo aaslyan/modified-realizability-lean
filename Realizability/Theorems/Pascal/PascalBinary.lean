@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Pascal.PascalTheorem
+
+/-!
 # Phase G2: the binary step identities, inside the fragment
 
 Phase G proved Kummer/Lucas in the metatheory, and recorded why the
@@ -36,7 +43,6 @@ Three places need a `0`/`succ` case split on the *column*, and the
 fragment's only way to do that is `ind` with the hypothesis discarded —
 the device Phase F3 introduced.
 -/
-import Realizability.Theorems.Pascal.PascalTheorem
 
 namespace Realizability
 
@@ -146,6 +152,7 @@ abbrev binEvenBody : Formula :=
   (Formula.eq (.pas (dbl (.var 1)) (dbl (.var 2))) (.pas (.var 1) (.var 2))).and
     (Formula.eq (.pas (dbl (.var 1)) (.succ (dbl (.var 2)))) .zero)
 
+/-- The even-row identities, quantified over the column. -/
 abbrev binEven : Formula := .all 2 binEvenBody
 
 /-- The odd-row identities. -/
@@ -155,6 +162,7 @@ abbrev binOddBody : Formula :=
     (Formula.eq (.pas (.succ (dbl (.var 1))) (.succ (dbl (.var 2))))
       (.pas (.var 1) (.var 2)))
 
+/-- The odd-row identities, quantified over the column. -/
 abbrev binOdd : Formula := .all 2 binOddBody
 
 /-! ## The odd rows, from the even rows at the same `n`
@@ -162,6 +170,7 @@ abbrev binOdd : Formula := .all 2 binOddBody
 The first half of the alternation.  Both parts split on the column, by
 `ind` with the hypothesis discarded. -/
 
+/-- Derive the odd-row identities from the even ones at the same `n`. -/
 def oddFromEven {Γ : List Formula} (hfresh : FreshIn 2 Γ)
     (hev : Deriv Γ binEven) : Deriv Γ binOdd := by
   refine .ind ?_ ?_ (substOK_of_forall (by decide))
@@ -225,6 +234,8 @@ The other half of the alternation: the step derives the odd identities at
 `n` from the induction hypothesis, then the even identities at `n + 1`
 from those. -/
 
+/-- **The binary step identities inside the fragment**, by `ind` down the
+rows (the even rows; the odd ones follow via `oddFromEven`). -/
 def binEvenDeriv : Deriv [] (.all 1 binEven) := by
   refine .ind ?_ ?_ (substOK_of_forall (by decide))
   · -- row `0`
@@ -333,7 +344,7 @@ theorem binOdd_extract_continuous (ρ : ℕ → ℕ) :
 through `soundness`, is Phase G's `pasN_even`. -/
 theorem bin_even_via_fragment (n k : ℕ) :
     pasN (n + n) (k + k) = pasN n k ∧ pasN (n + n) (k + k + 1) = 0 := by
-  have h := binEven_realized (fun _ => 0) (m := 18) (Nat.le_refl 18) n k
+  have h := binEven_realized (fun _ ↦ 0) (m := 18) (Nat.le_refl 18) n k
   obtain ⟨h₁, h₂⟩ := h
   constructor
   · simpa [Term.eval, Function.update] using h₁
@@ -342,7 +353,7 @@ theorem bin_even_via_fragment (n k : ℕ) :
 /-- **The round trip for the odd rows**: likewise Phase G's `pasN_odd`. -/
 theorem bin_odd_via_fragment (n k : ℕ) :
     pasN (n + n + 1) (k + k) = pasN n k ∧ pasN (n + n + 1) (k + k + 1) = pasN n k := by
-  have h := binOdd_realized (fun _ => 0) (m := 22) (Nat.le_refl 22) n k
+  have h := binOdd_realized (fun _ ↦ 0) (m := 22) (Nat.le_refl 22) n k
   obtain ⟨h₁, h₂⟩ := h
   constructor
   · simpa [Term.eval, Function.update] using h₁

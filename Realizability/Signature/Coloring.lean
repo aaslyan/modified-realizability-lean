@@ -1,4 +1,11 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Signature.Hanoi
+
+/-!
 # Sperner (1D) value layer: colorings as cons-list codes
 
 The 1-dimensional Sperner / discrete-IVT theorem quantifies over an
@@ -18,7 +25,6 @@ coding); the only genuinely new thing is the `look` accessor symbol —
 statability-forced, since `c k` for a bound `k` cannot be written as a
 term over the existing signature.
 -/
-import Realizability.Signature.Hanoi
 
 namespace Realizability
 

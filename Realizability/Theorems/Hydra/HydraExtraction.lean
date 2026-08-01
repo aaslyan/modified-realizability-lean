@@ -1,4 +1,12 @@
 /-
+Copyright (c) 2026 Ara Aslyan. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ara Aslyan
+-/
+import Realizability.Theorems.Hydra.HydraTheorem
+import Realizability.Core.CollapseDemo
+
+/-!
 # Phase H6: the extracted Hydra program
 
 `hydraTheorem` (Phase H5) is a closed derivation of `∀h ∃t. hydra(h,t) = 0`,
@@ -33,8 +41,6 @@ bottleneck of its own.
 The certified content is unaffected: `hydraBattleLength_spec` holds at
 every `h`, including the ones evaluation cannot reach.
 -/
-import Realizability.Theorems.Hydra.HydraTheorem
-import Realizability.Core.CollapseDemo
 
 namespace Realizability
 
@@ -63,7 +69,7 @@ component at the canonical point, which is exactly where `exIC` puts it.
 Ambient 12 is the derivation's own bound, so this is the realizer *at the
 level where it is certified*. -/
 def hydraBattleLength (h : ℕ) : ℕ :=
-  fstPT (app₁ (extract hydraTheorem (fun _ => 0) [] 12) (natPT 12 h))
+  fstPT (app₁ (extract hydraTheorem (fun _ ↦ 0) [] 12) (natPT 12 h))
     (defaultPT 11)
 
 /-- **The extracted function is correct**, at every hydra: the battle from
@@ -73,15 +79,15 @@ witness clause *is* this statement — so it needs no computation and holds
 far beyond where evaluation could reach. -/
 theorem hydraBattleLength_spec (h : ℕ) :
     hydraSeqN h (hydraBattleLength h) = 0 := by
-  have hr := hydra_realized (fun _ => 0) (n := 12) (Nat.le_refl 12) h
+  have hr := hydra_realized (fun _ ↦ 0) (n := 12) (Nat.le_refl 12) h
   have h2 : Term.eval
-      (Function.update (Function.update (fun _ => 0) 2 h) 4
-        (fstPT (app₁ (extract hydraTheorem (fun _ => 0) [] 12)
+      (Function.update (Function.update (fun _ ↦ 0) 2 h) 4
+        (fstPT (app₁ (extract hydraTheorem (fun _ ↦ 0) [] 12)
           (natPT 12 h)) (defaultPT 11)))
       (.hydra (.var 2) (.var 4))
       = Term.eval
-      (Function.update (Function.update (fun _ => 0) 2 h) 4
-        (fstPT (app₁ (extract hydraTheorem (fun _ => 0) [] 12)
+      (Function.update (Function.update (fun _ ↦ 0) 2 h) 4
+        (fstPT (app₁ (extract hydraTheorem (fun _ ↦ 0) [] 12)
           (natPT 12 h)) (defaultPT 11))) .zero := hr
   simpa [Term.eval, Function.update, hydraBattleLength] using h2
 
