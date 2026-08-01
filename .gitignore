@@ -1,2 +1,12 @@
 .lake/
 .DS_Store
+
+# LaTeX aux (paper/)
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.fls
+paper/*.fdb_latexmk
+paper/build.log
+paper/fonttest.*

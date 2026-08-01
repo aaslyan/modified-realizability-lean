@@ -1,0 +1,45 @@
+% Preamble additions for "How a Proof Becomes a Program".
+% Compiled with LuaLaTeX; pandoc's standalone template supplies
+% fontspec + unicode-math + hyperref, so this file adds only what the
+% template does not, and avoids double-loading font/encoding packages.
+%
+% Prose-mode symbols are mapped to Computer Modern math via
+% newunicodechar (font-independent); code (inline \texttt and verbatim
+% blocks) is set in DejaVu Sans Mono, which covers the block symbols.
+
+\usepackage[letterpaper,margin=1.15in]{geometry}
+\usepackage{parskip}
+
+% Monospace font with the Unicode coverage the code blocks need (∃ ∀ …).
+\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
+
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\Large\bfseries}{}{0pt}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.7\baselineskip}{0.7\baselineskip}
+\titlespacing*{\subsection}{0pt}{1.15\baselineskip}{0.4\baselineskip}
+
+% Slightly tighten and indent verbatim code blocks.
+\usepackage{fancyvrb}
+\fvset{xleftmargin=1.2em,fontsize=\small}
+
+% Prose-mode symbols, font-independent (Computer Modern math).
+\usepackage{newunicodechar}
+\newunicodechar{—}{\textemdash}
+\newunicodechar{–}{\textendash}
+\newunicodechar{…}{\ldots}
+\newunicodechar{∃}{\ensuremath{\exists}}
+\newunicodechar{∀}{\ensuremath{\forall}}
+\newunicodechar{→}{\ensuremath{\rightarrow}}
+\newunicodechar{∧}{\ensuremath{\land}}
+\newunicodechar{∨}{\ensuremath{\lor}}
+\newunicodechar{φ}{\ensuremath{\varphi}}
+\newunicodechar{ψ}{\ensuremath{\psi}}
+\newunicodechar{ε}{\ensuremath{\varepsilon}}
+\newunicodechar{ω}{\ensuremath{\omega}}
+\newunicodechar{₀}{\textsubscript{0}}
+\newunicodechar{ℕ}{\ensuremath{\mathbb{N}}}
+\newunicodechar{⟨}{\ensuremath{\langle}}
+\newunicodechar{⟩}{\ensuremath{\rangle}}
+\newunicodechar{−}{\ensuremath{-}}
+\newunicodechar{ń}{\'n}
