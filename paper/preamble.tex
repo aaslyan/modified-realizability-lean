@@ -1,45 +1,79 @@
-% Preamble additions for "How a Proof Becomes a Program".
-% Compiled with LuaLaTeX; pandoc's standalone template supplies
-% fontspec + unicode-math + hyperref, so this file adds only what the
-% template does not, and avoids double-loading font/encoding packages.
-%
-% Prose-mode symbols are mapped to Computer Modern math via
-% newunicodechar (font-independent); code (inline \texttt and verbatim
-% blocks) is set in DejaVu Sans Mono, which covers the block symbols.
+% Preamble for "How a Proof Becomes a Program" — the LaTeX-source edition.
+% Compiles with pdflatex (pure-ASCII source; all math via LaTeX commands).
+
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{newpxtext}                 % Palatino-family text (book-quality serif)
+\usepackage{newpxmath}                 % matching math (provides \mathbb, etc.)
+\usepackage[varqu,scaled=0.94]{zi4}    % Inconsolata monospace
+\usepackage{microtype}
 
 \usepackage[letterpaper,margin=1.15in]{geometry}
-\usepackage{parskip}
-
-% Monospace font with the Unicode coverage the code blocks need (∃ ∀ …).
-\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\setlist{itemsep=3pt,topsep=5pt,parsep=0pt}
 
 \usepackage{titlesec}
-\titleformat{\section}{\normalfont\Large\bfseries}{}{0pt}{}
+\titleformat{\section}{\normalfont\Large\bfseries\color{accent}}{}{0pt}{}
 \titleformat{\subsection}{\normalfont\large\bfseries}{}{0pt}{}
-\titlespacing*{\section}{0pt}{1.7\baselineskip}{0.7\baselineskip}
-\titlespacing*{\subsection}{0pt}{1.15\baselineskip}{0.4\baselineskip}
+\titlespacing*{\section}{0pt}{1.9\baselineskip}{0.8\baselineskip}
+\titlespacing*{\subsection}{0pt}{1.2\baselineskip}{0.4\baselineskip}
 
-% Slightly tighten and indent verbatim code blocks.
-\usepackage{fancyvrb}
-\fvset{xleftmargin=1.2em,fontsize=\small}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds,chains,
+  shapes.geometric,shapes.misc,decorations.pathreplacing}
+\usepackage{caption}
+\captionsetup{font=small,labelfont={bf,color=accent},skip=6pt}
 
-% Prose-mode symbols, font-independent (Computer Modern math).
-\usepackage{newunicodechar}
-\newunicodechar{—}{\textemdash}
-\newunicodechar{–}{\textendash}
-\newunicodechar{…}{\ldots}
-\newunicodechar{∃}{\ensuremath{\exists}}
-\newunicodechar{∀}{\ensuremath{\forall}}
-\newunicodechar{→}{\ensuremath{\rightarrow}}
-\newunicodechar{∧}{\ensuremath{\land}}
-\newunicodechar{∨}{\ensuremath{\lor}}
-\newunicodechar{φ}{\ensuremath{\varphi}}
-\newunicodechar{ψ}{\ensuremath{\psi}}
-\newunicodechar{ε}{\ensuremath{\varepsilon}}
-\newunicodechar{ω}{\ensuremath{\omega}}
-\newunicodechar{₀}{\textsubscript{0}}
-\newunicodechar{ℕ}{\ensuremath{\mathbb{N}}}
-\newunicodechar{⟨}{\ensuremath{\langle}}
-\newunicodechar{⟩}{\ensuremath{\rangle}}
-\newunicodechar{−}{\ensuremath{-}}
-\newunicodechar{ń}{\'n}
+\usepackage[hidelinks]{hyperref}
+
+% ---------- palette ----------
+\definecolor{accent}{HTML}{1A5276}   % deep blue  (structure)
+\definecolor{amber}{HTML}{B9770E}    % amber      (the "live" value)
+\definecolor{good}{HTML}{1E8449}     % green      (choice-free / runs)
+\definecolor{bad}{HTML}{922B21}      % red        (classical / does not run)
+\definecolor{boxbg}{HTML}{F3F6F8}
+\definecolor{boxbg2}{HTML}{FBF5EA}
+\definecolor{rulec}{HTML}{9FB0BA}
+
+% ---------- notation (\ensuremath so each works in text and math) ----------
+\newcommand{\Nat}{\ensuremath{\mathbb{N}}}
+\newcommand{\PT}{\mathsf{PureType}}          % math-only (subscripted)
+\newcommand{\good}{\ensuremath{\operatorname{good}}}
+\newcommand{\fib}{\ensuremath{\operatorname{fib}}}
+\newcommand{\hydra}{\ensuremath{\operatorname{hydra}}}
+\newcommand{\lev}{\ell}                       % math-only
+\newcommand{\rz}{\ensuremath{\Vdash}}
+\newcommand{\extract}{\ensuremath{\mathsf{extract}}}
+\newcommand{\CtQ}{\ensuremath{\mathsf{CtQ}}}
+\newcommand{\epsz}{\ensuremath{\varepsilon_0}}
+\newcommand{\fst}{\pi_1}                       % math-only
+\newcommand{\snd}{\pi_2}                       % math-only
+\newcommand{\code}[1]{\texttt{#1}}
+
+% a key statement, set off as an indented italic callout with an accent rule
+\newenvironment{keystmt}{%
+  \par\smallskip\noindent\begin{list}{}{%
+    \setlength{\leftmargin}{1.6em}\setlength{\rightmargin}{1.2em}%
+    \setlength{\topsep}{4pt}}\item[\textcolor{accent}{\rule[-0.2ex]{2.2pt}{1.2em}}]\itshape}%
+  {\end{list}\smallskip}
+
+% ---------- tikz styles ----------
+\tikzset{
+  box/.style={draw=accent,line width=0.7pt,rounded corners=2.5pt,fill=boxbg,
+    inner sep=6pt,align=center,font=\small,minimum height=2.4em},
+  boxa/.style={box,draw=amber,fill=boxbg2},
+  boxg/.style={box,draw=good,fill=good!8},
+  boxb/.style={box,draw=bad,fill=bad!7},
+  plain/.style={inner sep=3pt,align=center,font=\small},
+  flow/.style={-{Latex[length=2.4mm,width=1.8mm]},line width=0.8pt,draw=accent!85!black},
+  flowa/.style={flow,draw=amber!85!black},
+  ladder/.style={draw=rulec,line width=0.6pt,-{Latex[length=2mm]}},
+  elabel/.style={font=\footnotesize\itshape,fill=white,inner sep=1.5pt,text=black!70},
+  figcap/.style={font=\footnotesize,text=black!65,align=center},
+}

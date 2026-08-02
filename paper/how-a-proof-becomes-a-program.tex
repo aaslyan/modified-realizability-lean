@@ -1,485 +1,1044 @@
-% Options for packages loaded elsewhere
-\PassOptionsToPackage{unicode}{hyperref}
-\PassOptionsToPackage{hyphens}{url}
-\documentclass[
-  11pt,
-]{article}
-\usepackage{xcolor}
-\usepackage{amsmath,amssymb}
-\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
-\usepackage{iftex}
-\ifPDFTeX
-  \usepackage[T1]{fontenc}
-  \usepackage[utf8]{inputenc}
-  \usepackage{textcomp} % provide euro and other symbols
-\else % if luatex or xetex
-  \usepackage{unicode-math} % this also loads fontspec
-  \defaultfontfeatures{Scale=MatchLowercase}
-  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
-\fi
-\usepackage{lmodern}
-\ifPDFTeX\else
-  % xetex/luatex font selection
-\fi
-% Use upquote if available, for straight quotes in verbatim environments
-\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
-\IfFileExists{microtype.sty}{% use microtype if available
-  \usepackage[]{microtype}
-  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
-}{}
-\makeatletter
-\@ifundefined{KOMAClassName}{% if non-KOMA class
-  \IfFileExists{parskip.sty}{%
-    \usepackage{parskip}
-  }{% else
-    \setlength{\parindent}{0pt}
-    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
-}{% if KOMA class
-  \KOMAoptions{parskip=half}}
-\makeatother
-\setlength{\emergencystretch}{3em} % prevent overfull lines
-\providecommand{\tightlist}{%
-  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
-% Preamble additions for "How a Proof Becomes a Program".
-% Compiled with LuaLaTeX; pandoc's standalone template supplies
-% fontspec + unicode-math + hyperref, so this file adds only what the
-% template does not, and avoids double-loading font/encoding packages.
-%
-% Prose-mode symbols are mapped to Computer Modern math via
-% newunicodechar (font-independent); code (inline \texttt and verbatim
-% blocks) is set in DejaVu Sans Mono, which covers the block symbols.
+\documentclass[11pt]{article}
+\input{preamble}
 
-\usepackage[letterpaper,margin=1.15in]{geometry}
-\usepackage{parskip}
-
-% Monospace font with the Unicode coverage the code blocks need (∃ ∀ …).
-\setmonofont{DejaVu Sans Mono}[Scale=MatchLowercase]
-
-\usepackage{titlesec}
-\titleformat{\section}{\normalfont\Large\bfseries}{}{0pt}{}
-\titleformat{\subsection}{\normalfont\large\bfseries}{}{0pt}{}
-\titlespacing*{\section}{0pt}{1.7\baselineskip}{0.7\baselineskip}
-\titlespacing*{\subsection}{0pt}{1.15\baselineskip}{0.4\baselineskip}
-
-% Slightly tighten and indent verbatim code blocks.
-\usepackage{fancyvrb}
-\fvset{xleftmargin=1.2em,fontsize=\small}
-
-% Prose-mode symbols, font-independent (Computer Modern math).
-\usepackage{newunicodechar}
-\newunicodechar{—}{\textemdash}
-\newunicodechar{–}{\textendash}
-\newunicodechar{…}{\ldots}
-\newunicodechar{∃}{\ensuremath{\exists}}
-\newunicodechar{∀}{\ensuremath{\forall}}
-\newunicodechar{→}{\ensuremath{\rightarrow}}
-\newunicodechar{∧}{\ensuremath{\land}}
-\newunicodechar{∨}{\ensuremath{\lor}}
-\newunicodechar{φ}{\ensuremath{\varphi}}
-\newunicodechar{ψ}{\ensuremath{\psi}}
-\newunicodechar{ε}{\ensuremath{\varepsilon}}
-\newunicodechar{ω}{\ensuremath{\omega}}
-\newunicodechar{₀}{\textsubscript{0}}
-\newunicodechar{ℕ}{\ensuremath{\mathbb{N}}}
-\newunicodechar{⟨}{\ensuremath{\langle}}
-\newunicodechar{⟩}{\ensuremath{\rangle}}
-\newunicodechar{−}{\ensuremath{-}}
-\newunicodechar{ń}{\'n}
-\usepackage{bookmark}
-\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
-\urlstyle{same}
-% fallback for those not using the hyperref driver hyperxmp:
-\makeatletter
-\@ifundefined{xmpquote}{\newcommand{\xmpquote}[1]{#1}}{}
-\makeatother
-\hypersetup{
-  pdftitle={How a Proof Becomes a Program},
-  hidelinks,
-  pdfcreator={LaTeX via pandoc}}
-
-\title{How a Proof Becomes a Program}
-\author{}
+\title{\bfseries How a Proof Becomes a Program\\[6pt]
+  \normalfont\large\itshape A visual tour of a small formal system in which
+  theorems, once proved, hand you a working program\\ --- and of what that
+  turns out to cost.}
+\author{Ara Aslyan}
 \date{}
 
 \begin{document}
 \maketitle
-
-\emph{An unhurried tour of a small formal system in which theorems, once proved, hand you a working program for free --- and of what that turns out to cost.}
-
-This companion is written to be read start to finish by someone who has never seen realizability, type theory, ordinals past ω, or a proof assistant. It assumes only that you know what a theorem and a proof are, what the natural numbers \texttt{0,\ 1,\ 2,\ …} are, and that you have met mathematical induction at least once. Everything else is built up on the page, and nothing is used before it has been explained. Each new idea here appears at the exact moment an earlier paragraph has forced you to ask for it.
-
-Every factual claim about the formalization traces to the machine-checked development it describes; the fragment, the theorems, and the numbers below are all real and all checked by the Lean proof assistant.
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
-\section{Act I --- The hook}\label{act-i-the-hook}
-
-Pick a natural number --- say 3. Write it down. Now play the following game with it.
-
-First, rewrite the number using only powers of 2, and rewrite the exponents that way too, and their exponents, all the way down, until nothing but 2s and small constants remain. This is called \emph{hereditary base 2}. Now change every 2 you wrote into a 3 --- bump the base --- and subtract 1 from the result. Then rewrite \emph{that} number in hereditary base 3, change every 3 into a 4, subtract 1 again. Then base 4 into base 5, subtract 1. And so on, bumping the base by one each step and subtracting a single unit each time.
-
-The bases are marching upward without bound. Each step replaces a base by a larger one everywhere it appears --- and near the start, that base change inflates the number far more violently than the lonely ``subtract 1'' ever pulls it back down. The sequence you are generating does not drift gently; for many starting values it erupts. Start at 4 and the first few terms are 4, then 26, then 41, then 60, and it keeps climbing from there into numbers with no short decimal name.
-
-Goodstein's theorem says that this sequence --- no matter which number you started from --- always, eventually, comes back down and hits exactly 0.
-
-That is already strange. A process whose every early move makes the number enormously bigger, driven downward only by subtracting one at a time, nonetheless terminates at 0 for \emph{every} starting value. But the strange part, for our purposes, is not the theorem itself. It is what it takes to prove it, and what you can do with the proof once you have it.
-
-Here is the first half of the surprise. You cannot prove Goodstein's theorem with ordinary mathematical induction over the natural numbers. The usual ``check 0, then check that each number's truth follows from the previous one'' is genuinely not enough; the theorem needs a stronger principle, one that reaches past where step-by-step induction on \texttt{ℕ} can go. (Exactly what that stronger principle is, and why it is stronger, is Act IV's business. For now, hold onto the fact that ordinary induction falls short.)
-
-Here is the second half. Despite needing that extra strength, the proof is \emph{constructive} --- it does not merely assert that the sequence reaches 0, it contains, buried inside it, a recipe for finding the exact step at which that happens. And in the formal system this tour is about, that recipe can be pulled out of the proof mechanically and run as an actual program. Feed it a starting number; it returns the stopping step.
-
-Most expositions of Goodstein's theorem stop at the statement, or gesture at the proof and leave the ``constructive content'' as a phrase. This one opens the box all the way. We are going to watch, in complete detail and on a real example, a proof turn into a program --- first on something tiny enough to hold in your hand, then on Goodstein itself, and then on a handful of other theorems that each ask the machine to do one genuinely new thing. By the end you will have seen the whole mechanism, and one question will remain: when a program falls out of a proof this powerful, does some sliver of non-constructive reasoning sneak into the program along the way? The last act is devoted to answering it.
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
-\section{Act II --- One tiny, real example, walked through completely}\label{act-ii-one-tiny-real-example-walked-through-completely}
-
-Before any general theory, one concrete thing, done slowly and in full. We will not introduce a single piece of machinery in this act beyond what this one example forces us to name. No hierarchies, no levels, no collapses --- those are Act III, and they will make far more sense once you have a real realizer in hand to point at.
-
-Everything in this tour happens inside a fixed, small formal system --- we will call it \emph{the fragment}. Think of the fragment as a self-contained little world of mathematics with a rigid rulebook: it has a fixed vocabulary of things it can talk about (zero, successor, addition, multiplication, and a modest list of further operations we will meet as we need them), a fixed grammar of statements it can form, and a fixed list of inference rules for building proofs. Nothing enters the fragment except through that rulebook. This rigidity is deliberate: because the rules are finite and mechanical, a proof in the fragment is itself a finite, mechanical object --- a tree of rule-applications --- and a machine can take that tree apart. Hold that thought; it is what makes everything later possible.
-
-Our example is the fragment's very first existential theorem --- the first time it proved that \emph{something exists} rather than that two things are equal. It is deliberately the warm-up the development itself used before tackling the general Goodstein theorem, and we use it for exactly that reason: in Act IV, Goodstein will be the grown-up version of this same statement, and you will already have watched the miniature happen by hand.
-
-The statement is:
-
-\begin{quote}
-There is a step \texttt{s} at which the Goodstein sequence starting from 3 has reached 0.
-\end{quote}
-
-In the fragment's grammar this is written
-
-\begin{verbatim}
-∃s. good(3, s) = 0
-\end{verbatim}
-
-where \texttt{good(3,\ s)} is the fragment's own name for ``the value of the Goodstein sequence started at 3, after \texttt{s} steps.'' Read the whole formula aloud: \emph{there exists a step \texttt{s} such that \texttt{good(3,\ s)} equals \texttt{0}.}
-
-We happen to know the answer. The Goodstein sequence starting from 3 runs
-
-\begin{verbatim}
-3, 3, 3, 2, 1, 0
-\end{verbatim}
-
---- so it first reaches 0 at step 5. The number 5 is the \emph{witness}: the particular \texttt{s} that makes \texttt{∃s.\ good(3,\ s)\ =\ 0} true. Keep 5 in mind; the entire act is about watching 5 travel from the proof into a running program and back out.
-
-\subsection{What a realizer for this has to be}\label{what-a-realizer-for-this-has-to-be}
-
-Here is the first idea we genuinely need, and it arrives because the statement forces it. The statement claims something \emph{exists}. A proof that merely convinces us the claim is true --- without ever saying \emph{which} \texttt{s} works --- would be useless for computing anything. So we ask: what would a proof have to carry, concretely, for us to be able to read the answer off it?
-
-At a minimum, it has to carry the witness --- the number 5 --- because without the witness there is nothing to return. And it has to carry, as well, some evidence that this particular witness really does the job: that \texttt{good(3,\ 5)} really is \texttt{0}. A witness with no evidence is a guess; a proof is not a guess.
-
-This ``what a proof carries'' is exactly the notion of a \textbf{realizer}. A realizer of a statement is the computational content of a proof of it --- the data a proof hands you that a machine can actually use. Different shapes of statement carry different shapes of data, and the shape is dictated entirely by the statement's outermost connective. For an existential statement \texttt{∃y.\ φ}, the realizer is precisely the pair we just argued for:
-
-\begin{quote}
-A realizer of \texttt{∃y.\ φ} is a pair: a \textbf{witness} (a number), and a \textbf{certificate} that \texttt{φ} holds when \texttt{y} is that witness.
-\end{quote}
-
-That is not a metaphor or a convention chosen for this paper; it is the actual clause the formal system uses to define what ``realizes'' means at an existential statement. Written a little more precisely, a realizer \texttt{x} of \texttt{∃y.\ φ} is an object from which you can read a witness --- call it \texttt{w} --- and which then realizes \texttt{φ} with \texttt{y} set to \texttt{w}. In the development the witness is recovered from \texttt{x} by reading its first component at a fixed ``canonical point,'' and the rest of \texttt{x} realizes the body. We will not need the canonical-point machinery in detail; what matters is the shape: \emph{witness, then certificate.}
-
-Now specialize this to our formula. The body of our existential is \texttt{good(3,\ s)\ =\ 0} --- an \textbf{equation}. And here a second small idea appears, again forced by the example rather than imposed on it. What does it take to realize an equation? An equation is either true or it is not; if it is true, there is nothing further to \emph{compute} about it --- no witness to choose, no case to decide. So the realizer of a true equation carries no information at all. Any object whatsoever realizes it, provided the equation genuinely holds. We call such a realizer \textbf{contentless}.
-
-Put the two observations together. A realizer of \texttt{∃s.\ good(3,\ s)\ =\ 0} is a pair whose first component is the witness 5, and whose second component --- the certificate that \texttt{good(3,\ 5)\ =\ 0} --- is contentless, because \texttt{good(3,\ 5)\ =\ 0} is an equation. So the realizer is, in effect, \emph{just the number 5}, wearing a trivial second component it never has to justify beyond the equation being true. All of the content is the witness. That is as simple as a realizer ever gets, which is exactly why we started here.
-
-\subsection{The proof}\label{the-proof}
-
-Now we build an actual proof of \texttt{∃s.\ good(3,\ s)\ =\ 0} in the fragment, and we build it in the shape our realizer analysis predicts.
-
-To prove an existential, the fragment has a rule --- existential introduction --- that says: to conclude \texttt{∃y.\ φ}, supply a specific term for \texttt{y} and a proof that \texttt{φ} holds for that term. We supply the term 5. That leaves us needing a proof, inside the fragment, that \texttt{good(3,\ 5)\ =\ 0}.
-
-And this the fragment can simply \emph{compute}. Among its operations is \texttt{good} itself, and the fragment's rules include the defining equations that let it evaluate \texttt{good} on concrete numbers, step by mechanical step, until it reaches a numeral. Running those rules on \texttt{good(3,\ 5)} grinds out \texttt{0}, giving a fragment-internal proof that \texttt{good(3,\ 5)\ =\ 0} --- not an appeal to an outside calculation, but a derivation built from the fragment's own equational rules. (The development calls this computed proof \texttt{goodComputeDeriv}; you feed it the start value and the step and it produces the equation.)
-
-So the whole proof is: \emph{existential-introduction, at 5, over the computed proof that \texttt{good(3,\ 5)\ =\ 0}.} It is a small tree with the witness 5 sitting at the branch point. In the development this proof object has a name --- \texttt{goodThreeExDeriv} --- and it is a genuine, closed, machine-checked derivation, not a sketch.
-
-Notice that the proof's \emph{structure} mirrors the realizer's structure exactly: the place where the rule supplied the term 5 is the place where the realizer's witness comes from; the computed sub-proof of the equation is the place where the contentless certificate comes from. This is not a coincidence. It is the mechanism we are here to watch.
-
-\subsection{\texorpdfstring{What \texttt{extract} does to that proof}{What extract does to that proof}}\label{what-extract-does-to-that-proof}
-
-The fragment comes with a function --- call it \textbf{\texttt{extract}} --- that takes a finished proof and returns its realizer. It is a completely mechanical translation: it walks the proof tree and, at each rule, does the small operation that rule's realizer calls for. We will see it in generality in Act III; here we only need what it does to \emph{our} proof.
-
-Our proof was existential-introduction at 5 over a computed equation. \texttt{extract} handles existential-introduction by building the pair we described: it puts the witness --- the number the rule supplied, 5 --- in the first component, and it puts the realizer of the sub-proof in the second. The sub-proof was of an equation, whose realizer is contentless, so the second component is trivial. The result is the pair
-
-\begin{verbatim}
-⟨ 5 , (contentless) ⟩
-\end{verbatim}
-
---- exactly the realizer our up-front analysis said it had to be. \texttt{extract} did not need to be clever. The proof already had the witness in it; all \texttt{extract} did was package it in the standard shape for existentials.
-
-\subsection{Running it}\label{running-it}
-
-The realizer is not an abstraction; it is an object a machine can evaluate. To get the answer back out, we read its first component at the canonical point --- the mechanical ``read the witness'' operation the existential clause specified. Doing that to \texttt{⟨5,\ contentless⟩} returns
-
-\begin{verbatim}
-5
-\end{verbatim}
-
-And that is the full round trip, on the smallest possible real example. A statement was formed. We reasoned about what data a proof of it would have to carry, and found: a witness, plus a contentless certificate. We built such a proof by hand, supplying 5. We ran \texttt{extract}, which repackaged the proof's witness into a realizer. We evaluated the realizer, and 5 came back.
-
-Nothing here required knowing what a ``level'' is, where realizers ``live,'' or how any of this scales to real theorems. Those questions are about to push themselves on us --- the moment we ask ``does this work for \emph{every} proof, not just this one?'' --- and Act III introduces exactly the machinery those questions demand, in the order they demand it.
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
-\section{Act III --- Opening the box}\label{act-iii-opening-the-box}
-
-We have watched one proof become one program. Two questions are now unavoidable, and the whole theory in this act exists to answer them.
-
-First: our example's body was an equation, whose realizer was contentless --- so \emph{this} realizer was essentially just a number. Real theorems have bodies with \texttt{and}, \texttt{or}, implications, \texttt{for\ all}. What are realizers of \emph{those}? Until we know, we cannot handle anything but the simplest statements.
-
-Second: we ran \texttt{extract} on one proof and got the right answer. Is that luck, or does \texttt{extract} produce a correct realizer for \emph{every} proof the fragment can build? If it is only sometimes correct, the whole idea is worthless. We need this to be a theorem.
-
-We take the questions in that order, because the second one needs the first.
-
-\subsection{Realizers, for every shape of statement}\label{realizers-for-every-shape-of-statement}
-
-In Act II we met the realizability clause for \texttt{∃} by reasoning about what a proof of an existential must carry. Every other connective has such a clause, arrived at by the same kind of reasoning, and once you have seen one the rest are recognizable rather than surprising. Here is the full set, each stated as ``what data realizes a statement of this shape,'' with the same guiding question each time --- \emph{what would a machine need to use a proof of this?}
-
-\begin{itemize}
-\item
-  \textbf{An equation} \texttt{s\ =\ t} is realized by anything, provided the equation holds. (This is the contentless case from Act II. Equations carry no computational content.)
-\item
-  \textbf{A conjunction} \texttt{φ\ and\ ψ} is realized by a \textbf{pair} --- a realizer of each side, both at once, since using a proof of ``both'' means getting at each side.
-\item
-  \textbf{A disjunction} \texttt{φ\ or\ ψ} is realized by a \textbf{tag plus a payload}: a bit that says \emph{which} side holds --- 0 for the left, non-zero for the right --- and then a realizer of whichever side the tag named. To use a proof of ``one or the other,'' you first need to know which one; that is the tag. (Look back at \texttt{∃}: its realizer is \emph{witness, then realizer of the body} --- structurally the very same ``a number, then a payload selected by it'' as disjunction's ``tag, then payload.'' The existential is disjunction with the two-valued tag replaced by an arbitrary numeral. This is not a slogan; the development literally builds \texttt{∃}'s realizer out of disjunction's pairing machinery. We will return to what that reuse buys us.)
-\item
-  \textbf{An implication} \texttt{φ\ →\ ψ} is realized by a \textbf{transformation}: a procedure that, handed any realizer of \texttt{φ}, produces a realizer of \texttt{ψ}. To use a proof of ``if \texttt{φ} then \texttt{ψ},'' you feed it evidence of \texttt{φ} and it gives you evidence of \texttt{ψ}. The realizer \emph{consumes} an input.
-\item
-  \textbf{A universal} \texttt{∀y.\ φ} is realized by a \textbf{procedure indexed by a number}: handed any number \texttt{k}, it produces a realizer of \texttt{φ} with \texttt{y} set to \texttt{k}. To use ``for all \texttt{y},'' you pick a \texttt{y} and it gives you the instance. Like implication, it \emph{consumes} an input --- here, the number you instantiate at.
-\end{itemize}
-
-You have now seen the shape of every realizer the fragment will ever produce. Two of them --- implication and universal --- take something in and give something back; they are the procedures, the parts that \emph{do work} at runtime. The others --- pair, tag, witness --- just \emph{hold} data. Keep that distinction in view; the next section --- levels --- is built entirely on it.
-
-\subsection{Levels: the cost of consuming}\label{levels-the-cost-of-consuming}
-
-Here is the question the previous paragraph forced. Implications and universals are procedures --- they take an input and return an output. But that input is \emph{itself} a realizer, which might itself be a procedure taking an input, and so on. A realizer can be a procedure whose inputs are procedures whose inputs are procedures. How deep does this nesting go, and how do we keep track of it?
-
-The fragment keeps track with a single number attached to each formula, called its \textbf{level}. The level counts how many layers of ``takes an input and returns an output'' a realizer of that formula can involve. The counting rule is short, and it is exactly the distinction we just drew between consuming and holding:
-
-\begin{itemize}
-\tightlist
-\item
-  An equation has level 0. (Nothing to consume; contentless.)
-\item
-  \texttt{and} and \texttt{or} take the level of their more complex side --- packaging two realizers, or tagging one, adds no new layer of consuming.
-\item
-  \textbf{An implication adds one to the level.} It is a procedure that consumes a realizer of its hypothesis, so it sits one layer above what it consumes.
-\item
-  \textbf{A universal adds one to the level}, for the same reason: it consumes the number you instantiate at and returns a realizer, one layer up.
-\item
-  \textbf{An existential adds nothing to the level.}
-\end{itemize}
-
-Why does \texttt{∀} cost a level but \texttt{∃} does not, when both mention a bound variable? Because \texttt{∀y.\ φ} is a \emph{procedure} --- you hand it a \texttt{y} and it works --- while \texttt{∃y.\ φ} merely \emph{holds} a \texttt{y}, the witness, already chosen. A universal consumes; an existential packages. Consuming costs a level; packaging is free. Look back at Act II: the witness 5 was already sitting in the realizer, waiting to be read; nothing had to be \emph{run} to consume an input and produce it. That is exactly why our existential example was so simple: \texttt{∃} adds no level. This is not a rule imposed from outside --- it falls straight out of the difference between a realizer that runs and a realizer that merely stores.
-
-\subsection{\texorpdfstring{Where a realizer lives: \texttt{PureType}}{Where a realizer lives: PureType}}\label{where-a-realizer-lives-puretype}
-
-We keep saying a realizer ``is a number,'' or ``is a procedure taking a realizer and returning a realizer.'' For the simplest cases that is an adequate description. But once realizers can be procedures whose inputs are procedures, we need to say precisely what mathematical objects these are --- otherwise ``a procedure taking a realizer'' is a phrase, not a thing. Now that Act II has given us a concrete realizer to point at, and the level has told us how deep the nesting can go, we can place them.
-
-Realizers live in a hierarchy of types called \texttt{PureType}, built up in layers by that same level count. The bottom layer, \texttt{PureType} at level 0, is just the natural numbers --- this is where a bare witness like our 5 lives. The next layer up is the functions from the bottom layer to the numbers; the layer above that, functions from \emph{those} to the numbers; and so on. Each time a formula's level goes up by one --- each time you add an implication or a universal that \emph{consumes} a realizer --- the realizer climbs one storey in this tower. A realizer of a level-\texttt{n} formula lives \texttt{n} storeys up.
-
-This is why we spent so long on levels before naming \texttt{PureType}: the level is exactly the address, the floor number, telling you which storey of the tower a formula's realizers occupy. Our Act II realizer was a level-0 object --- a number --- because its formula was an existential over an equation, and neither the equation nor the existential adds a level. Had the formula been, say, an implication whose hypothesis was itself an implication, its realizers would have lived two storeys up, as procedures that consume procedures. The tower is just bookkeeping for ``how much consuming is going on,'' made into actual mathematical objects a machine can build and evaluate.
-
-One thing to carry forward, because Act V turns on it: this tower --- the numbers, the functions between the layers, the operations for packing and unpacking pairs and applying one layer's object to the layer below --- is built by completely elementary means, with nothing classical or non-constructive anywhere in it.
-
-\subsection{\texorpdfstring{The program a closed statement denotes: \texttt{CtQ}}{The program a closed statement denotes: CtQ}}\label{the-program-a-closed-statement-denotes-ctq}
-
-There is a subtlety we have glossed. Two \emph{different} proofs of the same statement can produce two \emph{different} realizers --- different objects in the \texttt{PureType} tower --- even though both compute the same answers. If we want to speak of ``\emph{the} program'' a theorem denotes, we need to know when two realizers should count as the same program.
-
-The answer is: when they agree as functions --- when, fed the same inputs, they always return the same outputs, all the way up and down the tower. Collapsing realizers that agree everywhere into single objects gives a cleaner space, the space of \emph{extensional} functionals, and for a closed statement (one with no free variables left dangling), its realizer lands in a specific such space the development calls \texttt{CtQ}. The single element of \texttt{CtQ} a closed statement's realizer collapses to is, in the strongest sense, \emph{the program that statement denotes} --- proof-independent, blind to how you happened to prove the theorem.
-
-We name \texttt{CtQ} here but do not yet lean on it, because it needs one further ingredient we have not established: for the collapse into extensional functionals to be the \emph{right} space --- the honest, well-behaved space of type-2 functionals rather than an arbitrary quotient --- the realizers landing in it must be \textbf{continuous}, a property we are about to state. So read \texttt{CtQ} for now as a promissory note: \emph{the program of a closed theorem is a single, proof-independent object, once we know its realizer is continuous.} The next two subsections supply, respectively, the guarantee that \texttt{extract} is correct at all, and then that continuity.
-
-\subsection{Soundness: it works for every proof, not just ours}\label{soundness-it-works-for-every-proof-not-just-ours}
-
-Now the second of this act's two opening questions. We ran \texttt{extract} on one proof and got a correct realizer. Is that always so?
-
-It is, and it is a theorem --- the central theorem of the whole construction. It is called \textbf{soundness}, and it says:
-
-\begin{quote}
-For every proof the fragment can build, of every statement, \texttt{extract} returns a genuine realizer of that statement.
-\end{quote}
-
-Read against Act II: what we watched happen once, by hand, for \texttt{∃s.\ good(3,\ s)\ =\ 0}, soundness guarantees happens for \emph{every} derivation the fragment admits. The witness always comes out; the certificate always certifies; the pair always has the shape the connective demands.
-
-The proof of soundness is itself an induction --- not over numbers, but over the shape of proofs. There are finitely many inference rules in the fragment. Soundness checks, once and for all, that each rule's little piece of \texttt{extract} does the right thing \emph{assuming the pieces for the rule's sub-proofs already did}. Because every proof is a finite tree built from those rules, checking each rule once covers every proof there will ever be. This is the same move as ordinary induction --- verify a base case and a step and you have covered infinitely many numbers --- lifted from numbers to proof-trees.
-
-Soundness is what upgrades the Act II demonstration from an anecdote into a guarantee. From here on, whenever we prove a theorem in the fragment, we may speak of ``the program it extracts to'' and know, without further checking, that the program is correct: it computes something that genuinely satisfies the theorem's statement, at every input.
-
-\subsection{Generic continuity: every program is continuous}\label{generic-continuity-every-program-is-continuous}
-
-One more property, stated now and explained more deeply once Act IV has given us programs worth explaining it for.
-
-A realizer of a closed statement can be a functional --- an object high in the \texttt{PureType} tower that takes functions as inputs. There is a classical worry about such objects: a functional that reads \emph{infinitely much} of its input before deciding what to return is a pathological thing, and it is exactly the kind of object that does not collapse honestly into the extensional space \texttt{CtQ} we described. The good functionals --- the ones \texttt{CtQ} is really about --- are the \textbf{continuous} ones: those that, to determine any single output, consult only \emph{finitely much} of their input.
-
-The development proves, once and generically:
-
-\begin{quote}
-Every realizer that \texttt{extract} produces, from every proof, is continuous.
-\end{quote}
-
-This is what redeems the promissory note on \texttt{CtQ}. Because every extract is continuous, every closed theorem's realizer collapses honestly into a single element of \texttt{CtQ} --- a single, proof-independent program. We will see in Act VI \emph{why} this generic continuity holds --- it turns on a small and rather satisfying fact about how the extraction machinery is built --- but the harder examples of Act IV should exist first, to make that ``why'' worth the space. For now: \texttt{extract} is correct (soundness) and its output is continuous (generic continuity), so every theorem of the fragment denotes one honest program.
-
-The box is open. We have the general notion of realizer, the level accounting, the tower they live in, the collapse into programs, the guarantee that extraction is correct, and the guarantee that its output is continuous. Everything from here runs on exactly this machinery, unchanged. What varies is only the proofs we feed it --- and each of the next several asks the machine to do one thing it has not done before.
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
-\section{Act IV --- Running the same machine on harder proofs}\label{act-iv-running-the-same-machine-on-harder-proofs}
-
-Nothing new gets added to the extractor in this act. The pipeline --- prove a theorem, run \texttt{extract}, get a certified program --- is fixed. What changes is the difficulty of the proofs, and each example below is chosen because it forces exactly one genuinely new capability out of the same fixed machine. We name that capability directly, in a heading, so the staircase is visible.
-
-Before the first step, one rule the first five examples all lean on.
-
-\subsection{The rule that becomes recursion: ordinary induction}\label{the-rule-that-becomes-recursion-ordinary-induction}
-
-The fragment has ordinary mathematical induction as one of its inference rules --- call it \texttt{ind}. It says the familiar thing: to prove \texttt{∀x.\ φ(x)}, prove \texttt{φ(0)} and prove that \texttt{φ(x)} implies \texttt{φ(x\ +\ 1)}.
-
-Watch what \texttt{extract} does to a proof that uses \texttt{ind}. The base case \texttt{φ(0)} extracts to some realizer --- the answer at 0. The step extracts to a \emph{transformation} --- a procedure turning a realizer of \texttt{φ(x)} into a realizer of \texttt{φ(x\ +\ 1)}. To get the realizer at a particular number \texttt{k}, \texttt{extract} starts from the base and applies the step \texttt{k} times. That is precisely a \textbf{recursive program}: base value, and a function iterated as many times as the input says. A proof by induction, run through \texttt{extract}, \emph{is} a program by recursion. This is the shape underneath all five of the next examples; each supplies a different base and step, and so extracts to a different recursive program.
-
-\subsection{New capability: a structured witness (Towers of Hanoi)}\label{new-capability-a-structured-witness-towers-of-hanoi}
-
-The Towers of Hanoi puzzle asks for a sequence of moves that transfers a stack of \texttt{n} disks from one peg to another. The fragment can state, and prove, that such a sequence always exists --- and, in the same breath, that it has exactly \texttt{2\^{}n\ −\ 1} moves.
-
-What is new here is the \emph{shape of the witness}. In Act II the witness was a bare number, 5. Here the thing whose existence we prove is a whole \emph{sequence of moves} --- a structured object, encoded as a number but meaning a list. When \texttt{extract} runs on this proof, the realizer's witness is not a count but the actual move sequence, and it can be decoded back into a readable list of ``move a disk from this peg to that peg'' instructions --- the classical optimal solution, produced by the extracted program and checked to be exactly the moves a human would write down. The existential machine of Act II, unchanged, now hands back structured data rather than a single number. (The proof itself uses \texttt{ind} on the number of disks, so by the previous subsection it extracts to a recursion; the recursion branches, solving two smaller sub-towers and joining them with one move between --- which is why the move count comes out \texttt{2\^{}n\ −\ 1}.)
-
-\subsection{New capability: a decision procedure (Pascal's triangle, mod 2)}\label{new-capability-a-decision-procedure-pascals-triangle-mod-2}
-
-Take Pascal's triangle and replace every entry by its remainder on division by 2 --- every number becomes a 0 or a 1. The fragment proves, for every position in the triangle, that its parity is either 0 or 1 (an utterly unsurprising statement --- every number is even or odd) and, more to the point, \emph{which}.
-
-The new capability is that the extracted program is a \textbf{classifier}. Recall the realizer of a disjunction \texttt{φ\ or\ ψ}: a tag saying which side holds. The statement here is a disjunction --- ``this entry is 0, or it is 1'' --- and so its realizer carries a tag: for each position, a bit naming the answer. Run \texttt{extract} and that tag becomes a runnable function from a position to its parity --- a genuine decision procedure, produced not by us writing a classifier but by extracting one from a proof that merely said ``the answer is one or the other.''
-
-And when you tabulate that extracted classifier's outputs --- draw a \texttt{\#} for 1 and a blank for 0, row by row --- the picture that appears is the Sierpiński triangle, the familiar fractal of nested holes. There is no gap between the picture and the theorem: every cell of the drawing is one instance of the proved disjunction, its value filled in by the extracted realizer's own tag. The fractal is not illustrating the theorem from outside; it \emph{is} the theorem's extracted program, run over a grid.
-
-\subsection{New capability: a strengthened induction hypothesis (Fibonacci)}\label{new-capability-a-strengthened-induction-hypothesis-fibonacci}
-
-The Fibonacci numbers \texttt{0,\ 1,\ 1,\ 2,\ 3,\ 5,\ 8,\ …} are defined by ``each is the sum of the previous two.'' Suppose we want to prove, in the fragment, that the Fibonacci function is total --- that for every \texttt{n} there is a value \texttt{fib(n)} --- in a form from which we can extract a program computing it.
-
-Try to do this by ordinary induction and you hit a wall that is worth feeling. Ordinary induction gives you, at the step, the truth of the statement \emph{at \texttt{n}} to work with. But computing \texttt{fib(n\ +\ 2)} needs \emph{two} earlier values, \texttt{fib(n\ +\ 1)} and \texttt{fib(n)} --- and the induction hypothesis at \texttt{n} alone does not hand you both. The naive statement does not go through.
-
-The new capability is the standard cure, and watching it extract is the point. Instead of proving ``\texttt{fib(n)} exists,'' prove the \emph{stronger} pair statement: ``the \emph{pair} \texttt{(fib(n),\ fib(n\ +\ 1))} exists.'' Now the induction hypothesis at \texttt{n} hands you both consecutive values at once, and the step is a single shift: from \texttt{(fib(n),\ fib(n\ +\ 1))} you produce \texttt{(fib(n\ +\ 1),\ fib(n\ +\ 2))} by keeping the second component and adding the two together. Strengthening what you prove makes the induction go through, because a stronger hypothesis is a stronger thing to be handed at the step.
-
-Extract that proof and --- exactly as the ``induction becomes recursion'' subsection predicts --- you get the fast, two-variable iterative Fibonacci program every programmer knows: carry a pair, shift it forward \texttt{n} times, read off a component. The proof's strengthened hypothesis \emph{is} the program's pair of accumulator variables. You can watch the extracted realizer's pair advance through \texttt{(0,1),\ (1,1),\ (1,2),\ (2,3)} --- the loop's running state, read straight out of a proof that never mentions a loop.
-
-\subsection{New capability: taming variable capture (Euclid's gcd)}\label{new-capability-taming-variable-capture-euclids-gcd}
-
-The fragment can prove that any two numbers have a greatest common divisor --- and the extracted witness \emph{is} the gcd, computed by subtractive Euclid (repeatedly replace the larger number by the difference), with no gcd operation built into the fragment at all. Two supporting ideas make this possible, and both show the fragment's economy. First, the fragment never needed to add an ``order'' operation to talk about one number being smaller than another: \texttt{s\ \textless{}\ t} is simply \emph{there exists a \texttt{d} with \texttt{succ\ s\ +\ d\ =\ t}} --- order is an existential over addition, not a new primitive. Second, the fragment never needed a separate ``strong induction'' (course-of-values induction, where the step may use \emph{all} smaller cases, not just the immediately previous one): it is \emph{derived} from ordinary \texttt{ind}.
-
-But the new capability the gcd proof forces is neither of these --- it is a problem about \emph{substitution}. When you instantiate an induction hypothesis, or apply a ``for all'' statement, you substitute a specific term for a bound variable. If that term happens to mention a variable that is \emph{also bound} somewhere in the formula you are substituting into, the substitution silently confuses two different variables that share a name --- the notorious \emph{variable capture} of formal logic. The fragment's substitution is deliberately simple-minded: rather than quietly renaming to avoid capture, it \emph{forbids} the capturing substitution outright. So the burden falls on the proof author to route around capture, and Euclid's recursion is the first place two different capture problems bite at once.
-
-The fragment has two general-purpose dodges for this, developed on earlier theorems, and the gcd proof is the first to use them \emph{together}. One dodge: when you need to instantiate an induction hypothesis at a term that mentions a bound variable, first give that term a fresh name with an extra ``for all,'' instantiate at the harmless \emph{name}, and only then connect the name to the term. The other: when a recursion permutes its arguments so that you must instantiate a ``for all'' at a rearrangement of its own just-bound variables, rename those variables to fresh ones first. Neither dodge changes what is proved or what the extracted program computes; both are purely about getting a naive substitution system to accept a substitution that is morally fine but literally capturing. The gcd derivation composes the two, and out the far end comes a certified program that is a genuine greatest-common-divisor calculator --- and, pleasingly, it needs no special case for zero: the specification is satisfied by \texttt{gcd(0,\ 0)\ =\ 0}, everything divides 0, and so no positivity precondition is required at all.
-
-\subsection{New capability: more general than the classical statement (Sperner, 1D)}\label{new-capability-more-general-than-the-classical-statement-sperner-1d}
-
-Colour the points \texttt{0,\ 1,\ 2,\ …,\ n} along a line, each some natural-number colour, with the two ends coloured differently. Then somewhere along the line two \emph{adjacent} points must have different colours --- you cannot get from one end-colour to the other without a change somewhere. This is the one-dimensional case of Sperner's lemma, and the discrete ancestor of the intermediate value theorem: if a walk starts low and ends high, it crosses every level in between.
-
-The fragment proves it by ordinary induction, scanning along the line and carrying ``either we are still at the start colour, or we have already found a crossing.'' The extracted program is a genuine left-to-right search that returns the \emph{first} crossing.
-
-But the new thing is not the extraction; it is the theorem. The classical statement is usually given for \emph{two} colours --- the ends are 0 and 1, and the crossing is a 0-next-to-1. The fragment's proof never uses the restriction to two colours. It works for \emph{arbitrary} natural-number colourings: any colours at all, ends merely required to differ. The extracted search is correspondingly more general than the classical picture. The proof turned out to prove \emph{more} than the theorem it was written for --- a small illustration that formalizing a statement faithfully sometimes reveals it was never really about the special case you first met.
-
-\subsection{New capability: recursion along the ordinals (Goodstein)}\label{new-capability-recursion-along-the-ordinals-goodstein}
-
-Now Goodstein itself, the general theorem behind Act II's single hand-worked case.
-
-Back in Act II we proved, by hand, that the Goodstein sequence from 3 reaches 0 --- a single existential, \texttt{∃s.\ good(3,\ s)\ =\ 0}, witness supplied by us as 5. Goodstein's \emph{theorem} is the universal version:
-
-\begin{verbatim}
-∀m. ∃s. good(m, s) = 0
-\end{verbatim}
-
---- for \emph{every} starting value \texttt{m}, the sequence reaches 0 at some step \texttt{s}. This is the same shape of statement as Act II's, one universal quantifier out front, and we want the same thing from it: a program that, given \texttt{m}, returns the stopping step. In Act II we knew the witness because we knew the answer for 3. Here the witness must be produced \emph{uniformly}, by the proof, for a starting value we have not seen.
-
-And this is where Act I's promissory note comes due --- the fact that ordinary induction is not enough. If you try to prove Goodstein by inducting on \texttt{m}, or on \texttt{s}, or on the value \texttt{good(m,\ s)}, you fail, because the value goes \emph{up} at almost every step; there is no ordinary numerical quantity that decreases as the sequence runs, so there is nothing to induct downward on. The quantity that \emph{does} decrease is not a natural number at all. It is an \textbf{ordinal} --- a number from a system that extends the naturals past infinity in a controlled way, far enough to reach the height called ε₀ (epsilon-nought). Each Goodstein step, though it inflates the natural-number value, strictly \emph{lowers} an ordinal assigned to the current state; and because that ordinal system is \emph{well-ordered} --- has no infinite descending chains --- the sequence cannot descend forever, so it must terminate. This is the extra strength Act I warned you about: \textbf{transfinite induction up to ε₀}, a principle strictly beyond ordinary induction on \texttt{ℕ}. The fragment has it as one inference rule --- the single rule in its whole repertoire that is not a consequence of ordinary logic and ordinary induction. It is the reason the fragment can prove Goodstein at all.
-
-To make that rule real and mechanical, the fragment builds the ε₀ ordinals \emph{as ordinary numbers under a hand-crafted encoding}, defines the ``is a smaller ordinal than'' relation on those codes, and proves --- by elementary means, no infinite reasoning --- that this relation is well-founded, i.e.~admits no infinite descending chain. That well-foundedness proof is what licenses recursion along the ordinals. (There is a specific reason this substrate was built by hand rather than borrowed from a standard library, and it is bound up with Act V's result; we defer it to Act VI, where it lands as a discovery rather than a digression.)
-
-Now watch the two acts line up. In Act II, \texttt{extract} turned an existential proof into a witness by reading a number the proof supplied. Here, \texttt{extract} turns Goodstein's proof into a witness by \emph{recursion along the ordinals}: the transfinite-induction rule extracts to a recursive program that descends the ordinal assigned to each Goodstein state until it reaches the bottom, and the number of descents is the stopping step. Where \texttt{ind} extracted to ``iterate a step as many times as the input says'' (an ordinary recursion), the transfinite rule extracts to ``recur along the ordinal ordering'' --- a genuinely stronger recursion, matching the genuinely stronger induction. Same machine, one gear higher.
-
-And the program runs. Ask it for the stopping step of the Goodstein sequence starting at \texttt{m} and it computes:
-
-\begin{verbatim}
-m:              0    1    2    3    …    4
-stopping step:  0    1    3    5    …    (not attempted)
-\end{verbatim}
-
-The entries for \texttt{m\ =\ 0} and \texttt{m\ =\ 1} the extracted program returns directly when you evaluate it --- 0 and 1. The stopping steps 3 and 5 for \texttt{m\ =\ 2,\ 3} are the lengths of the Goodstein sequences \texttt{2,\ 2,\ 1,\ 0} and \texttt{3,\ 3,\ 3,\ 2,\ 1,\ 0}; soundness guarantees the extracted program returns exactly those, and the fragment's own \texttt{good} operation computes them, even though running the extracted program itself that far is slow (a cost we examine in Act VI). And \texttt{m\ =\ 4} is simply not attempted: its Goodstein sequence begins \texttt{4,\ 26,\ 41,\ 60,\ …} and climbs into stopping steps too astronomically large to reach. This last row is the moment Act I's ``numbers explode'' stops being an assertion. You are watching a theorem's extracted program decline to finish a computation because the theorem is \emph{true but enormous} --- the terminating sequence really is that long.
-
-\subsection{New capability: a fragment theorem versus a metatheorem (the Hydra)}\label{new-capability-a-fragment-theorem-versus-a-metatheorem-the-hydra}
-
-The last and hardest example marks a boundary --- the place where what the fragment can \emph{prove} and what it can even \emph{state} come apart.
-
-The Hydra is a many-headed tree. Hercules fights it by chopping a head; each chop makes the Hydra regrow --- often growing \emph{more} heads than it lost, sometimes far more. It looks unwinnable. The Kirby--Paris theorem says Hercules wins anyway: every battle, however the regrowth goes, terminates with the Hydra dead. The reason is Goodstein's reason in disguise --- each chop, though it grows the tree, strictly lowers an ordinal below ε₀ assigned to the tree, and ordinals cannot descend forever.
-
-The fragment can prove termination for \emph{one fixed, encoded battle}: fix a starting Hydra and a fixed way of playing, code the whole thing as numbers, and prove \texttt{∀h.\ ∃t.\ hydra(h,\ t)\ =\ 0} --- for every starting Hydra \texttt{h}, there is a step \texttt{t} at which the battle has ended. This is the exact shape of Goodstein's theorem, proved the exact same way, transfinite recursion and all, and it extracts to a program computing the battle length. So far, business as usual.
-
-But the \emph{real} Kirby--Paris theorem says more: Hercules wins \emph{no matter what strategy} he uses and \emph{no matter how} the Hydra regrows. And this fuller statement the fragment \textbf{cannot even express}. To say ``for every strategy,'' you must quantify over strategies --- and a strategy is a \emph{function} (it looks at the current Hydra and decides the next chop). The fragment's ``for all'' ranges only over \emph{numbers}, never over functions. It has no way to write ``for all strategies'' at all. The limitation is not that the fragment fails to \emph{prove} the general theorem; it is that the sentence expressing the general theorem is not in the fragment's language.
-
-So the general theorem is proved \emph{outside} the fragment --- in the ordinary mathematics of the proof assistant itself, which can freely quantify over functions. There, one proves that \emph{every} legal Hydra move, by any strategy, lowers the same ordinal, and hence every battle whatsoever is finite; and one checks that the fragment's single fixed battle is one of these general plays, so the fragment's theorem is a genuine special case of the general one, not a different game. This split --- a \emph{fragment theorem} for one encoded battle, a \emph{metatheorem} for all strategies --- is forced, cleanly and provably, by the single fact that the fragment has no function variables. It is a boundary that mathematics draws for you, rather than one you choose, and it is the right place to stop feeding the machine harder proofs.
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
-\section{Act V --- What it costs: the constructivity audit}\label{act-v-what-it-costs-the-constructivity-audit}
-
-We have now watched proofs of real strength become running programs. Goodstein and the Hydra needed transfinite induction up to ε₀ --- genuinely more than ordinary arithmetic. And the programs we extracted are not toys: an ordinal-descending recursion, a first-crossing search, a greatest-common-divisor calculator, a parity classifier.
-
-So here is the suspicion any careful reader should now be holding, and it is the right suspicion. Proofs of this strength, in ordinary mathematical practice, routinely use \emph{non-constructive} reasoning --- the law of excluded middle, the axiom of choice, arguments that assert an object exists without building it. Surely, somewhere in a construction reaching all the way to ε₀, some non-constructive step sneaks in. And if it does, then the extracted ``program'' might be a fiction --- an object that type-checks but cannot actually run, its computational content secretly resting on an axiom that computes nothing. The whole promise of the tour would collapse at exactly its most impressive point.
-
-This act resolves the suspicion, precisely, in the program's favour. And the resolution is possible only because the proof assistant tracks, mechanically and unforgeably, exactly which axioms any given object depends on. Ask it about any definition or theorem and it reports the complete list.
-
-The suspicion has a specific name. The genuinely non-constructive axiom --- the one that asserts choices can be made without giving any rule for making them, and from which the full law of excluded middle follows --- is called \textbf{\texttt{Classical.choice}}. It is the axiom whose presence in a program would hollow the program out, turning a thing that computes into a thing that merely type-checks. So when we ask whether something non-constructive rode into the extracted programs, the question has one precise form: does \texttt{Classical.choice} appear in the list?
-
-Now the audit's finding, stated exactly as the machine reports it.
-
-Every extracted program in the whole development --- the Goodstein stopping-step function, the Hydra battle-length function, the gcd calculator, the Sperner search, the Pascal classifier, the Fibonacci iterator, and the extraction machinery itself --- reports its axiom dependency as exactly
-
-\begin{verbatim}
-[propext, Quot.sound]
-\end{verbatim}
-
-and \texttt{Classical.choice} is not on the list. Not ``we believe''; not ``morally.'' The kernel of the proof assistant, asked directly, lists those two names and not the third, for every object that actually runs.
-
-So what \emph{are} the two names that are there? Neither is the one the suspicion feared. \textbf{\texttt{propext}} and \textbf{\texttt{Quot.sound}} are the proof assistant's own two foundational axioms, and both are constructively harmless: neither lets you conjure an object you cannot build, neither implies the law of excluded middle. They are bookkeeping about when two propositions, or two quotient elements, count as equal --- part of the machine's floor, computationally inert. The trusted base of every extracted computation is the proof assistant's kernel together with these two, and nothing classical.
-
-The suspicion is not merely soothed; it is \emph{refuted, mechanically.} The recursion up to ε₀ that powers Goodstein and the Hydra does not smuggle in choice, because the ε₀ substrate --- the ordinal codes, the smaller-than relation, the well-foundedness proof licensing the recursion --- was built, deliberately, without any classical step. (That deliberateness is the Act VI discovery we have twice deferred.)
-
-Does \texttt{Classical.choice} appear \emph{anywhere} in the project? Yes --- and where it appears is a precise boundary. It enters in exactly two places, and neither of them runs.
-
-\begin{itemize}
-\tightlist
-\item
-  It appears in some of the \emph{correctness proofs} --- the proofs that the extracted programs meet their specifications --- and even there only through \emph{two named, humble lemmas} from the standard library, about a routine operation for updating a function at a point. These lemmas are about equality of functions; they live entirely in the realm of propositions; they are used to \emph{prove that a program is correct}, never inside the program. A program's correctness proof may lean on a classical equality-of-functions fact without one atom of that fact entering the program's runtime behaviour. (And these two lemmas are, in fact, constructively true; reproving them by hand would remove even this trace. The dependency is a convenience, not a necessity.)
-\item
-  It appears in the final \emph{packaging} step --- the collapse of a realizer into the single extensional program-object of \texttt{CtQ} from Act III. That collapse is a semantic act of identification, performed once to say ``here is the one program this theorem denotes,'' and it inherits choice from the general theory of extensional functionals. But again: the identification is \emph{about} the program; the program itself is the choice-free realizer that got identified.
-\end{itemize}
-
-Draw the picture and it is stark. There is a wall. On one side, everything that \emph{runs} --- every extracted program, the entire executable pipeline --- and that side is free of \texttt{Classical.choice} entirely, resting only on the inert kernel axioms. On the other side, some \emph{proofs about} those programs, and one \emph{packaging} step, which may use choice freely because nothing on that side ever executes. The one non-constructive axiom in the whole development is quarantined on the far side of the wall from anything that computes.
-
-A proof needing strictly more than Peano arithmetic --- transfinite induction to ε₀ --- became a program, and the program is \emph{constructive to the last axiom the machine can name}. The strength went into proving the theorem; none of it leaked into the thing that runs.
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
-\section{Act VI --- What Lean forced us to discover}\label{act-vi-what-lean-forced-us-to-discover}
-
-Some of what we have seen was designed. But some of it was not chosen at all --- it was \emph{found}: facts that turned out to be true and had to be respected, boundaries that mathematics drew rather than the authors. This act collects those, because they are the places where formalizing something taught its authors something they did not set out to learn.
-
-\textbf{Why the level accounting has the shape it does.} We introduced, in Act III, the rule that \texttt{∀} and \texttt{→} cost a level while \texttt{∃}, \texttt{∧}, \texttt{∨} cost none, and justified it by ``consuming versus packaging.'' Seen as a discovery rather than a rule: the level system did not have to come out this clean, and the fact that the \emph{only} things that cost a level are the two connectives whose realizers actually run --- the procedures that consume an input --- is a genuine regularity of realizability, not a design decision. Binders that consume realizers cost a level; binders that merely store them are free. The existential's freedom, in particular, is why witness-extraction stayed as cheap as the disjunction it is built from --- and that cheapness is what let the same simple machinery of Act II carry all the way up to Goodstein.
-
-\textbf{Why the Hydra split was forced.} In Act IV we found that the fragment can prove one encoded Hydra battle terminates but cannot state ``Hercules wins for every strategy,'' because a strategy is a function and the fragment quantifies only over numbers. This is the clearest case in the whole tour of a discovery masquerading as a design choice. Nobody decided the fragment ``should not'' prove the general theorem; the general theorem's \emph{sentence} simply is not writable in a language without function variables. The fragment/metatheorem division is not a limitation the authors imposed to keep things simple --- it is a fact about the expressive reach of the language, which the attempt to state Kirby--Paris in full ran straight into.
-
-\textbf{Why the ε₀ substrate had to be hand-rolled.} Here is the discovery Act V twice pointed at. The proof assistant's standard library already contains a way of coding pairs of numbers as single numbers --- exactly the kind of coding the ε₀ ordinal notations need. The obvious move is to reuse it. It cannot be reused. That standard pairing, and every lemma the library proves about it, depends on \texttt{Classical.choice}. Had the ε₀ substrate been built on it, \texttt{Classical.choice} would have flowed straight into the definition of the transfinite recursion --- and from there into every extracted program that uses transfinite recursion, which is Goodstein and the Hydra. The clean \texttt{{[}propext,\ Quot.sound{]}} verdict of Act V would have been \emph{false}, and not fixably so, because the choice would have been welded into the recursion itself rather than sitting off in a correctness proof. So the ordinal codes, the ordering, and the well-foundedness proof were all built from scratch by elementary means, specifically so that no classical axiom touches the machinery that runs. The constructivity result of Act V is not a happy accident discovered at the end; it is a constraint that reached backward and dictated how the foundations had to be laid. The audit was, in effect, being passed before it was run.
-
-\textbf{A fully verified optimization that changes nothing.} The transfinite recursion that powers Goodstein and the Hydra is slow to \emph{evaluate} --- slow enough that the extracted programs finish only for small inputs, as we saw with Goodstein's \texttt{m\ =\ 4}. The natural fix is memoization: remember the recursion's result at each ordinal so it is never recomputed. This was built, and \emph{fully verified} --- proved to compute the same answers as the un-memoized version. And then it was measured, and it saved nothing. Instrumentation showed the memo table being consulted thousands of times, finding the same entry over and over, and the wall-clock time was unchanged within noise. The reason is a genuine negative result, and worth stating because it corrects the obvious intuition: the recursion's value at an ordinal is not expensive to \emph{compute} --- it is produced in a single step, as a small closure --- so there is nothing to save by remembering it. The real cost is elsewhere entirely: in how many times that closure gets \emph{applied} as the surrounding program runs, which no table keyed by the ordinal can reach, because it is not recomputation at all. The optimization was correct and useless, and finding out \emph{why} it was useless --- measured, not guessed --- is a fact about where the cost of this kind of extracted program actually lives.
-
-\textbf{A fact that moved from assumed to derived.} Early in the development, the crucial descending step of the Goodstein proof --- that one Goodstein step really does lower the ordinal --- was taken as an \emph{assumption}, an extra rule handed to the fragment. That made the proof honest but unsatisfying: the fragment proved Goodstein's theorem only \emph{relative to} the very fact that makes it true. Later, that assumption was \emph{derived} instead, broken into three much smaller assumptions --- each a single, general property of one operation, none of which so much as mentions the Goodstein sequence --- from which the descending step follows by the fragment's own reasoning. The gap did not close entirely (those three small properties are still assumed rather than proved inside the fragment), but it narrowed from ``assume the thing you are trying to prove'' to ``assume three general facts about arithmetic and derive the rest.'' Watching a formalization tighten its own hypotheses over time, turning an assumption into a consequence, is the kind of bookkeeping honesty that only a machine-checked development makes fully visible.
-
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
-
-\section{Act VII --- Closing}\label{act-vii-closing}
-
-One pipeline handled all of these --- a Goodstein stopping-step function, a Hydra battle length, a gcd, a parity classifier, a first-crossing search, a Fibonacci iterator --- from proofs that ranged from ordinary induction all the way up to transfinite recursion. That is true. But that proofs contain programs is an old idea; nobody should be surprised, in the abstract, that a constructive proof of ``something exists'' can be made to cough up the something. What this tour exhibits instead is how few moving parts it took to make that real, across such a range.
-
-A realizer is a witness, or a pair, or a tag, or a procedure --- four shapes. A level counts how much consuming a formula's realizers do. \texttt{extract} walks a proof and, at each rule, does the one small thing that rule calls for; soundness checks each rule once. Ordinary induction extracts to ordinary recursion; transfinite induction extracts to recursion along the ordinals; an existential extracts to its witness. Hanoi's branching, Pascal's parity, gcd's substitution dance, Sperner's scan, Goodstein's ordinals, the Hydra's boundary --- all of it ran through that same handful of parts, unchanged, and came out as programs whose every runtime axiom the machine can name, none of them classical.
-
-The same four shapes, the same level count, the same proof-walking translation carried from the one hand-built existential of Act II --- \texttt{∃s.\ good(3,\ s)\ =\ 0}, a single witness read back as 5 --- to the edge of what a language without function variables can say.
-
-Everything above has a fully formal counterpart --- the actual Lean development, every theorem machine-checked, every axiom dependency the kernel's own verdict, and a technical write-up that states each claim in its exact form with its exact hypotheses. This tour is the map; that is the territory. If any sentence here made you want to see precisely how it is done rather than merely that it is, that is the right instinct, and the formal development is where it is answered.
-
-\emph{--- end ---}
+\thispagestyle{empty}
+
+%======================================================================
+\section*{Prologue}
+
+In school we learn that a proof is something that convinces us a statement
+is true. A proof of ``every even number greater than two is a sum of two
+primes'' would settle the matter; it would not, on the face of it, \emph{do}
+anything.
+
+Computer scientists discovered something stronger. Sometimes a proof does
+not merely establish that an object exists --- it contains, inside itself, a
+recipe for \emph{building} that object. A proof that ``every list can be
+sorted'' can hide an actual sorting algorithm in its steps. When that
+happens, the proof is not just an argument; it is a program in disguise, and
+with the right lens you can read the program straight off the proof. Proof
+assistants --- software that checks proofs down to the last symbol --- let us
+apply that lens \emph{mechanically}, turning a verified proof into runnable
+code with no human cleverness in between.
+
+For simple statements this is unsurprising. The interesting question is what
+happens at the other extreme. Some theorems need reasoning far stronger than
+ordinary arithmetic --- reasoning that climbs past the natural numbers into
+the infinite, using principles a first course in induction never mentions.
+When a proof reaches that high, does the program still fall out the bottom?
+Or does the extra strength leave a residue --- some step that asserts an
+object exists without ever building it --- that quietly hollows the extracted
+program into something that type-checks but cannot actually run?
+
+This document answers that question by opening one such extraction pipeline
+from end to end. We take a fixed, small formal system; we prove inside it a
+theorem that genuinely needs more than ordinary induction; we watch, in full
+detail, the proof become a program; and we then ask the proof assistant,
+which cannot lie, exactly which assumptions that program depends on. The
+tour is meant to be read start to finish by someone who has never seen any
+of this before. Everything is built up on the page, and each idea arrives at
+the moment an earlier paragraph has made you ask for it.
+
+%======================================================================
+\section{Act I --- The hook}
+
+Pick a natural number --- say $3$. Write it down. Now play the following
+game with it.
+
+First, rewrite the number using only powers of $2$, and rewrite the
+exponents that way too, and their exponents, all the way down, until nothing
+but $2$s and small constants remain. This is called \emph{hereditary base
+$2$}. Now change every $2$ you wrote into a $3$ --- bump the base --- and
+subtract $1$ from the result. Then rewrite \emph{that} number in hereditary
+base $3$, change every $3$ into a $4$, subtract $1$ again. Then base $4$ into
+base $5$, subtract $1$. And so on, bumping the base by one each step and
+subtracting a single unit each time.
+
+The bases are marching upward without bound. Each step replaces a base by a
+larger one everywhere it appears --- and near the start, that base change
+inflates the number far more violently than the lonely ``subtract $1$'' ever
+pulls it back down. The sequence you are generating does not drift gently;
+for many starting values it erupts. Start at $4$ and the first terms are
+those in Figure~\ref{fig:erupt}: the number climbs into values with no short
+decimal name --- and yet, eventually, it comes back down to $0$.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=6mm]
+  \node[boxa](n0){$4$};
+  \node[boxa,right=of n0](n1){$26$};
+  \node[boxa,right=of n1](n2){$41$};
+  \node[boxa,right=of n2](n3){$60$};
+  \node[plain,right=5mm of n3](d){$\cdots$};
+  \node[boxg,right=5mm of d](z){$0$};
+  \draw[flowa](n0)--(n1); \draw[flowa](n1)--(n2); \draw[flowa](n2)--(n3);
+  \draw[flow,dashed](n3)--(d); \draw[flow,dashed](d)--(z);
+  \node[figcap,below=1mm of n1,xshift=6mm]{climbing};
+  \node[figcap,below=1mm of z]{terminates};
+\end{tikzpicture}
+\caption{The Goodstein sequence starting at $4$: it erupts upward, driven by
+the base change, then --- after astronomically many steps --- reaches
+exactly $0$. (The sequence starting at $3$ is tame by comparison:
+$3,3,3,2,1,0$.)}
+\label{fig:erupt}
+\end{figure}
+
+Goodstein's theorem says that this sequence --- no matter which number you
+started from --- always, eventually, hits exactly $0$.
+
+That is already strange. A process whose every early move makes the number
+enormously bigger, driven downward only by subtracting one at a time,
+nonetheless terminates at $0$ for \emph{every} starting value. But the
+strange part, for our purposes, is not the theorem itself. It is what it
+takes to prove it, and what you can do with the proof once you have it.
+
+Here is the first half of the surprise. You cannot prove Goodstein's theorem
+with ordinary mathematical induction over the natural numbers. The usual
+``check $0$, then check that each number's truth follows from the previous
+one'' is genuinely not enough; the theorem needs a stronger principle, one
+that reaches past where step-by-step induction on $\Nat$ can go. (Exactly
+what that stronger principle is, and why it is stronger, is Act~IV's
+business. For now, hold onto the fact that ordinary induction falls short.)
+
+Here is the second half. Despite needing that extra strength, the proof is
+\emph{constructive} --- it does not merely assert that the sequence reaches
+$0$, it contains, buried inside it, a recipe for finding the exact step at
+which that happens. And in the formal system this tour is about, that recipe
+can be pulled out of the proof mechanically and run as an actual program.
+Feed it a starting number; it returns the stopping step.
+
+Most expositions of Goodstein's theorem stop at the statement, or gesture at
+the proof and leave the ``constructive content'' as a phrase. This one opens
+the box all the way. We are going to watch, in complete detail and on a real
+example, a proof turn into a program --- first on something tiny enough to
+hold in your hand, then on Goodstein itself, and then on a handful of other
+theorems that each ask the machine to do one genuinely new thing. By the end
+you will have seen the whole mechanism, and one question will remain: when a
+program falls out of a proof this powerful, does some sliver of
+non-constructive reasoning sneak into the program along the way? The last act
+is devoted to answering it.
+
+%======================================================================
+\section{Act II --- One tiny, real example, walked through completely}
+
+Before any general theory, one concrete thing, done slowly and in full. We
+will not introduce a single piece of machinery in this act beyond what this
+one example forces us to name. No hierarchies, no levels, no collapses ---
+those are Act~III, and they will make far more sense once you have a real
+realizer in hand to point at.
+
+Everything in this tour happens inside a fixed, small formal system --- we
+will call it \emph{the fragment}. Think of the fragment as a self-contained
+little world of mathematics with a rigid rulebook: a fixed vocabulary of
+things it can talk about (zero, successor, addition, multiplication, and a
+modest list of further operations we meet as we need them), a fixed grammar
+of statements it can form, and a fixed list of inference rules for building
+proofs. Nothing enters the fragment except through that rulebook. This
+rigidity is deliberate: because the rules are finite and mechanical, a proof
+in the fragment is itself a finite, mechanical object --- a tree of
+rule-applications --- and a machine can take that tree apart. Hold that
+thought; it is what makes everything later possible.
+
+Our example is the fragment's very first existential theorem --- the first
+time it proved that \emph{something exists} rather than that two things are
+equal. It is deliberately the warm-up the development itself used before
+tackling the general Goodstein theorem, and we use it for exactly that
+reason: in Act~IV, Goodstein will be the grown-up version of this same
+statement, and you will already have watched the miniature happen by hand.
+The statement is: \emph{there is a step $s$ at which the Goodstein sequence
+starting from $3$ has reached $0$}, written in the fragment's grammar as
+\[
+  \exists s.\ \good(3,s)=0,
+\]
+where $\good(3,s)$ is the fragment's own name for ``the value of the
+Goodstein sequence started at $3$, after $s$ steps.''
+
+We happen to know the answer. The Goodstein sequence starting from $3$ runs
+$3,3,3,2,1,0$, so it first reaches $0$ at step~$5$. The number~$5$ is the
+\emph{witness}: the particular $s$ that makes $\exists s.\ \good(3,s)=0$
+true. Keep~$5$ in mind; the whole act is about watching it travel from the
+proof into a running program and back out.
+
+\subsection*{What a realizer for this has to be}
+
+Here is the first idea we genuinely need, and it arrives because the
+statement forces it. The statement claims something \emph{exists}. A proof
+that merely convinces us the claim is true --- without ever saying
+\emph{which} $s$ works --- would be useless for computing anything. So we
+ask: what would a proof have to carry, concretely, for us to read the answer
+off it?
+
+At a minimum, it has to carry the witness --- the number $5$ --- because
+without it there is nothing to return. And it has to carry, as well, some
+evidence that this witness really does the job: that $\good(3,5)$ really is
+$0$. This ``what a proof carries'' is exactly the notion of a
+\textbf{realizer}: the computational content of a proof, the data a machine
+can actually use. The shape of that data is dictated by the statement's
+outermost connective, and for an existential it is precisely the pair we
+just argued for:
+\begin{keystmt}
+A realizer of $\exists y.\ \varphi(y)$ is a pair $x$: a \textbf{witness}
+$\fst x$, and a \textbf{certificate} $\snd x$ that realizes $\varphi$ at that
+witness. Compactly,
+\[
+  x \rz \exists y.\ \varphi(y)
+  \quad\Longleftrightarrow\quad
+  \snd x \rz \varphi\bigl(\fst x\bigr).
+\]
+\end{keystmt}
+Read $\fst x$ as ``read the witness off $x$'' and $\snd x$ as ``the rest of
+$x$.'' This is not a metaphor chosen for this paper; it is the actual clause
+the fragment uses to define what ``realizes'' means at an existential.
+
+Now specialize it to our formula. Instantiating the clause at
+$\exists s.\ \good(3,s)=0$ gives
+\[
+  x \rz \exists s.\ \good(3,s)=0
+  \quad\Longleftrightarrow\quad
+  \snd x \rz \bigl(\good(3,\fst x)=0\bigr).
+\]
+The body $\good(3,s)=0$ is an \emph{equation}, and here a second small idea
+appears, again forced by the example. What does it take to realize an
+equation? An equation is either true or not; if it is true, there is nothing
+further to \emph{compute} about it --- no witness to choose, no case to
+decide. So the realizer of a true equation carries no information at all: any
+object realizes it, provided the equation holds. We call such a realizer
+\textbf{contentless}. So the certificate $\snd x$ above is contentless, and
+the realizer of $\exists s.\ \good(3,s)=0$ is, in effect, \emph{just the
+witness $5$} wearing a trivial second component. All of the content is the
+witness. That is as simple as a realizer ever gets, which is why we started
+here.
+
+\subsection*{The proof, and what \texorpdfstring{$\extract$}{extract} does to it}
+
+Now we build an actual proof of $\exists s.\ \good(3,s)=0$ in the fragment,
+in the shape the realizer analysis predicts. To prove an existential the
+fragment has a rule --- existential introduction --- that says: to conclude
+$\exists y.\ \varphi$, supply a specific term for $y$ and a proof that
+$\varphi$ holds for that term. We supply the term $5$. That leaves us needing
+a fragment-internal proof that $\good(3,5)=0$ --- and this the fragment can
+simply \emph{compute}, grinding its defining equations for $\good$ on the
+concrete numbers $3$ and $5$ until it reaches $0$. So the whole proof is:
+existential-introduction, at $5$, over the computed equation, a small tree
+with the witness $5$ at the branch point.
+
+The fragment comes with a function --- $\extract$ --- that takes a finished
+proof and returns its realizer, by walking the proof tree and doing, at each
+rule, the small operation that rule's realizer calls for. On our proof it
+does exactly what the shape predicts (Figure~\ref{fig:extract2}): the witness
+$5$ the rule supplied becomes the pair's first component; the realizer of the
+computed equation --- contentless --- becomes the second. And to run the
+result, we read its first component at the canonical point, recovering $5$.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=14mm]
+  \node[box,align=center](p){\code{exI} at $5$\\[-1pt]\footnotesize over $\good(3,5)=0$};
+  \node[boxa,right=of p](r){$\langle\,5,\ \cdot\,\rangle$};
+  \node[boxg,right=of r](o){$5$};
+  \draw[flow](p)--node[elabel]{$\extract$}(r);
+  \draw[flow](r)--node[elabel]{$\fst$}(o);
+  \node[figcap,below=1.5mm of p]{proof (a tree)};
+  \node[figcap,below=1.5mm of r]{realizer\\(witness, certificate)};
+  \node[figcap,below=1.5mm of o]{output};
+\end{tikzpicture}
+\caption{The whole round trip on the tiny example. The proof already
+contains the witness $5$; $\extract$ only repackages it into the standard
+existential shape $\langle\text{witness},\text{certificate}\rangle$, the
+certificate contentless because the body is an equation. Reading the first
+component returns $5$.}
+\label{fig:extract2}
+\end{figure}
+
+That is the full round trip on the smallest possible real example: a
+statement was formed; we reasoned out what a proof of it must carry; we built
+such a proof by hand; $\extract$ repackaged its witness; evaluating the
+result returned $5$. Nothing here required knowing what a ``level'' is, where
+realizers ``live,'' or how any of this scales. Those questions push
+themselves on us the moment we ask ``does this work for \emph{every} proof?''
+--- and Act~III introduces exactly the machinery they demand.
+
+%======================================================================
+\section{Act III --- Opening the box}
+
+We have watched one proof become one program. Two questions are now
+unavoidable. First: our example's body was an equation, whose realizer was
+contentless --- so \emph{this} realizer was essentially just a number. Real
+theorems have bodies with ``and,'' ``or,'' implications, ``for all.'' What
+are realizers of \emph{those}? Second: we ran $\extract$ once and got the
+right answer. Is that luck, or does $\extract$ produce a correct realizer for
+\emph{every} proof? We take the questions in that order, because the second
+needs the first.
+
+\subsection*{Realizers, for every shape of statement}
+
+In Act~II we met the realizer clause for $\exists$ by asking what a proof of
+an existential must carry. Every connective has such a clause, arrived at the
+same way, and once you have seen one the rest are recognizable rather than
+surprising. Table~\ref{tab:realizers} collects them --- the guiding question
+each time being \emph{what would a machine need to use a proof of this?}
+
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{@{}l l l@{}}
+\toprule
+\textbf{Statement} & \textbf{Realizer} & \textbf{to use a proof of it, you\dots} \\
+\midrule
+$s = t$ & (nothing) & \dots{}need nothing --- it just has to hold \\
+$A \land B$ & a pair $(r_A, r_B)$ & \dots{}get at each side \\
+$A \lor B$ & a tag $+$ a payload & \dots{}first learn which side \\
+$A \rightarrow B$ & a function $r_A \mapsto r_B$ & \dots{}feed it evidence of $A$ \\
+$\forall x.\ A(x)$ & a function $k \mapsto r_{A(k)}$ & \dots{}pick an $x$ \\
+$\exists x.\ A(x)$ & a pair (witness, certificate) & \dots{}read the witness \\
+\bottomrule
+\end{tabular}
+\caption{What realizes each shape of statement. An equation is
+\emph{contentless}. A conjunction holds both realizers at once; a disjunction
+tags which side holds ($0$ left, non-zero right) and carries that side's
+realizer --- structurally the same ``a number, then a payload it selects''
+as the existential, which is why the fragment builds $\exists$ out of the
+disjunction's pairing machinery. The two that \emph{consume} an input --- the
+functions of $\rightarrow$ and $\forall$ --- are the ones that do work at
+runtime.}
+\label{tab:realizers}
+\end{table}
+
+You have now seen the shape of every realizer the fragment will ever produce.
+Two of them --- implication and universal --- take something in and give
+something back; they are the procedures, the parts that \emph{do work} at
+runtime. To use a proof of ``if $A$ then $B$'' you feed it evidence of $A$
+and it returns evidence of $B$; to use ``for all $x$'' you pick an $x$ and it
+returns the instance. The other three --- pair, tag, witness --- just
+\emph{hold} data. Keep that distinction in view; the next section --- levels
+--- is built entirely on it.
+
+\subsection*{Levels: the cost of consuming}
+
+Here is the question the previous paragraph forced. Implications and
+universals are procedures --- they take an input and return an output. But
+that input is \emph{itself} a realizer, which might itself be a procedure
+taking an input, and so on. A realizer can be a procedure whose inputs are
+procedures whose inputs are procedures. How deep does the nesting go, and how
+do we track it?
+
+The fragment tracks it with a single number on each formula, its
+\textbf{level} $\lev$, counting how many layers of ``takes an input, returns
+an output'' a realizer can involve. The counting rule is short, and it is
+exactly the consume-versus-hold distinction made arithmetic:
+\begin{align*}
+  \lev(s=t)              &= 0, &
+  \lev(A \rightarrow B)  &= \max\bigl(\lev A + 1,\ \lev B\bigr), \\
+  \lev(A \land B)        &= \max\bigl(\lev A,\lev B\bigr), &
+  \lev(\forall x.\,A)    &= \lev A + 1, \\
+  \lev(A \lor B)         &= \max\bigl(\lev A,\lev B\bigr), &
+  \lev(\exists x.\,A)    &= \lev A.
+\end{align*}
+Only the two consuming connectives add a level. Why does $\forall$ cost a
+level but $\exists$ does not, when both mention a bound variable? Because
+$\forall y.\,\varphi$ is a \emph{procedure} --- you hand it a $y$ and it works
+--- while $\exists y.\,\varphi$ merely \emph{holds} a $y$, the witness,
+already chosen. A universal consumes; an existential packages. Consuming
+costs a level; packaging is free. Look back at Act~II: the witness $5$ was
+already sitting in the realizer, waiting to be read; nothing had to be
+\emph{run}. That is exactly why our existential example was so simple:
+$\exists$ adds no level. The rule is not imposed from outside --- it falls
+straight out of the difference between a realizer that runs and one that
+merely stores.
+
+\subsection*{Where a realizer lives: \texorpdfstring{$\PT$}{PureType}}
+
+We keep saying a realizer ``is a number,'' or ``is a procedure taking a
+realizer and returning a realizer.'' Once realizers can be procedures whose
+inputs are procedures, we must say precisely what mathematical objects these
+are. Now that Act~II has given us a concrete realizer, and levels have told
+us how deep the nesting goes, we can place them. Realizers live in a tower of
+types, built by that same level count:
+\[
+  \PT_0 = \Nat, \qquad
+  \PT_{n+1} = \bigl(\PT_n \to \Nat\bigr).
+\]
+The bottom floor is the natural numbers --- where a bare witness like our $5$
+lives. Each floor up is the functions from the floor below to the numbers
+(Figure~\ref{fig:tower}). Each time a formula's level rises by one --- each
+time you add an implication or universal that \emph{consumes} a realizer ---
+the realizer climbs one storey: a realizer of a level-$n$ formula lives $n$
+storeys up. This is why we spent so long on levels first: the level is the
+floor number.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=4mm]
+  \node[box,minimum width=78mm](l0){$\PT_0=\Nat$ \quad\footnotesize (numbers --- e.g. the witness $5$)};
+  \node[box,minimum width=78mm,above=of l0](l1){$\PT_1=\Nat\to\Nat$ \quad\footnotesize (functions on numbers)};
+  \node[box,minimum width=78mm,above=of l1](l2){$\PT_2=\PT_1\to\Nat$ \quad\footnotesize (functionals)};
+  \node[box,minimum width=78mm,above=of l2](l3){$\PT_3=\PT_2\to\Nat$ \quad\footnotesize (higher functionals)};
+  \node[plain,above=1.5mm of l3](d){$\vdots$};
+  \draw[flow](l0)--(l1); \draw[flow](l1)--(l2); \draw[flow](l2)--(l3);
+\end{tikzpicture}
+\caption{The $\PT$ tower. A realizer of a level-$n$ formula lives on floor
+$n$. Our Act~II realizer was a level-$0$ object --- a number --- because its
+formula, an existential over an equation, adds no level. This tower is built
+by completely elementary means, with nothing classical or non-constructive
+anywhere in it --- a fact Act~V will turn on.}
+\label{fig:tower}
+\end{figure}
+
+\subsection*{The program a closed statement denotes: \texorpdfstring{$\CtQ$}{CtQ}}
+
+Two \emph{different} proofs of the same statement can produce two different
+realizers --- different objects in the tower --- that nonetheless compute the
+same answers everywhere. To speak of ``\emph{the} program'' a theorem
+denotes, we collapse realizers that agree as functions into single objects.
+For a closed statement, its realizer lands, after this collapse, in a space
+the development calls $\CtQ$, and its image there is the one
+\emph{proof-independent} program the theorem denotes:
+\[
+  \boxed{\ \text{Realizer}\ } \ \xrightarrow{\ \text{collapse}\ }\
+  \boxed{\ \CtQ\ } .
+\]
+We name $\CtQ$ now but do not yet lean on it: for the collapse to be the
+honest space of functionals rather than an arbitrary quotient, the realizers
+landing in it must be \emph{continuous}, a property we state below. Read
+$\CtQ$ for now as a promissory note --- \emph{the program of a closed theorem
+is a single proof-independent object, once we know its realizer is
+continuous} --- redeemed two definitions on.
+
+\subsection*{Soundness: it works for every proof}
+
+Now the second opening question. We ran $\extract$ once and got a correct
+realizer. Is that always so? It is --- and it is the central theorem of the
+whole construction:
+\begin{keystmt}
+\textbf{Soundness.} For every proof the fragment can build, of every
+statement, $\extract$ returns a genuine realizer of that statement.
+\end{keystmt}
+What we watched happen once, by hand, for $\exists s.\ \good(3,s)=0$,
+soundness guarantees for \emph{every} derivation the fragment admits. Its
+proof is itself an induction --- not over numbers, but over the shape of
+proofs. There are finitely many inference rules; soundness checks, once, that
+each rule's piece of $\extract$ does the right thing \emph{assuming the
+pieces for its sub-proofs did}. Because every proof is a finite tree of those
+rules, checking each rule once covers every proof there will ever be. From
+here on we may speak of ``the program a theorem extracts to'' and know,
+without further checking, that it is correct at every input.
+
+\subsection*{Generic continuity: every program is continuous}
+
+One more property, stated now and explained more deeply once Act~IV gives us
+programs worth explaining it for. A realizer high in the tower is a
+functional --- it takes functions as inputs. The pathological ones read
+\emph{infinitely much} of their input before deciding an output, and those
+are exactly the objects that do not collapse honestly into $\CtQ$. The good
+functionals are the \textbf{continuous} ones: to determine any single output
+they consult only \emph{finitely much} of their input. The development proves,
+once and generically:
+\begin{keystmt}
+\textbf{Generic continuity.} Every realizer $\extract$ produces, from every
+proof, is continuous.
+\end{keystmt}
+This redeems the promissory note on $\CtQ$: because every extract is
+continuous, every closed theorem's realizer collapses honestly into a single
+$\CtQ$ element --- one honest program. We will see \emph{why} generic
+continuity holds in Act~VI; the harder examples of Act~IV should exist first
+to make that ``why'' worth the space. The box is open: we have realizers for
+every shape, the level accounting, the tower they live in, the collapse into
+programs, and the two guarantees --- correctness and continuity. Everything
+from here runs on exactly this machinery, unchanged. What varies is only the
+proofs we feed it.
+
+%======================================================================
+\section{Act IV --- Running the same machine on harder proofs}
+
+Nothing new gets added to the extractor in this act. The pipeline --- prove a
+theorem, run $\extract$, get a certified program --- is fixed. What changes is
+the difficulty of the proofs, and each example is chosen because it forces
+exactly one genuinely new capability out of the same fixed machine. We name
+that capability in a heading, so the staircase is visible
+(Figure~\ref{fig:stair}). Before the first step, one rule the first five
+examples all lean on.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=2.6mm]
+  \node[box,minimum width=34mm](e1){Hanoi};
+  \node[box,minimum width=34mm,above=of e1](e2){Pascal mod $2$};
+  \node[box,minimum width=34mm,above=of e2](e3){Fibonacci};
+  \node[box,minimum width=34mm,above=of e3](e4){Euclid / gcd};
+  \node[box,minimum width=34mm,above=of e4](e5){Sperner (1D)};
+  \node[boxa,minimum width=34mm,above=of e5](e6){Goodstein};
+  \node[boxb,minimum width=34mm,above=of e6](e7){Hydra};
+  \foreach \a/\b in {e1/e2,e2/e3,e3/e4,e4/e5,e5/e6,e6/e7}
+    \draw[ladder](\a)--(\b);
+  \node[figcap,right=3mm of e1,align=left]{structured witness};
+  \node[figcap,right=3mm of e2,align=left]{decision procedure};
+  \node[figcap,right=3mm of e3,align=left]{strengthened hypothesis};
+  \node[figcap,right=3mm of e4,align=left]{taming variable capture};
+  \node[figcap,right=3mm of e5,align=left]{beyond the classical statement};
+  \node[figcap,right=3mm of e6,align=left]{recursion along the ordinals};
+  \node[figcap,right=3mm of e7,align=left]{fragment vs.\ metatheorem};
+\end{tikzpicture}
+\caption{The staircase of Act~IV: each example is the one below plus a single
+new demand on the same fixed extractor. Amber marks the step up to
+transfinite recursion (Goodstein); red marks the boundary of what the
+fragment can even express (Hydra).}
+\label{fig:stair}
+\end{figure}
+
+\subsection*{The rule that becomes recursion: ordinary induction}
+
+The fragment has ordinary mathematical induction as an inference rule --- call
+it \code{ind}. It says the familiar thing: to prove $\forall x.\,\varphi(x)$,
+prove $\varphi(0)$ and prove that $\varphi(x)$ implies $\varphi(x+1)$. Watch
+what $\extract$ does to a proof that uses it. The base $\varphi(0)$ extracts
+to a realizer --- the answer at $0$. The step extracts to a
+\emph{transformation} --- a procedure turning a realizer of $\varphi(x)$ into
+one of $\varphi(x+1)$. To get the realizer at a number $k$, $\extract$ starts
+from the base and applies the step $k$ times:
+\[
+  R(0) = r_0, \qquad R(n+1) = f\bigl(R(n)\bigr).
+\]
+That is precisely a recursive program: a base value and a function iterated as
+many times as the input says. A proof by induction, run through $\extract$,
+\emph{is} a program by recursion (Figure~\ref{fig:indrec}) --- the shape
+underneath all five of the next examples.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=20mm]
+  \node[box,align=center](p){proof by \code{ind}\\[-1pt]\footnotesize base $\varphi(0)$; step $\varphi(x)\!\to\!\varphi(x{+}1)$};
+  \node[boxg,align=center,right=of p](r){recursive program\\[-1pt]\footnotesize $R(0)=r_0$; $R(n{+}1)=f(R(n))$};
+  \draw[flow](p)--node[elabel]{$\extract$}(r);
+\end{tikzpicture}
+\caption{Extraction turns the base and step of an induction into the base and
+step of a recursion. The stronger induction of Goodstein (below) turns, by the
+same move, into a stronger recursion.}
+\label{fig:indrec}
+\end{figure}
+
+\subsection*{New capability: a structured witness (Towers of Hanoi)}
+
+The Towers of Hanoi puzzle asks for a sequence of moves transferring $n$ disks
+between pegs. The fragment proves such a sequence always exists --- and, in the
+same breath, that it has exactly $2^n-1$ moves. What is new is the \emph{shape}
+of the witness. In Act~II the witness was a bare number, $5$. Here the thing
+whose existence we prove is a whole \emph{sequence of moves} --- structured
+data, encoded as a number but meaning a list. When $\extract$ runs, the
+realizer's witness is that move sequence, and it decodes into a readable list
+of ``move a disk from this peg to that peg'' instructions --- the classical
+optimal solution, produced by the extracted program and checked to be exactly
+the moves a human would write. The existential machine of Act~II, unchanged,
+now returns structured data. (The proof uses \code{ind} on the disk count, so
+it extracts to a recursion; the recursion branches --- two smaller sub-towers
+joined by one move --- which is why the count comes out $2^n-1$.)
+
+\subsection*{New capability: a decision procedure (Pascal's triangle, mod $2$)}
+
+Replace every entry of Pascal's triangle by its remainder mod $2$: every number
+becomes a $0$ or a $1$. The fragment proves, for each position, that its parity
+is $0$ or $1$ --- and, more to the point, \emph{which}. The new capability is
+that the extracted program is a \textbf{classifier}. The statement is a
+disjunction, ``this entry is $0$, or it is $1$,'' so (Table~\ref{tab:realizers})
+its realizer carries a tag naming the answer. Run $\extract$ and that tag
+becomes a runnable function from a position to its parity --- a decision
+procedure, produced not by us writing one but by extracting it from a proof
+that merely said ``the answer is one or the other.'' Tabulate that classifier's
+outputs --- a mark for $1$, a blank for $0$, row by row --- and the picture that
+appears is the Sierpi\'nski triangle. There is no gap between the picture and
+the theorem: every cell of the drawing is one instance of the proved
+disjunction, its value filled in by the extracted realizer's own tag.
+
+\subsection*{New capability: a strengthened induction hypothesis (Fibonacci)}
+
+The Fibonacci numbers $0,1,1,2,3,5,8,\dots$ are each the sum of the previous
+two. Suppose we want to prove, in a form from which we can extract a program,
+that $\fib$ is total. Try it by ordinary induction and you hit a wall worth
+feeling: induction hands you the statement \emph{at $n$}, but computing
+$\fib(n+2)$ needs \emph{two} earlier values, $\fib(n+1)$ and $\fib(n)$, and the
+hypothesis at $n$ alone does not give both. The new capability is the standard
+cure. Instead of proving ``$\fib(n)$ exists,'' prove the stronger pair
+statement: the \emph{pair} $\bigl(\fib(n),\fib(n+1)\bigr)$ exists. Now the
+hypothesis hands you both consecutive values, and the step is a single shift,
+\[
+  \bigl(\fib(n),\ \fib(n+1)\bigr)\ \longmapsto\
+  \bigl(\fib(n+1),\ \fib(n)+\fib(n+1)\bigr).
+\]
+A stronger hypothesis is a stronger thing to be handed at the step, so the
+induction goes through. Extract that proof and --- exactly as
+Figure~\ref{fig:indrec} predicts --- you get the fast two-variable iterative
+Fibonacci every programmer knows: carry a pair, shift it $n$ times, read off a
+component. The proof's strengthened hypothesis \emph{is} the program's pair of
+accumulator variables; you can watch the extracted pair advance through
+$(0,1),(1,1),(1,2),(2,3)$ --- the loop's running state, read out of a proof
+that never mentions a loop.
+
+\subsection*{New capability: taming variable capture (Euclid's gcd)}
+
+The fragment proves that any two numbers have a greatest common divisor --- and
+the extracted witness \emph{is} the gcd, computed by subtractive Euclid
+(repeatedly replace the larger number by the difference), with no gcd operation
+built into the fragment. Two supporting economies make this possible. First,
+the fragment never added an ``order'' operation: $s<t$ is simply $\exists d.\
+(s+1)+d=t$ --- order is an existential over addition, not a primitive. Second,
+it never added ``strong induction'' (where the step may use \emph{all} smaller
+cases); that is \emph{derived} from ordinary \code{ind}.
+
+But the new capability the gcd proof forces is neither of these --- it is a
+problem about \emph{substitution}. When you instantiate an induction hypothesis
+or a ``for all,'' you substitute a term for a bound variable; if that term
+mentions a variable that is \emph{also} bound in the formula, the substitution
+silently confuses two different variables sharing a name --- the notorious
+\emph{variable capture}. The fragment's substitution is deliberately
+simple-minded: rather than quietly renaming to avoid capture, it \emph{forbids}
+the capturing substitution outright, so the proof author must route around it.
+Euclid's recursion is the first place two capture problems bite at once, and the
+first to use the fragment's two general-purpose dodges \emph{together}: give the
+offending term a fresh name with an extra ``for all'' and instantiate at the
+harmless name; and, when a recursion permutes its arguments, rename those
+variables to fresh ones first. Neither changes what is proved or what the
+program computes; both merely coax a naive substitution system into accepting a
+substitution that is morally fine. Out the far end comes a certified
+greatest-common-divisor calculator --- which, pleasingly, needs no special case
+for zero: the specification is met by $\gcd(0,0)=0$, since everything divides
+$0$.
+
+\subsection*{New capability: more general than the classical statement (Sperner, 1D)}
+
+Colour the points $0,1,\dots,n$ along a line, each some natural-number colour,
+with the two ends coloured differently. Then somewhere two \emph{adjacent}
+points must differ --- you cannot get from one end-colour to the other without a
+change. This is the one-dimensional Sperner lemma, the discrete ancestor of the
+intermediate value theorem. The fragment proves it by ordinary induction,
+scanning the line and carrying ``either we are still at the start colour, or we
+have already found a crossing''; the extracted program is a left-to-right search
+returning the \emph{first} crossing. But the new thing is not the extraction ---
+it is the theorem. The classical statement is usually given for \emph{two}
+colours; the fragment's proof never uses that restriction. It works for
+\emph{arbitrary} natural-number colourings, so the extracted search is more
+general than the classical picture. The proof turned out to prove \emph{more}
+than the theorem it was written for.
+
+\subsection*{New capability: recursion along the ordinals (Goodstein)}
+
+Now Goodstein itself, the general theorem behind Act~II's single hand-worked
+case. Act~II proved $\exists s.\ \good(3,s)=0$ with the witness supplied by us
+as $5$. Goodstein's \emph{theorem} is the universal version,
+\[
+  \forall m.\ \exists s.\ \good(m,s)=0,
+\]
+and we want from it the same thing Act~II gave, but uniform in $m$: a program
+that, given $m$, returns the stopping step. The proof cannot know $m$'s answer
+in advance, so the witness must be \emph{produced} by the proof.
+
+This is where Act~I's promissory note --- that ordinary induction is not enough
+--- comes due. Induct on $m$, or $s$, or the value $\good(m,s)$, and you fail:
+the value goes \emph{up} at almost every step, so no natural-number quantity
+decreases as the sequence runs. What decreases is not a natural number at all.
+To see why, write a number in hereditary base and watch a step act on it:
+\[
+  13 \;=\; 2^{2+1} + 2^{2} + 1
+  \;\;\xrightarrow{\ 2\,\rightsquigarrow\,3\ }\;\;
+  3^{3+1} + 3^{3} + 1 \;=\; 109
+  \;\;\xrightarrow{\ -1\ }\;\; 108.
+\]
+Replacing every base $2$ by a $3$ --- \emph{including the ones inside the
+exponents} --- inflates $13$ to $108$ in a single step. Yet if you read that
+same expression not as a number but as an \emph{ordinal} --- interpret each
+base as $\omega$, the first infinity --- the base change does nothing (every
+base is already $\omega$), while the ``$-1$'' strictly \emph{lowers} it. Every
+Goodstein step, however it inflates the natural-number value, strictly descends
+an ordinal below $\epsz$ (epsilon-nought); and the ordinals are
+\emph{well-ordered} --- no infinite descending chains
+(Figure~\ref{fig:ordinals}) --- so the sequence cannot descend forever and must
+reach $0$.
+\[
+  0 < 1 < 2 < \cdots < \omega < \omega+1 < \cdots < \omega^2 < \cdots
+    < \omega^\omega < \cdots < \epsz .
+\]
+This is the extra strength Act~I warned of: \textbf{transfinite induction up to
+$\epsz$}, the single rule in the fragment's whole repertoire that is not a
+consequence of ordinary logic and ordinary induction. To make it mechanical the
+fragment builds the $\epsz$ ordinals \emph{as ordinary numbers} under a
+hand-crafted encoding, defines the ``smaller ordinal'' relation on those codes,
+and proves --- by elementary means, no infinite reasoning --- that it admits no
+infinite descending chain. (Why the encoding was built by hand rather than
+borrowed is an Act~VI discovery.)
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=5mm]
+  \node[boxb](a){$\epsz$};
+  \node[box,below=of a](b){$\omega^2$};
+  \node[box,below=of b](c){$\omega$};
+  \node[boxa,below=of c](d){$5$};
+  \node[boxa,below=of d](e){$4$};
+  \node[boxa,below=of e](f){$3$};
+  \node[boxg,below=of f](g){$0$};
+  \foreach \x/\y in {a/b,b/c,c/d,d/e,e/f,f/g} \draw[flow](\x)--(\y);
+  \node[figcap,right=3mm of a]{start (an ordinal below $\epsz$)};
+  \node[figcap,right=3mm of d,align=left]{each Goodstein step descends,};
+  \node[figcap,right=3mm of e,align=left]{even as the \emph{number} grows};
+  \node[figcap,right=3mm of g]{must reach the bottom};
+\end{tikzpicture}
+\caption{Well-foundedness in one picture: the ordinal assigned to each state
+strictly descends at every step, and a descending chain of ordinals cannot go
+on forever, so the process terminates --- however large the underlying numbers
+become.}
+\label{fig:ordinals}
+\end{figure}
+
+Now the two acts line up. In Act~II, $\extract$ turned an existential proof into
+a witness by reading a number the proof supplied. Here it turns Goodstein's
+proof into a witness by \emph{recursion along the ordinals}: the
+transfinite-induction rule extracts to a program that descends the ordinal of
+each state until it reaches the bottom, and the number of descents is the
+stopping step. Where \code{ind} extracted to ``iterate a step $k$ times''
+(Figure~\ref{fig:indrec}), the transfinite rule extracts to ``recur along the
+ordinal ordering'' --- a stronger recursion for a stronger induction. Same
+machine, one gear higher:
+\[
+  \forall m.\ \exists s.\ \good(m,s)=0
+  \qquad\xrightarrow{\ \extract\ }\qquad
+  m \longmapsto s .
+\]
+One theorem; one extracted program. And it runs (Table~\ref{tab:stop}). The row
+for $m=4$ is where Act~I's ``numbers explode'' stops being an assertion: the
+program declines to finish because the terminating sequence really is that
+long.
+
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}l cccc c c@{}}
+\toprule
+start $m$          & $0$ & $1$ & $2$ & $3$ & $\cdots$ & $4$ \\
+\midrule
+stopping step $s$  & $0$ & $1$ & $3$ & $5$ & $\cdots$ & (not attempted) \\
+\bottomrule
+\end{tabular}
+\caption{The extracted stopping-step program $m\mapsto s$. It returns $0$ and
+$1$ directly when run; soundness certifies $3$ and $5$ for $m=2,3$ (the
+sequences $2,2,1,0$ and $3,3,3,2,1,0$) even where running the program that far
+is slow; $m=4$ is not attempted --- its sequence begins $4,26,41,60,\dots$ and
+its stopping step is astronomically large.}
+\label{tab:stop}
+\end{table}
+
+\subsection*{New capability: a fragment theorem versus a metatheorem (the Hydra)}
+
+The last and hardest example marks a boundary --- the place where what the
+fragment can \emph{prove} and what it can even \emph{state} come apart.
+
+The Hydra is a many-headed tree; Hercules chops a head and it regrows, often
+growing \emph{more} heads than it lost. The Kirby--Paris theorem says Hercules
+wins anyway: every battle terminates. The reason is Goodstein's in disguise ---
+each chop, though it grows the tree, strictly lowers an ordinal below $\epsz$
+assigned to it. The fragment can prove termination for \emph{one fixed, encoded
+battle}: fix a starting Hydra and a fixed way of playing, code it all as
+numbers, and prove $\forall h.\ \exists t.\ \hydra(h,t)=0$ --- the exact shape of
+Goodstein's theorem, proved the exact same way, extracting to a battle-length
+program. Business as usual.
+
+But the \emph{real} Kirby--Paris theorem says Hercules wins \emph{no matter what
+strategy} he uses --- and this the fragment cannot even express
+(Figure~\ref{fig:hydra}). To say ``for every strategy'' you must quantify over
+strategies, and a strategy is a \emph{function} (it looks at the current Hydra
+and decides the next chop). The fragment's ``for all'' ranges only over
+\emph{numbers}, never functions. The limitation is not that the fragment fails
+to \emph{prove} the general theorem; the sentence expressing it is not in the
+fragment's language at all. So the general theorem is proved \emph{outside} the
+fragment, in the ordinary mathematics of the proof assistant, which quantifies
+over functions freely; and the fragment's single battle is checked to be one of
+those general plays, a genuine special case. This split --- a \emph{fragment
+theorem} for one battle, a \emph{metatheorem} for all strategies --- is forced,
+cleanly and provably, by the one fact that the fragment has no function
+variables. It is the right place to stop feeding the machine harder proofs.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+  \node[box,text width=40mm,align=center](f){\textbf{Fragment language}\\[3pt]
+    one fixed, encoded battle\\[2pt] $\forall h.\ \exists t.\ \hydra(h,t)=0$\\[3pt]
+    \footnotesize provable; extracts to a\\ battle-length program};
+  \node[boxb,text width=40mm,align=center,right=20mm of f](m){\textbf{Metatheory (Lean)}\\[3pt]
+    \emph{every} strategy at once\\[2pt] ``for all strategies\dots''\\[3pt]
+    \footnotesize a strategy is a \emph{function};\\ the fragment cannot state this};
+  \draw[dashed,line width=1pt,rulec]
+    ($(f.north)!0.5!(m.north)+(0,3mm)$) -- ($(f.south)!0.5!(m.south)-(0,3mm)$);
+\end{tikzpicture}
+\caption{The boundary the Hydra draws. Left of the dashed line, the fragment
+proves --- and extracts a program for --- termination of one encoded battle.
+Right of it, the fully general claim, which the fragment cannot even write down,
+so it is proved directly in the metatheory. The line is forced by the absence of
+function variables, not chosen.}
+\label{fig:hydra}
+\end{figure}
+
+%======================================================================
+\section{Act V --- What it costs: the constructivity audit}
+
+We have now watched proofs of real strength become running programs. Goodstein
+and the Hydra needed transfinite induction up to $\epsz$ --- genuinely more than
+ordinary arithmetic. And the programs are not toys: an ordinal-descending
+recursion, a first-crossing search, a greatest-common-divisor calculator, a
+parity classifier.
+
+So here is the suspicion any careful reader should now be holding, and it is the
+right one. Proofs of this strength, in ordinary practice, routinely use
+\emph{non-constructive} reasoning --- the law of excluded middle, the axiom of
+choice, arguments that assert an object exists without building it. Surely,
+somewhere in a construction reaching all the way to $\epsz$, some
+non-constructive step sneaks in. And if it does, the extracted ``program'' might
+be a fiction --- an object that type-checks but cannot run, its content secretly
+resting on an axiom that computes nothing. The whole promise of the tour would
+collapse at its most impressive point.
+
+This act resolves the suspicion, precisely, in the program's favour --- and the
+resolution is possible only because the proof assistant tracks, mechanically and
+unforgeably, exactly which axioms any object depends on. The suspicion has a
+specific name. The genuinely non-constructive axiom --- the one that asserts
+choices can be made with no rule for making them, and from which the full law of
+excluded middle follows --- is called \code{Classical.choice}. It is the axiom
+whose presence in a program would hollow it out, turning a thing that computes
+into a thing that merely type-checks. So the question has one precise form: does
+\code{Classical.choice} appear in the list?
+
+Now the finding, stated exactly as the machine reports it. Every extracted
+program in the whole development --- the Goodstein stopping-step function, the
+Hydra battle-length function, the gcd calculator, the Sperner search, the Pascal
+classifier, the Fibonacci iterator, and the extraction machinery itself ---
+reports its axiom dependency as exactly
+\[
+  \code{[\,propext,\ Quot.sound\,]}
+\]
+and \code{Classical.choice} is \emph{not} on the list. Not ``we believe''; not
+``morally.'' The kernel, asked directly, lists those two names and not the
+third, for every object that actually runs.
+
+So what \emph{are} the two names that are there? Neither is the one the
+suspicion feared. \code{propext} and \code{Quot.sound} are the proof
+assistant's own two foundational axioms, and both are constructively harmless:
+neither lets you conjure an object you cannot build, neither implies excluded
+middle. They are bookkeeping about when two propositions, or two quotient
+elements, count as equal --- part of the machine's floor, computationally inert.
+The trusted base of every extracted computation is the kernel together with
+these two, and nothing classical.
+
+Does \code{Classical.choice} appear \emph{anywhere}? Yes --- and where it does
+is a precise boundary (Table~\ref{tab:const}, Figure~\ref{fig:wall}). It enters
+in exactly two places, and neither runs. It appears in some \emph{correctness
+proofs} --- the proofs that the programs meet their specifications --- and even
+there only through two humble library lemmas about updating a function at a
+point; these live entirely among propositions and are used to \emph{prove a
+program correct}, never inside it. And it appears in the final \emph{packaging}
+step --- the collapse of a realizer into its single $\CtQ$ element --- performed
+once to say ``here is the one program this theorem denotes,'' inheriting choice
+from the general theory of extensional functionals. But again: the packaging is
+\emph{about} the program; the program itself is the choice-free realizer that
+got packaged.
+
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}l l@{}}
+\toprule
+\textbf{Component} & \textbf{Uses \code{Classical.choice}?} \\
+\midrule
+Extracted programs (Goodstein, gcd, \dots) & \textcolor{good}{\textbf{no}} \\
+The extraction pipeline itself            & \textcolor{good}{\textbf{no}} \\
+Some correctness proofs                   & \textcolor{amber}{limited --- two library lemmas} \\
+The $\CtQ$ packaging step                 & \textcolor{bad}{yes} \\
+\bottomrule
+\end{tabular}
+\caption{Where the one non-constructive axiom does and does not appear.
+Everything that runs is choice-free; \code{Classical.choice} is confined to
+things that only reason \emph{about} the programs.}
+\label{tab:const}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+  \node[boxg,text width=42mm,align=center](l){\textbf{Everything that runs}\\[3pt]
+    extracted programs;\\ the extraction pipeline\\[3pt]
+    \footnotesize \code{[propext, Quot.sound]}\\ --- no \code{Classical.choice}};
+  \node[boxb,text width=42mm,align=center,right=26mm of l](r){\textbf{Some proofs \emph{about} them}\\[3pt]
+    two correctness lemmas;\\ the $\CtQ$ packaging\\[3pt]
+    \footnotesize \code{Classical.choice} allowed\\ --- nothing here executes};
+  \draw[line width=2pt,accent]
+    ($(l.north east)!0.5!(r.north west)+(0,7mm)$) --
+    ($(l.south east)!0.5!(r.south west)-(0,7mm)$)
+    node[midway,fill=white,rotate=90,font=\footnotesize\bfseries,text=accent]{~WALL~};
+\end{tikzpicture}
+\caption{The constructivity wall. On one side, everything that executes ---
+choice-free, resting only on the inert kernel axioms. On the other, some proofs
+\emph{about} those programs and one packaging step, which may use choice freely
+because nothing there ever runs. The one non-constructive axiom in the whole
+development is quarantined on the far side from anything that computes.}
+\label{fig:wall}
+\end{figure}
+
+A proof needing strictly more than Peano arithmetic --- transfinite induction to
+$\epsz$ --- became a program, and the program is \emph{constructive to the last
+axiom the machine can name}. The strength went into proving the theorem; none of
+it leaked into the thing that runs.
+
+%======================================================================
+\section{Act VI --- What the machine forced us to discover}
+
+A proof assistant is usually cast as a checker: you have the argument, it
+confirms you made no mistake. That is the smaller half of what happened here.
+The larger half is that the machine, by refusing to accept certain things,
+\emph{forced} decisions that would never have surfaced on paper --- where a
+wave of the hand carries you past exactly the spots where it dug in. Four
+episodes; each is a place where the development is shaped the way it is because
+the machine would not let it be otherwise.
+
+\subsection*{The level bookkeeping was not designed --- it was extorted}
+
+Act~III's realizers live in a tower of types, and each formula carries a level
+saying how high in the tower its realizers sit. The rule turned out to be
+sharp:
+\begin{keystmt}
+Connectives that \emph{consume} a realizer --- implication and ``for all'' ---
+cost a level. Connectives that merely \emph{package} realizers --- ``and,''
+``or,'' and ``there exists'' --- cost nothing.
+\end{keystmt}
+On paper one might guess a level discipline and tune it until the proofs go
+through. Here there was no room to guess: assign ``there exists'' a level it
+should not have, or deny ``for all'' the level it needs, and the realizer types
+fail to line up and the type-checker rejects the extractor outright --- not with
+a warning, with a hard error at the exact malformed clause. The rule above was
+read off the pattern of what the machine accepted and what it refused. The
+distinction it encodes --- consuming versus packaging --- is a real conceptual
+fault line in realizability, and it was the type-checker that drew it.
+
+\subsection*{The Hydra boundary was provable, not merely felt}
+
+Act~IV ended at the wall where the general Kirby--Paris theorem cannot be stated
+in the fragment. On paper that is easy to slide past --- one writes ``for every
+strategy\dots'' and reads it as innocent. Inside the machine it is not innocent:
+to write it you must produce a term quantifying over functions, and the
+fragment's grammar has no such term former. The attempt does not produce a weak
+or unprovable statement; it produces \emph{no statement at all}, because it does
+not parse. The split between the fragment theorem (one battle) and the
+metatheorem (all strategies) is therefore not a matter of taste about where to
+stop --- it is forced by a checkable property of the fragment's syntax. The
+machine turned ``this feels out of reach'' into ``this is provably
+inexpressible.''
+
+\subsection*{The pairing had to be hand-built, or the audit would have failed}
+
+Act~V's clean verdict --- nothing that runs uses \code{Classical.choice} --- was
+nearly lost to a detail three layers down. The $\epsz$ ordinals are encoded as
+ordinary numbers, and that encoding needs a way to pack two numbers into one:
+a pairing function. The proof-assistant library ships one, ready to use. But its
+supporting lemmas are, throughout, proved with \code{Classical.choice} --- and
+because the transfinite recursor's very \emph{definition} calls the pairing,
+that choice would have flowed downstream into $\extract$ and tainted
+\emph{every} extracted program (Figure~\ref{fig:pair}). The paper argument
+``we encode ordinals as numbers'' hides this completely; \code{\#print axioms},
+run on an early prototype, made it glaring --- \code{Classical.choice} appearing
+in a program that should have had none, traced back to the borrowed pairing. The
+fix was to hand-roll a triangular pairing that the kernel can compute and whose
+lemmas are choice-free. A foundational decision, invisible on paper, forced into
+the open by the audit the machine made possible.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=10mm and 26mm]
+  \node[boxb](np){library \code{Nat.pair}};
+  \node[boxb,right=of np](cc){\code{Classical.choice}};
+  \node[boxb,right=of cc](ex1){$\extract$ tainted};
+  \draw[flow,draw=bad](np)--node[elabel]{lemmas use}(cc);
+  \draw[flow,draw=bad](cc)--node[elabel]{flows into}(ex1);
+  \node[figcap,right=4mm of ex1,text=bad,align=left]{breaks\\ Act~V};
+  \node[boxg,below=of np](hp){hand-rolled pairing};
+  \node[boxg,below=of cc](cf){kernel-computable,\\ choice-free};
+  \node[boxg,below=of ex1](ex2){$\extract$ clean};
+  \draw[flow,draw=good](hp)--node[elabel]{choice-free}(cf);
+  \draw[flow,draw=good](cf)--node[elabel]{stays clean}(ex2);
+  \node[figcap,right=4mm of ex2,text=good,align=left]{Act~V\\ holds};
+\end{tikzpicture}
+\caption{The discovery the audit forced. Reusing the library's pairing (top)
+would have threaded \code{Classical.choice} through the ordinal recursor into
+every extracted program. Hand-rolling a choice-free pairing (bottom) keeps the
+one non-constructive axiom out of everything that runs. The leak was invisible
+on paper and glaring under \code{\#print axioms}.}
+\label{fig:pair}
+\end{figure}
+
+\subsection*{A verified optimization that changed nothing --- and we kept it}
+
+The transfinite recursor is the development's most expensive machine, so an
+obvious improvement suggests itself: \emph{memoize} it --- cache each ordinal's
+result so it is not recomputed. This was implemented, proved correct, and wired
+in as a drop-in replacement for the plain recursor. Then it was measured, and it
+changed \emph{nothing}. The reason is precise and only visible once you look:
+producing the recursor's value at an ordinal code is already a constant-time
+operation --- it hands back a closure --- so the real cost lives in the
+\emph{applications} of that closure, which a table keyed by the ordinal code can
+never reach. The verified-but-useless memo path is kept in the development, with
+its correctness proof, as the record of a negative result that was
+\emph{measured} rather than assumed. On paper an optimization that looks
+plausible tends to get written up as a win; here the profiler said otherwise, and
+honesty about the null result was cheaper than the illusion of a speedup.
+
+\subsection*{The descent was demoted from assumption to theorem}
+
+The engine of Goodstein and the Hydra is one fact: each step strictly lowers the
+ordinal. In an early version that fact was simply \emph{assumed} --- imported as
+an axiom schema and used. That is a real dependency, and the machine records it:
+an assumed descent appears on the \code{\#print axioms} list, in plain sight,
+for anyone to see how much is being taken on faith. The development later
+\emph{earned} it back, deriving the descent from three small schemas, each about
+a single symbol in relation to a single ordinal operation, none mentioning
+Goodstein or the Hydra at all. The gain is not that the proof got shorter --- it
+is that the ledger of assumptions got smaller, and the machine is what keeps that
+ledger honest. What you assume is visible; reducing it is progress you can point
+to, not a matter of narrative.
+
+%======================================================================
+\section{Act VII --- The thesis}
+
+Set the examples back-to-back --- Hanoi, Pascal, Fibonacci, Euclid, Sperner,
+Goodstein, the Hydra --- and the natural summary is ``look, one pipeline turns
+proofs into programs.'' But that pipeline is old news: that a constructive proof
+carries computational content is the content of realizability and of the
+Curry--Howard correspondence, both decades established. The reader was told as
+much in Act~I, and being shown a known correspondence at work is not, by itself,
+a surprise.
+
+The surprise is the \emph{range reached with so little}. One signature of
+twenty-one symbols. One extractor, with one small combinator per inference rule.
+One soundness proof, one case per rule. One continuity invariant, closed under
+the same handful of combinators. That fixed, modest apparatus --- never enlarged
+across the whole tour --- was enough to reach a structured puzzle solution, a
+decision procedure that draws the Sierpi\'nski triangle, a strengthened-invariant
+iterator, a greatest-common-divisor calculator, a discrete intermediate-value
+search, and two theorems --- Goodstein and Kirby--Paris --- that genuinely need
+transfinite induction to $\epsz$, more than ordinary arithmetic can prove. Wildly
+different mathematics; the same few moving parts.
+
+And the whole way down, the machine kept the accounting honest --- not as a
+formality but as the thing that made the strongest claim sayable at all. The
+constructivity verdict of Act~V is not an aspiration one hopes holds up under
+scrutiny; it is a fact the kernel will reprint on demand, for every program in
+the development: everything that runs rests on two inert axioms and nothing
+classical. A proof that needs more than Peano arithmetic became a program that
+needs less than a whiff of choice --- and we know it needs less because the
+machine, asked directly, said so.
+
+That is how a proof becomes a program: not by a grand mechanism, but by a small
+one applied with discipline, and checked by something that cannot be talked past.
 
 \end{document}

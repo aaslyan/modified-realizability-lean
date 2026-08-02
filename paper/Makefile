@@ -1,26 +1,24 @@
-# Build "How a Proof Becomes a Program" from the Markdown source.
+# Build "How a Proof Becomes a Program".
 #
-# Requirements: pandoc, a LuaLaTeX TeX distribution (TeX Live / MacTeX),
-# and the DejaVu Sans Mono font (ships with TeX Live) for the code blocks'
-# Unicode glyphs.  The prose math symbols are font-independent (mapped to
-# Computer Modern math in preamble.tex), so only the mono font matters.
+# The LaTeX source (how-a-proof-becomes-a-program.tex) is authoritative and is
+# authored directly; preamble.tex is \input by it. The retired Markdown draft
+# lives in draft/ for reference only and is no longer part of the build.
+#
+# Requirements: a TeX Live / MacTeX distribution providing pdflatex, latexmk,
+# and the newpx (Palatino-family) and inconsolata (zi4) font packages. The
+# source is pure ASCII; every mathematical symbol is a LaTeX command, so no
+# special fonts or Unicode handling are needed.
 
 NAME = how-a-proof-becomes-a-program
-SRC  = $(NAME).md
 TEX  = $(NAME).tex
 PDF  = $(NAME).pdf
-
-PANDOC_FLAGS = --standalone --shift-heading-level-by=-1 --wrap=none \
-               --include-in-header=preamble.tex \
-               -V documentclass=article -V fontsize=11pt
 
 .PHONY: all clean
 
 all: $(PDF)
 
-$(PDF): $(SRC) preamble.tex
-	pandoc $(SRC) -o $(TEX) $(PANDOC_FLAGS)
-	latexmk -lualatex -interaction=nonstopmode $(TEX)
+$(PDF): $(TEX) preamble.tex
+	latexmk -pdf -interaction=nonstopmode -halt-on-error $(TEX)
 
 # Remove LaTeX auxiliary files (keeps the committed .tex and .pdf).
 clean:
