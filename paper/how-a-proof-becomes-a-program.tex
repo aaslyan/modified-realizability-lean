@@ -1249,7 +1249,44 @@ proofs into programs.'' But that pipeline is old news: that a constructive proof
 carries computational content is the content of realizability and of the
 Curry--Howard correspondence~\citep{howard1980}, both decades established. The reader was told as
 much in Act~I, and being shown a known correspondence at work is not, by itself,
-a surprise.
+a surprise --- though Figure~\ref{fig:curry-howard} makes it unusually concrete,
+reading the extracted program back onto the proof of the hardest theorem here.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+   L/.style={box,anchor=west,align=left,inner sep=3.5pt,font=\small},
+   R/.style={boxg,anchor=west,align=left,inner sep=3.5pt,font=\small}]
+  \node[figcap,anchor=west,font=\footnotesize\bfseries] at (0,9mm){the proof (logic)};
+  \node[figcap,anchor=west,font=\footnotesize\bfseries] at (80mm,9mm){the program (extracted)};
+  \node[elabel] at (57mm,9mm){$\xrightarrow{\ \extract\ }$};
+  \node[L,anchor=west] (l1) at (0,  0mm){$\forall m$ \ \footnotesize($\forall$-intro)};
+  \node[L,anchor=west] (l2) at (0,-10mm){$\mathrm{TI}(\epsz)$ along $\prec$};
+  \node[L,anchor=west] (l3) at (0,-20mm){$\good(m,s){=}0 \lor \neg$ \ \footnotesize($\lor$-elim)};
+  \node[L,anchor=west] (l4) at (0,-30mm){$\exists s.\ \good(m,s){=}0$ \ \footnotesize($\exists$-intro)};
+  \node[L,anchor=west] (l5) at (0,-40mm){induction hypothesis};
+  \node[L,anchor=west] (l6) at (0,-50mm){$\mathrm{ord}$ descends \ \footnotesize($\code{prec}{=}1$)};
+  \node[R,anchor=west] (r1) at (80mm,  0mm){$\lambda m.$};
+  \node[R,anchor=west] (r2) at (80mm,-10mm){$\ \mathsf{rec}\ \mathit{loop}(s)$ \emph{ along the ordinal}};
+  \node[R,anchor=west] (r3) at (80mm,-20mm){$\ \ \code{if}\ \good(m,s){=}0$};
+  \node[R,anchor=west] (r4) at (80mm,-30mm){$\ \ \code{then return}\ s$};
+  \node[R,anchor=west] (r5) at (80mm,-40mm){$\ \ \code{else}\ \mathit{loop}(s{+}1)$ \ \footnotesize(the IH)};
+  \node[R,anchor=west] (r6) at (80mm,-50mm){$\cdot$ \ \footnotesize(erased)};
+  \foreach \i in {1,2,3,4,5,6} \draw[densely dotted,rulec] (l\i.east) -- (r\i.west);
+\end{tikzpicture}
+\caption{\textbf{The extraction map on the hardest theorem.} Modified
+realizability is Curry--Howard with the map made explicit: $\extract$ sends each
+proof rule (left) to one program operation (right). A witness supplied by hand
+extracts to a constant --- $\exists s.\ \good(3,s){=}0$, proved by $\code{exI}\
+5$, gives \code{return}$\ \langle 5,\cdot\rangle$ --- while a witness produced by
+transfinite induction extracts to a recursion, the shape of the induction
+becoming the shape of the recursion. The induction hypothesis \emph{is} the
+recursive call; the ordinal descent, carrying no runtime content, is erased. The
+same object is a proof that every Goodstein sequence terminates and a program
+that computes when. What is old is the correspondence; what is new is that this
+one fixed apparatus reaches $\mathrm{TI}(\epsz)$ with nothing added.}
+\label{fig:curry-howard}
+\end{figure}
 
 The surprise is the \emph{range reached with so little}. One signature of
 twenty-one symbols. One extractor, with one small combinator per inference rule.
