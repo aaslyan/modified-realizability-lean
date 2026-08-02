@@ -225,6 +225,63 @@ partial def render (depth : Nat) : Skel → String
 def realizerSkeleton {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) : String :=
   render 0 (toSkel D)
 
+/-! ## The Curry–Howard view
+
+`#realizerCH` renders the same walk as three columns per node — the **program
+operation**, the **logic rule** it corresponds to, and the **proposition** that
+rule proves — so the extraction map (rule ↦ program operation) is legible line
+by line. Extraction is structure-preserving: modified realizability is
+Curry–Howard with the map made explicit, and this is a picture of the map.
+
+Completeness is enforced by `toSkel` above (no wildcard); `toCH` may use a
+wildcard for the contentless tail, since a new content-bearing rule would break
+`toSkel`'s build first. -/
+
+/-- A node of the correspondence view: program op, logic rule, proposition. -/
+inductive CHNode where
+  | mk : (op rule prop : String) → List CHNode → CHNode
+  deriving Inhabited
+
+/-- Truncate a string to width `w` with an ellipsis. -/
+def trunc (w : Nat) (s : String) : String :=
+  if s.length ≤ w then s else s.take (w - 1) ++ "…"
+
+/-- Annotate each rule with its program operation and the proposition it proves. -/
+partial def toCH {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) : CHNode :=
+  let p := formulaStr φ
+  if isContentless φ then .mk "·" "equation (proof-irrelevant)" p [] else
+  match D with
+  | .ax          => .mk "var" "hypothesis / IH" p []
+  | .wk D        => .mk "(weaken)" "weakening" p [toCH D]
+  | .andI D₁ D₂  => .mk "⟨_,_⟩" "∧-intro" p [toCH D₁, toCH D₂]
+  | .andE₁ D     => .mk "π₁" "∧-elim₁" p [toCH D]
+  | .andE₂ D     => .mk "π₂" "∧-elim₂" p [toCH D]
+  | .orI₁ D      => .mk "inl" "∨-intro₁" p [toCH D]
+  | .orI₂ D      => .mk "inr" "∨-intro₂" p [toCH D]
+  | .orE D D₁ D₂ => .mk "case" "∨-elim" p [toCH D, toCH D₁, toCH D₂]
+  | .impI D      => .mk "λh." "→-intro" p [toCH D]
+  | .impE D₁ D₂  => .mk "apply" "→-elim" p [toCH D₁, toCH D₂]
+  | .botE D      => .mk "absurd" "⊥-elim" p [toCH D]
+  | .allI D _    => .mk "λk." "∀-intro" p [toCH D]
+  | .allE u D _  => .mk s!"apply @ {termStr u}" "∀-elim" p [toCH D]
+  | .ind D₁ D₂ _ => .mk "rec (fold on succ)" "induction" p [toCH D₁, toCH D₂]
+  | @Deriv.tiEps0 _ _ _ _ D _ _ _ =>
+        .mk "rec (well-founded on ≺)" "TI(ε₀)" p [toCH D]
+  | .exI u D _   => .mk s!"return ⟨{termStr u}, ·⟩" "∃-intro" p [toCH D]
+  | @Deriv.exE _ _ _ _ D₁ D₂ _ _ => .mk "let ⟨w,p⟩ :=" "∃-elim" p [toCH D₁, toCH D₂]
+  | .eqDec s t   => .mk s!"decide {termStr s}={termStr t}" "decidable-eq" p []
+  | _            => .mk "·" "axiom (proof-irrelevant)" p []
+
+/-- Render the correspondence tree, one `op — rule ⟦prop⟧` line per node. -/
+partial def renderCH (depth : Nat) : CHNode → String
+  | .mk op rule prop ch =>
+      pad (depth * 3) ++ op ++ "  — " ++ rule ++ "  ⟦" ++ trunc 44 prop ++ "⟧\n" ++
+        (ch.map (renderCH (depth + 1))).foldl (· ++ ·) ""
+
+/-- The Curry–Howard correspondence view of a derivation, as a string. -/
+def realizerCorrespondence {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) : String :=
+  "PROGRAM  —  LOGIC RULE  ⟦ PROPOSITION ⟧\n" ++ renderCH 0 (toCH D)
+
 end Realizability.RealizerDisplay
 
 /-- `#realizer d` prints the extracted realizer skeleton of the derivation `d`
@@ -233,6 +290,17 @@ structurally, so it works on realizers that `#reduce` cannot evaluate. -/
 macro "#realizer " t:term : command =>
   `(command| #eval IO.println (Realizability.RealizerDisplay.realizerSkeleton $t))
 
+/-- `#realizerCH d` prints the derivation as the Curry–Howard correspondence:
+each line is `program-operation — logic-rule ⟦proposition⟧`, exhibiting the
+extraction map rule-by-rule. -/
+macro "#realizerCH " t:term : command =>
+  `(command| #eval IO.println (Realizability.RealizerDisplay.realizerCorrespondence $t))
+
 -- Pinned regression: the smallest realizer renders as the paper's ⟨5, contentless⟩.
 #guard Realizability.RealizerDisplay.realizerSkeleton Realizability.goodThreeExDeriv ==
   "exI  ⟨witness = 5, ·⟩\n   · ⟨contentless⟩  good(3,5) = 0\n"
+
+-- Pinned regression: the correspondence view maps ∃-intro to `return ⟨5, ·⟩`.
+#guard ((Realizability.RealizerDisplay.realizerCorrespondence
+    Realizability.goodThreeExDeriv).splitOn "\n").getD 1 "" ==
+  "return ⟨5, ·⟩  — ∃-intro  ⟦∃x1.good(3,x1) = 0⟧"
