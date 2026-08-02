@@ -551,6 +551,31 @@ now returns structured data. (The proof uses \code{ind} on the disk count, so
 it extracts to a recursion; the recursion branches --- two smaller sub-towers
 joined by one move --- which is why the count comes out $2^n-1$.)
 
+Every recursion in this act halts for the same underlying reason, and it is
+worth naming that reason once, here, where it is easiest to see. The disk count
+is a \emph{descent certificate}: a quantity that strictly drops at every
+recursive call and, being a natural number, cannot drop forever
+(Figure~\ref{fig:desc-hanoi}). Each example below carries one; watch what it is.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=7mm]
+  \node[dbox](a){$3$};
+  \node[dbox,right=of a](b){$2$};
+  \node[dbox,right=of b](c){$1$};
+  \node[dzero,right=of c](d){$0$};
+  \foreach \x/\y in {a/b,b/c,c/d} \draw[ladder](\x)--(\y);
+  \coordinate (mid) at ($(a)!0.5!(d)$);
+  \node[dlab,below=6mm of mid]{descent certificate: disks remaining};
+\end{tikzpicture}
+\caption{\textbf{Why recursion terminates (Hanoi).} Each recursive call solves a
+tower of strictly fewer disks, so the disk count --- the \emph{descent
+certificate} --- falls to $0$ and can fall no further. The recursion
+\emph{branches} (two sub-towers per disk), but every branch drops the count, so
+the whole tree of calls is finite.}
+\label{fig:desc-hanoi}
+\end{figure}
+
 \subsection*{New capability: a decision procedure (Pascal's triangle, mod $2$)}
 
 Replace every entry of Pascal's triangle by its remainder mod $2$: every number
@@ -563,9 +588,44 @@ becomes a runnable function from a position to its parity --- a decision
 procedure, produced not by us writing one but by extracting it from a proof
 that merely said ``the answer is one or the other.'' Tabulate that classifier's
 outputs --- a mark for $1$, a blank for $0$, row by row --- and the picture that
-appears is the Sierpi\'nski triangle. There is no gap between the picture and
-the theorem: every cell of the drawing is one instance of the proved
-disjunction, its value filled in by the extracted realizer's own tag.
+appears is the Sierpi\'nski triangle (Figure~\ref{fig:sierpinski}). There is no
+gap between the picture and the theorem: every cell of the drawing is one
+instance of the proved disjunction, its value filled in by the extracted
+realizer's own tag.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=6mm]
+  \node[dbox](a){row $n$};
+  \node[dbox,right=of a](b){$n{-}1$};
+  \node[dbox,right=of b](c){$\cdots$};
+  \node[dzero,right=of c](d){$0$};
+  \foreach \x/\y in {a/b,b/c,c/d} \draw[ladder](\x)--(\y);
+  \coordinate (mid) at ($(a)!0.5!(d)$);
+  \node[dlab,below=6mm of mid]{descent certificate: the row index (outer), the column index (inner)};
+\end{tikzpicture}
+\caption{\textbf{Why recursion terminates (Pascal).} The proof is a
+\emph{nested} induction: the outer recursion descends the row index, and within
+each row an inner recursion descends the column index. Two descent
+certificates, both ordinary natural numbers, one inside the other.}
+\label{fig:desc-pascal}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\input{sierpinski.tikz}
+\end{tikzpicture}
+\caption{The extracted classifier's own output, rows $0$--$31$: a filled cell
+where the decided parity is $1$, blank where it is $0$. The Sierpi\'nski
+triangle here is not a picture drawn to resemble the theorem --- it \emph{is}
+the theorem, one cell per proved instance of ``this entry is $0$ or $1$,'' each
+cell's value read off the extracted realizer's tag. Generated from the parity
+recurrence $\mathrm{pas}(n,k)=\mathrm{pas}(n{-}1,k{-}1)\oplus\mathrm{pas}(n{-}1,k)$
+and cross-checked against $\binom{n}{k}\bmod 2$; the $243=3^5$ filled cells over
+$32$ rows are exactly the count the closed form predicts.}
+\label{fig:sierpinski}
+\end{figure}
 
 \subsection*{New capability: a strengthened induction hypothesis (Fibonacci)}
 
@@ -590,6 +650,24 @@ component. The proof's strengthened hypothesis \emph{is} the program's pair of
 accumulator variables; you can watch the extracted pair advance through
 $(0,1),(1,1),(1,2),(2,3)$ --- the loop's running state, read out of a proof
 that never mentions a loop.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=7mm]
+  \node[dbox](a){$n$};
+  \node[dbox,right=of a](b){$n{-}1$};
+  \node[dbox,right=of b](c){$\cdots$};
+  \node[dzero,right=of c](d){$0$};
+  \foreach \x/\y in {a/b,b/c,c/d} \draw[ladder](\x)--(\y);
+  \coordinate (mid) at ($(a)!0.5!(d)$);
+  \node[dlab,below=6mm of mid]{descent certificate: the index $n$};
+\end{tikzpicture}
+\caption{\textbf{Why recursion terminates (Fibonacci).} Strengthening the
+hypothesis to a pair changed what is \emph{carried} at each step --- the two
+accumulators --- not what makes the recursion stop. The descent certificate is
+still the plain index $n$, counting down to $0$.}
+\label{fig:desc-fib}
+\end{figure}
 
 \subsection*{New capability: taming variable capture (Euclid's gcd)}
 
@@ -621,6 +699,36 @@ greatest-common-divisor calculator --- which, pleasingly, needs no special case
 for zero: the specification is met by $\gcd(0,0)=0$, since everything divides
 $0$.
 
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=5.5mm and 8mm]
+  \node[dup](p0){$(48,18)$};
+  \node[dup,right=of p0](p1){$(30,18)$};
+  \node[dup,right=of p1](p2){$(12,18)$};
+  \node[dup,right=of p2](p3){$(12,6)$};
+  \node[dup,right=of p3](p4){$(6,6)$};
+  \foreach \x/\y in {p0/p1,p1/p2,p2/p3,p3/p4} \draw[ladder](\x)--(\y);
+  \node[dbox,below=10mm of p0](s0){$66$};
+  \node[dbox,below=10mm of p1](s1){$48$};
+  \node[dbox,below=10mm of p2](s2){$30$};
+  \node[dbox,below=10mm of p3](s3){$18$};
+  \node[dbox,below=10mm of p4](s4){$12$};
+  \node[dbox,right=of s4](s5){$\cdots$};
+  \node[dzero,right=of s5](s6){$0$};
+  \foreach \x/\y in {s0/s1,s1/s2,s2/s3,s3/s4,s4/s5,s5/s6} \draw[ladder](\x)--(\y);
+  \foreach \p in {p0,p1,p2,p3,p4} \draw[densely dotted,draw=rulec](\p)--(\p|-s0.north);
+  \node[dlab,right=6mm of p4]{the state $(a,b)$ --- neither falls};
+  \node[dlab,right=6mm of s6]{descent certificate: $a+b$};
+\end{tikzpicture}
+\caption{\textbf{Why recursion terminates (Euclid).} Subtractive Euclid replaces
+the larger number by the difference. Neither coordinate of the pair (amber)
+falls at every step --- but their \emph{sum} (below) does, strictly, until it
+reaches $0$. The descent certificate here is not one of the arguments; it is the
+derived quantity $a+b$, which is exactly why the proof runs a course-of-values
+(``strong'') induction \emph{on the sum} rather than on either number.}
+\label{fig:desc-euclid}
+\end{figure}
+
 \subsection*{New capability: more general than the classical statement (Sperner, 1D)}
 
 Colour the points $0,1,\dots,n$ along a line, each some natural-number colour,
@@ -637,6 +745,32 @@ colours; the fragment's proof never uses that restriction. It works for
 general than the classical picture. The proof turned out to prove \emph{more}
 than the theorem it was written for.
 
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=6mm]
+  \node[dbox,minimum width=6mm](c0){$0$};
+  \node[dbox,minimum width=6mm,right=2mm of c0](c1){$1$};
+  \node[dbox,minimum width=6mm,right=2mm of c1](c2){$2$};
+  \node[dbox,minimum width=6mm,right=2mm of c2](c3){$\cdots$};
+  \node[dbox,minimum width=6mm,right=2mm of c3](c4){$n$};
+  \draw[flow] ([yshift=2.5mm]c0.north west) -- ([yshift=2.5mm]c4.north east)
+     node[midway,above,font=\footnotesize\itshape,text=black!70]{scan forward, one position at a time};
+  \node[dbox,below=12mm of c0](r0){$n$};
+  \node[dbox,right=of r0](r1){$n{-}1$};
+  \node[dbox,right=of r1](r2){$\cdots$};
+  \node[dzero,right=of r2](r3){$0$};
+  \foreach \x/\y in {r0/r1,r1/r2,r2/r3} \draw[ladder](\x)--(\y);
+  \coordinate (mid) at ($(r0)!0.5!(r3)$);
+  \node[dlab,below=6mm of mid]{descent certificate: positions left to scan, $n-m$};
+\end{tikzpicture}
+\caption{\textbf{Why recursion terminates (Sperner).} The extracted program is a
+\emph{forward linear scan}: it walks the points $0,1,\dots,n$ left to right,
+stopping at the first colour change. The descent certificate is the number of
+unscanned positions, $n-m$, dropping by exactly one per step --- a straight walk
+to the end, not an interval halved by bisection.}
+\label{fig:desc-sperner}
+\end{figure}
+
 \subsection*{New capability: recursion along the ordinals (Goodstein)}
 
 Now Goodstein itself, the general theorem behind Act~II's single hand-worked
@@ -649,10 +783,15 @@ and we want from it the same thing Act~II gave, but uniform in $m$: a program
 that, given $m$, returns the stopping step. The proof cannot know $m$'s answer
 in advance, so the witness must be \emph{produced} by the proof.
 
-This is where Act~I's promissory note --- that ordinary induction is not enough
---- comes due. Induct on $m$, or $s$, or the value $\good(m,s)$, and you fail:
-the value goes \emph{up} at almost every step, so no natural-number quantity
-decreases as the sequence runs. What decreases is not a natural number at all.
+Every example so far has handed us a descent certificate that was an ordinary
+natural number --- a disk count, a row index, a plain index, a sum, a count of
+positions left to scan. \textbf{Goodstein is where that stops being enough.}
+This is the same fact as Act~I's promissory note --- that ordinary induction is
+not enough --- now come due: induct on $m$, or $s$, or the value $\good(m,s)$,
+and you fail, because the value goes \emph{up} at almost every step, so no
+natural-number quantity decreases as the sequence runs. The descent certificate
+Goodstein needs is not a natural number at all --- it is the same idea of
+descent, reaching one step past the naturals.
 To see why, write a number in hereditary base and watch a step act on it:
 \[
   13 \;=\; 2^{2+1} + 2^{2} + 1
@@ -688,24 +827,37 @@ borrowed is an Act~VI discovery.)
 
 \begin{figure}[h]
 \centering
-\begin{tikzpicture}[node distance=5mm]
-  \node[boxb](a){$\epsz$};
-  \node[box,below=of a](b){$\omega^2$};
-  \node[box,below=of b](c){$\omega$};
-  \node[boxa,below=of c](d){$5$};
-  \node[boxa,below=of d](e){$4$};
-  \node[boxa,below=of e](f){$3$};
-  \node[boxg,below=of f](g){$0$};
-  \foreach \x/\y in {a/b,b/c,c/d,d/e,e/f,f/g} \draw[flow](\x)--(\y);
-  \node[figcap,right=3mm of a]{start (an ordinal below $\epsz$)};
-  \node[figcap,right=3mm of d,align=left]{each Goodstein step descends,};
-  \node[figcap,right=3mm of e,align=left]{even as the \emph{number} grows};
-  \node[figcap,right=3mm of g]{must reach the bottom};
+\begin{tikzpicture}[x=13mm,y=9mm,every node/.style={font=\footnotesize}]
+  % ---- left: the Goodstein value climbs ----
+  \node[dup] (v0) at (0,0)  {$4$};
+  \node[dup] (v1) at (1,0.6){$26$};
+  \node[dup] (v2) at (2,1.2){$41$};
+  \node[dup] (v3) at (3,1.8){$60$};
+  \node[dup] (v4) at (4,2.4){$83$};
+  \draw[ladder,draw=amber!85!black] (v0)--(v1)--(v2)--(v3)--(v4);
+  \node[dlab,text=amber,align=center] at (2,-1.05)
+    {the number the eye sees:\\ the Goodstein value, \emph{climbs}};
+  % ---- right: the ordinal descends ----
+  \begin{scope}[xshift=70mm]
+  \node[dbox]  (o0) at (0,2.4){$\omega^{\omega}$};
+  \node[dbox]  (o1) at (1,1.8){$\bullet$};
+  \node[dbox]  (o2) at (2,1.2){$\bullet$};
+  \node[dbox]  (o3) at (3,0.6){$\bullet$};
+  \node[dzero] (o4) at (4,0)  {$0$};
+  \draw[ladder] (o0)--(o1)--(o2)--(o3)--(o4);
+  \node[dlab,align=center] at (2,-1.05)
+    {the descent certificate:\\ the ordinal $\prec\epsz$, \emph{falls}};
+  \end{scope}
 \end{tikzpicture}
-\caption{Well-foundedness in one picture: the ordinal assigned to each state
-strictly descends at every step, and a descending chain of ordinals cannot go
-on forever, so the process terminates --- however large the underlying numbers
-become.}
+\caption{\textbf{Why recursion terminates (Goodstein) --- the signature
+contrast.} Starting from $m=4$, the Goodstein value climbs (left; the real
+values $4,26,41,60,83,\dots$) while the ordinal assigned to each state (right)
+strictly \emph{descends} through the well-order below $\epsz$, from
+$\omega^{\omega}$ toward $0$. The intermediate ordinals (shown $\bullet$) are
+intricate, but every one lies strictly below the last, and a descending chain of
+ordinals cannot run forever. The proof follows the falling certificate on the
+right, never the climbing number on the left --- which is why a sequence that
+grows can still be proved to stop.}
 \label{fig:ordinals}
 \end{figure}
 
@@ -760,7 +912,40 @@ assigned to it. The fragment can prove termination for \emph{one fixed, encoded
 battle}: fix a starting Hydra and a fixed way of playing, code it all as
 numbers, and prove $\forall h.\ \exists t.\ \hydra(h,t)=0$ --- the exact shape of
 Goodstein's theorem, proved the exact same way, extracting to a battle-length
-program. Business as usual.
+program. Business as usual --- including the reason it terminates
+(Figure~\ref{fig:hydra-desc}).
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[x=13mm,y=9mm,every node/.style={font=\footnotesize}]
+  \node[dup,minimum height=5mm]   (t0) at (0,0)  {$T_0$};
+  \node[dup,minimum height=6.5mm] (t1) at (1,0.6){$T_1$};
+  \node[dup,minimum height=8mm]   (t2) at (2,1.2){$T_2$};
+  \node[dup,minimum height=9.5mm] (t3) at (3,1.8){$T_3$};
+  \node[dup,minimum height=11mm]  (t4) at (4,2.4){$T_4$};
+  \draw[ladder,draw=amber!85!black] (t0)--(t1)--(t2)--(t3)--(t4);
+  \node[dlab,text=amber,align=center] at (2,-1.15)
+    {the tree:\\ gains heads, \emph{grows}};
+  \begin{scope}[xshift=70mm]
+  \node[dbox]  (a0) at (0,2.4){$\alpha_0$};
+  \node[dbox]  (a1) at (1,1.8){$\bullet$};
+  \node[dbox]  (a2) at (2,1.2){$\bullet$};
+  \node[dbox]  (a3) at (3,0.6){$\bullet$};
+  \node[dzero] (a4) at (4,0)  {$0$};
+  \draw[ladder] (a0)--(a1)--(a2)--(a3)--(a4);
+  \node[dlab,align=center] at (2,-1.15)
+    {the descent certificate:\\ its ordinal $\prec\epsz$, \emph{falls}};
+  \end{scope}
+\end{tikzpicture}
+\caption{\textbf{Why recursion terminates (the Hydra) --- the same signature.}
+Each chop regrows the Hydra, usually with \emph{more} heads than before, so the
+tree size climbs (left, successive states $T_0,T_1,\dots$). Yet the ordinal
+$\alpha_i\prec\epsz$ assigned to each tree strictly falls (right), by exactly
+Goodstein's mechanism. Termination follows the ordinal, not the head count ---
+the identical shape to Figure~\ref{fig:ordinals}, which is why the fragment
+proves it the identical way.}
+\label{fig:hydra-desc}
+\end{figure}
 
 But the \emph{real} Kirby--Paris theorem says Hercules wins \emph{no matter what
 strategy} he uses --- and this the fragment cannot even express
@@ -796,6 +981,40 @@ so it is proved directly in the metatheory. The line is forced by the absence of
 function variables, not chosen.}
 \label{fig:hydra}
 \end{figure}
+
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.32}
+\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Case} & \textbf{Theorem (in the fragment)} & \textbf{Extracted program} & \textbf{Descent certificate} \\
+\midrule
+Hanoi     & $\exists k.\ \mathrm{Solves}\ \wedge\ \mathrm{len}{=}2^n{-}1$ & move sequence          & disk count $n$ \\
+Pascal    & $\forall n,k.\ \mathrm{pas}(n,k)\in\{0,1\}$                   & parity classifier      & row index, then column \\
+Fibonacci & $\forall n.\ \exists y.\ \fib n{=}y$                          & pair iterator          & index $n$ \\
+Euclid    & $\forall a,b.\ \exists g.\ g\mid a,\ g\mid b,\dots$           & gcd calculator         & sum $a+b$ \\
+Sperner   & $\forall n,c.\ \exists k{<}n.\ c_k{\neq}c_{k+1}$              & first-crossing search  & positions $n-m$ \\
+\midrule
+Goodstein & $\forall m.\ \exists s.\ \good(m,s){=}0$                      & stopping-step function & ordinal $\prec\epsz$ \\
+Hydra     & $\forall h.\ \exists t.\ \hydra(h,t){=}0$                     & battle-length function & ordinal $\prec\epsz$ \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Act~IV in one table.} One row per case study: the theorem proved
+inside the fragment, the program $\extract$ produces from it, and the descent
+certificate that makes that program terminate. The middle rule separates the
+five whose certificate is an ordinary natural number from the two --- Goodstein
+and the Hydra --- whose certificate is an ordinal below $\epsz$.}
+\label{tab:descent}
+\end{table}
+
+Read the last column top to bottom: five ordinary natural numbers, then two
+ordinals. That is the whole of what changes across the act. Ordinary induction
+and transfinite induction are not two kinds of computation --- they are the one
+extraction pipeline reading two \emph{notions of descent}, the natural numbers
+and the ordinals below $\epsz$; and in every row of the table, a proof that some
+certificate descends is what $\extract$ turns into a recursive program that
+halts.
 
 %======================================================================
 \section{Act V --- What it costs: the constructivity audit}

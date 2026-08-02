@@ -77,4 +77,10 @@
   ladder/.style={draw=rulec,line width=0.6pt,-{Latex[length=2mm]}},
   elabel/.style={font=\footnotesize\itshape,fill=white,inner sep=1.5pt,text=black!70},
   figcap/.style={font=\footnotesize,text=black!65,align=center},
+  % --- descent-certificate motif (repeated across Act IV) ---
+  dbox/.style={draw=accent,line width=0.6pt,rounded corners=2pt,fill=boxbg,
+    inner sep=0pt,minimum width=8mm,minimum height=6.5mm,font=\footnotesize,align=center},
+  dzero/.style={dbox,draw=good,fill=good!12},          % the certificate hits bottom
+  dup/.style={dbox,draw=amber,fill=boxbg2},            % the visible quantity, climbing
+  dlab/.style={font=\footnotesize\itshape,text=accent},% "descent certificate: ..."
 }
