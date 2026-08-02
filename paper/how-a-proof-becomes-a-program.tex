@@ -28,7 +28,11 @@ happens, the proof is not just an argument; it is a program in disguise, and
 with the right lens you can read the program straight off the proof. Proof
 assistants --- software that checks proofs down to the last symbol --- let us
 apply that lens \emph{mechanically}, turning a verified proof into runnable
-code with no human cleverness in between.
+code with no human cleverness in between.\footnote{The development this tour
+describes is carried out in Lean~4~\citep{demoura2021} with its mathematical
+library Mathlib~\citep{mathlib2020}; the extensional-collapse layer it builds
+on is a companion Kleene--Kreisel continuous-functionals development.
+Throughout, ``the proof assistant'' and ``the machine'' mean this system.}
 
 For simple statements this is unsurprising. The interesting question is what
 happens at the other extreme. Some theorems need reasoning far stronger than
@@ -92,8 +96,8 @@ $3,3,3,2,1,0$.)}
 \label{fig:erupt}
 \end{figure}
 
-Goodstein's theorem says that this sequence --- no matter which number you
-started from --- always, eventually, hits exactly $0$.
+Goodstein's theorem~\citep{goodstein1944} says that this sequence --- no matter
+which number you started from --- always, eventually, hits exactly $0$.
 
 That is already strange. A process whose every early move makes the number
 enormously bigger, driven downward only by subtracting one at a time,
@@ -284,7 +288,10 @@ needs the first.
 In Act~II we met the realizer clause for $\exists$ by asking what a proof of
 an existential must carry. Every connective has such a clause, arrived at the
 same way, and once you have seen one the rest are recognizable rather than
-surprising. Table~\ref{tab:realizers} collects them --- the guiding question
+surprising.\footnote{The interpretation is Kreisel's \emph{modified}
+realizability~\citep{kreisel1959}; the standard reference, whose
+induction-axiom realizer this development follows, is
+Troelstra~\citep{troelstra1973}.} Table~\ref{tab:realizers} collects them --- the guiding question
 each time being \emph{what would a machine need to use a proof of this?}
 
 \begin{table}[h]
@@ -411,7 +418,10 @@ honest space of functionals rather than an arbitrary quotient, the realizers
 landing in it must be \emph{continuous}, a property we state below. Read
 $\CtQ$ for now as a promissory note --- \emph{the program of a closed theorem
 is a single proof-independent object, once we know its realizer is
-continuous} --- redeemed two definitions on.
+continuous} --- redeemed two definitions on.\footnote{$\CtQ$ is the
+extensional collapse of the Kleene--Kreisel continuous
+functionals~\citep{kleene1959,kreisel1959}; for a modern account see Longley
+and Normann~\citep{longleynormann2015}.}
 
 \subsection*{Soundness: it works for every proof}
 
@@ -616,8 +626,8 @@ $0$.
 Colour the points $0,1,\dots,n$ along a line, each some natural-number colour,
 with the two ends coloured differently. Then somewhere two \emph{adjacent}
 points must differ --- you cannot get from one end-colour to the other without a
-change. This is the one-dimensional Sperner lemma, the discrete ancestor of the
-intermediate value theorem. The fragment proves it by ordinary induction,
+change. This is the one-dimensional Sperner lemma~\citep{sperner1928}, the
+discrete ancestor of the intermediate value theorem. The fragment proves it by ordinary induction,
 scanning the line and carrying ``either we are still at the start colour, or we
 have already found a crossing''; the extracted program is a left-to-right search
 returning the \emph{first} crossing. But the new thing is not the extraction ---
@@ -666,7 +676,10 @@ reach $0$.
 \]
 This is the extra strength Act~I warned of: \textbf{transfinite induction up to
 $\epsz$}, the single rule in the fragment's whole repertoire that is not a
-consequence of ordinary logic and ordinary induction. To make it mechanical the
+consequence of ordinary logic and ordinary induction --- it is exactly the
+principle Gentzen showed lies beyond ordinary arithmetic~\citep{gentzen1943},
+here realized as recursion along a primitive-recursive ordering in the manner
+of Tait~\citep{tait1965}. To make it mechanical the
 fragment builds the $\epsz$ ordinals \emph{as ordinary numbers} under a
 hand-crafted encoding, defines the ``smaller ordinal'' relation on those codes,
 and proves --- by elementary means, no infinite reasoning --- that it admits no
@@ -739,8 +752,9 @@ The last and hardest example marks a boundary --- the place where what the
 fragment can \emph{prove} and what it can even \emph{state} come apart.
 
 The Hydra is a many-headed tree; Hercules chops a head and it regrows, often
-growing \emph{more} heads than it lost. The Kirby--Paris theorem says Hercules
-wins anyway: every battle terminates. The reason is Goodstein's in disguise ---
+growing \emph{more} heads than it lost. The Kirby--Paris
+theorem~\citep{kirbyparis1982} says Hercules wins anyway: every battle
+terminates. The reason is Goodstein's in disguise ---
 each chop, though it grows the tree, strictly lowers an ordinal below $\epsz$
 assigned to it. The fragment can prove termination for \emph{one fixed, encoded
 battle}: fix a starting Hydra and a fixed way of playing, code it all as
@@ -1014,7 +1028,7 @@ Set the examples back-to-back --- Hanoi, Pascal, Fibonacci, Euclid, Sperner,
 Goodstein, the Hydra --- and the natural summary is ``look, one pipeline turns
 proofs into programs.'' But that pipeline is old news: that a constructive proof
 carries computational content is the content of realizability and of the
-Curry--Howard correspondence, both decades established. The reader was told as
+Curry--Howard correspondence~\citep{howard1980}, both decades established. The reader was told as
 much in Act~I, and being shown a known correspondence at work is not, by itself,
 a surprise.
 
@@ -1040,5 +1054,8 @@ machine, asked directly, said so.
 
 That is how a proof becomes a program: not by a grand mechanism, but by a small
 one applied with discipline, and checked by something that cannot be talked past.
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
 
 \end{document}

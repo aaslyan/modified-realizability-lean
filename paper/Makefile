@@ -17,10 +17,12 @@ PDF  = $(NAME).pdf
 
 all: $(PDF)
 
-$(PDF): $(TEX) preamble.tex
+# latexmk runs the full pdflatex -> bibtex -> pdflatex -> pdflatex cycle
+# automatically to resolve the natbib citations against refs.bib.
+$(PDF): $(TEX) preamble.tex refs.bib
 	latexmk -pdf -interaction=nonstopmode -halt-on-error $(TEX)
 
 # Remove LaTeX auxiliary files (keeps the committed .tex and .pdf).
 clean:
 	latexmk -c $(TEX) >/dev/null 2>&1 || true
-	rm -f $(NAME).fls $(NAME).fdb_latexmk build.log
+	rm -f $(NAME).fls $(NAME).fdb_latexmk $(NAME).bbl $(NAME).blg build.log

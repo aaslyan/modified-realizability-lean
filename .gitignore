@@ -9,4 +9,6 @@ paper/*.toc
 paper/*.fls
 paper/*.fdb_latexmk
 paper/build.log
+paper/*.bbl
+paper/*.blg
 paper/fonttest.*
