@@ -36,6 +36,7 @@ Files live under layer directories and `import`s follow the path
 - `Realizability/Core/` — the realizability **engine**: `Syntax`, `ModifiedRealizes`, `Transport`, `Extraction`, `Soundness`, `GenericContinuity`, `CollapseDemo`; plus the vendored `ContinuousFunctionals/` dependency (a real directory of the 12 upstream files, built as its own in-package `lean_lib`).
 - `Realizability/Common/` — shared content built *on* Core: `Arithmetic`, `Exists`, `StrongInduction`.
 - `Realizability/Theorems/{Goodstein,Hydra,Hanoi,Pascal,Euclid,Sperner}/` — each headline theorem's proof + extraction (and the post-`Syntax` value modules like `Goodstein`, `HydraFragment`).
+- `Realizability/Meta/` — display tooling, not part of the certified pipeline: `RealizerDisplay` provides the **`#realizer d`** command, which prints the extracted realizer's *skeleton* by walking the derivation `d` structurally (so it terminates on `goodsteinTheorem`/`hydraTheorem`, which `#reduce` cannot evaluate past the `tiRecC` wall) — per-rule combinators become named nodes, contentless equation/`⊥` sub-derivations collapse to one `·` leaf. Meta code only: `partial def`s + a macro, no theorems, no axiom-budget impact; a pinned `#guard` fixes the `goodThreeExDeriv` output. See its "fifth per-rule site" note under the per-rule discipline.
 
 The numbered chain below names modules by their bare name; prepend the layer for the path (`Syntax` → `Core/Syntax.lean` = module `Realizability.Core.Syntax`).
 
@@ -83,7 +84,7 @@ Module chain (each imports the previous):
 
 ### The per-rule discipline (most important structural rule)
 
-Every derivation rule has a matching case in **four places**: `extract` + `derivBound` (Extraction), `soundness` (Soundness), and `extract_tracked` (GenericContinuity). Adding a function symbol additionally requires a `termEval_continuous` case (and cases in `Term.eval`/`vars`/`subst`/`eval_subst`/`eval_congr`). **No case may be left silent** — when extending the fragment, touch all of them, and add the corresponding `#print axioms` checks for new headline theorems.
+Every derivation rule has a matching case in **five places**: `extract` + `derivBound` (Extraction), `soundness` (Soundness), `extract_tracked` (GenericContinuity), and `toSkel` (`Meta/RealizerDisplay.lean`, the `#realizer` display — it matches every constructor with no wildcard, so a new rule breaks its build until given a case, exactly like the certified four). Adding a function symbol additionally requires a `termEval_continuous` case (and cases in `Term.eval`/`vars`/`subst`/`eval_subst`/`eval_congr`), plus a `termStr` case in `RealizerDisplay`. **No case may be left silent** — when extending the fragment, touch all of them, and add the corresponding `#print axioms` checks for new headline theorems.
 
 The two recursing combinators are the ones to imitate when adding another: `indRecC`/`indC` (recursion along `succ`, correctness `MR_indRecC`, tracking `indC_tracked`) and `tiRecC`/`tiC` (recursion along `≺`, correctness `MR_tiRecC`, tracking `tiRecC_tracked`/`tiC_tracked`). Both are packaged by `allIC`; both prove tracking at a *fixed* recursion index and absorb the oracle-dependent index with `tracked_apply_nat`. `tiRecC_eq` (the non-dependent unfolding of the well-founded recursion) is what both of its proofs rewrite with.
 
