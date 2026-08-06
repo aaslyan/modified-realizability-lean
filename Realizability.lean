@@ -23,6 +23,7 @@ import Realizability.Common.Exists
 import Realizability.Theorems.Goodstein.OrdinalDescent
 import Realizability.Theorems.Goodstein.GoodsteinTheorem
 import Realizability.Theorems.Goodstein.GoodsteinExtraction
+import Realizability.Theorems.Goodstein.GoodsteinSearch
 import Realizability.Theorems.Hydra.HydraFragment
 import Realizability.Theorems.Hydra.HydraTheorem
 import Realizability.Theorems.Hydra.HydraExtraction

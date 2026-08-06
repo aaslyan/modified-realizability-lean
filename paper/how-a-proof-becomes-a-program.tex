@@ -898,6 +898,68 @@ its stopping step is astronomically large.}
 \label{tab:stop}
 \end{table}
 
+\subsubsection*{An aside: the same function, computed two ways}
+
+That stopping-time function $m\mapsto s$ can be written as a program in two very
+different ways, and the difference is exactly the subject of this whole tour. The
+obvious way is a \emph{search}: run the sequence, test for zero, return the first
+step that hits it --- a \code{while} loop, the classical minimization operator.
+It is easy to write and, for small $m$, easy to run. But look at where its
+termination lives: the loop halts \emph{if and only if} the sequence really does
+reach $0$ --- which is Goodstein's theorem. Nothing inside the loop guarantees
+it. The other way is the \emph{extracted} program of Figure~\ref{fig:search}: the
+recursion along the descending ordinals we have just described, which halts
+\emph{by construction}, because a chain of ordinals below $\epsz$ cannot descend
+forever --- no matter how large the natural-number values swell in between.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=8mm]
+  \node[boxa,text width=60mm,align=left](S){%
+    \textbf{A --- search (the \code{while} loop)}\\[3pt]
+    $s \gets 0$\\
+    \code{while}\ $\good(m,s)\neq 0$:\ \ $s \gets s+1$\\
+    \code{return}\ $s$\\[5pt]
+    \footnotesize halts \emph{iff} the sequence reaches $0$\\
+    \footnotesize {\itshape\color{bad} that is Goodstein's theorem}\\
+    \footnotesize in Lean: a \code{partial def} --- \emph{not} certified};
+  \node[boxg,text width=60mm,align=left,right=14mm of S](D){%
+    \textbf{B --- ordinal descent (extracted)}\\[3pt]
+    recurse along $\prec$ from the ordinal of\\
+    $\good(m,\cdot)$; each step lowers it below $\epsz$;\\
+    \code{return}\ the number of steps\\[5pt]
+    \footnotesize halts \emph{by construction} (well-founded)\\
+    \footnotesize {\itshape\color{good} termination is intrinsic}\\
+    \footnotesize in Lean: a total \code{def} --- certified};
+  \node[figcap,align=center] at ($(S.south)!0.5!(D.south) - (0,7mm)$)
+    {both return the same column:\ \ \ $0\mapsto 0,\ \ 1\mapsto 1,\ \ 2\mapsto 3,\ \ 3\mapsto 5,\ \ \dots$};
+\end{tikzpicture}
+\caption{One function, two programs. Both compute the Goodstein stopping time and
+agree wherever they run, but their termination guarantees sit in opposite places.
+Program A is a search whose halting \emph{is} the theorem: written directly in
+Lean it must be marked \code{partial}, the kernel's way of saying ``not certified
+to terminate.'' Program B, extracted from the proof, is a total \code{def} whose
+halting is carried by the well-founded ordinal descent. The gap is one keyword.}
+\label{fig:search}
+\end{figure}
+
+The dependency is not merely narrated --- it can be made a proof. Lean's
+constructive minimization operator (\code{Nat.find}) turns the search into a
+\emph{total} function, but only when handed a proof that a zero exists; and the
+one such proof available is the extracted theorem itself.
+
+\begin{keystmt}
+The search becomes certified-total exactly by \emph{consuming Goodstein's
+theorem} as its termination argument. ``Halts iff the theorem holds'' stops
+being a remark and becomes the type of the program.
+\end{keystmt}
+
+\noindent
+One caveat keeps the picture honest: the certificate buys \emph{termination}, not
+\emph{speed}. The certified search still evaluates by running the sequence, so at
+$m=4$ it is as unreachable as before --- Program B's guarantee is that it
+\emph{will} finish, not that it finishes soon.
+
 \subsection*{New capability: a fragment theorem versus a metatheorem (the Hydra)}
 
 The last and hardest example marks a boundary --- the place where what the
