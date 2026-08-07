@@ -1,0 +1,33 @@
+% Generated verbatim from `#realizer` output (scratchpad/xray.lean); do not
+% hand-edit. Each line is one tabular row; glyphs map to math ($\cdot$,
+% $\Lambda$, $\prec$, $\langle$, ...) and every space becomes ~ so the
+% monospace tree indentation is reproduced exactly. Rows end with \\.
+allI~~($\Lambda$k) \\
+~~~impE~~(app) \\
+~~~~~~allE[0]~~(inst) \\
+~~~~~~~~~allE[ord(2,good(x2,0))]~~(inst) \\
+~~~~~~~~~~~~tiEps0~/~tiRecC~~(recurse~along~$\prec$) \\
+~~~~~~~~~~~~~~~allI~~($\Lambda$k) \\
+~~~~~~~~~~~~~~~~~~impI~~($\lambda$) \\
+~~~~~~~~~~~~~~~~~~~~~allI~~($\Lambda$k) \\
+~~~~~~~~~~~~~~~~~~~~~~~~impI~~($\lambda$) \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~orE~~(case) \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~eqDec~~$\langle$decide~good(x2,x3)~=~0$\rangle$ \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~exI~~$\langle$witness~=~x3,~$\cdot$$\rangle$ \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~$\cdot$~$\langle$contentless$\rangle$~~good(x2,x3)~=~0 \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~impE~~(app) \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~allE[ord(S(S(S(x3))),good(x2,S(x3)))]~~(inst) \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~allI~~($\Lambda$k) \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~impI~~($\lambda$) \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~impE~~(app) \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~allE[S(x3)]~~(inst) \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~impE~~(app) \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~allE[x5]~~(inst) \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~wk~~(weaken) \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~wk~~(weaken) \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~wk~~(weaken) \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ax~~(head~hypothesis) \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~$\cdot$~$\langle$contentless$\rangle$~~prec(x5,x1)~=~1 \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~$\cdot$~$\langle$contentless$\rangle$~~ord(S(S(S(x3))),good(x2,S(x3)))~=~x5 \\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~$\cdot$~$\langle$contentless$\rangle$~~ord(S(S(S(x3))),good(x2,S(x3)))~=~ord(S(S(S(x3))),good(x2,S(x3))) \\
+~~~~~~$\cdot$~$\langle$contentless$\rangle$~~ord(2,good(x2,0))~=~ord(2,good(x2,0))

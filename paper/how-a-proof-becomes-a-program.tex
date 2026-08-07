@@ -939,7 +939,8 @@ agree wherever they run, but their termination guarantees sit in opposite places
 Program A is a search whose halting \emph{is} the theorem: written directly in
 Lean it must be marked \code{partial}, the kernel's way of saying ``not certified
 to terminate.'' Program B, extracted from the proof, is a total \code{def} whose
-halting is carried by the well-founded ordinal descent. The gap is one keyword.}
+halting is carried by the well-founded ordinal descent. The gap is one keyword.
+Appendix~\ref{app:xray} shows Program B as a tree.}
 \label{fig:search}
 \end{figure}
 
@@ -1346,7 +1347,8 @@ becoming the shape of the recursion. The induction hypothesis \emph{is} the
 recursive call; the ordinal descent, carrying no runtime content, is erased. The
 same object is a proof that every Goodstein sequence terminates and a program
 that computes when. What is old is the correspondence; what is new is that this
-one fixed apparatus reaches $\mathrm{TI}(\epsz)$ with nothing added.}
+one fixed apparatus reaches $\mathrm{TI}(\epsz)$ with nothing added.
+Appendix~\ref{app:xray} prints this program in full, verbatim from the proof.}
 \label{fig:curry-howard}
 \end{figure}
 
@@ -1372,6 +1374,93 @@ machine, asked directly, said so.
 
 That is how a proof becomes a program: not by a grand mechanism, but by a small
 one applied with discipline, and checked by something that cannot be talked past.
+
+%======================================================================
+\appendix
+\section{Appendix A --- Looking inside: the extracted program as a tree}
+\label{app:xray}
+
+Throughout the tour we have said that the extracted realizer \emph{is} a
+program, and Act~VII drew it as one (Figure~\ref{fig:curry-howard}). This
+appendix closes the loop: it shows the actual program, printed from the actual
+proof, by a command you can run.
+
+There is an obstacle to seeing it that is worth stating, because overcoming it is
+the point. You cannot simply \emph{evaluate} the extracted realizer and look at
+the result. For Goodstein the realizer is built by the transfinite recursion
+$\mathrm{tiRecC}$, and evaluating it forces that recursion --- which is exactly
+the astronomically long computation Table~\ref{tab:stop} could not finish. And
+even on the smallest example, full evaluation \emph{over}-reduces: the realizer of
+$\exists s.\ \good(3,s){=}0$ computes to the single number $30$ (it is
+$\mathsf{Nat.pair}\,5\,0$, the witness paired with a contentless payload), so the
+$5$ the proof supplied is hidden inside an opaque code.
+
+The command \code{\#realizer} avoids both problems by reading the \emph{proof}
+structurally rather than running the program: it walks the finite derivation,
+names the combinator at each rule, and collapses every proof-irrelevant
+sub-derivation (an equation, $\bot$) to a single ``$\cdot$'' leaf. It therefore
+terminates instantly on proofs whose programs cannot be evaluated, and it keeps
+the witness visible. On the smallest realizer it prints the pair the prose has
+described all along:
+
+\begin{center}
+\fcolorbox{rulec}{boxbg}{\begin{minipage}{0.82\linewidth}
+\ttfamily\small
+\begin{tabular}{@{}l@{}}
+\input{xray-small.tex}
+\end{tabular}
+\end{minipage}}
+\end{center}
+
+\noindent
+The witness $5$ sits at the top, exactly where $\exists$-introduction is pairing;
+the body, being an equation, carries no runtime content and is one leaf. That is
+Reading~1 of Figure~\ref{fig:curry-howard}, now as literal output.
+
+The same command, on Goodstein's \emph{theorem}, prints the whole extracted
+stopping-step program --- the one Figure~\ref{fig:curry-howard} distilled and
+Figure~\ref{fig:search} contrasted with a search. It is a $29$-node tree, and it
+prints in well under a second, though the program it describes could never be run
+to completion at $m=4$:
+
+\begin{center}
+\fcolorbox{rulec}{boxbg}{%
+  \resizebox{0.96\linewidth}{!}{%
+    \ttfamily\footnotesize
+    \begin{tabular}{@{}l@{}}
+    \input{xray-goodstein.tex}
+    \end{tabular}}}
+\end{center}
+
+\noindent
+Read it top to bottom and it is the program of Figure~\ref{fig:curry-howard}: bind
+the input ($\mathsf{allI}$), name the initial ordinal, recurse along $\prec$
+($\mathsf{tiEps0}/\mathrm{tiRecC}$), and at each state case-split
+($\mathsf{orE}$) on a decided equality --- return the current step
+($\mathsf{exI}$, the witness) if the value is $0$, otherwise recurse on the next
+state, invoking the induction hypothesis ($\mathsf{ax}$, the recursive call) and
+discharging the ordinal descent as a contentless leaf ($\code{prec}(\dots){=}1$).
+This is the recursion whose termination Figure~\ref{fig:ordinals} certified and
+whose guarantee Figure~\ref{fig:search} set against the naive loop. The Hydra's
+program is the same $29$-node shape, for the reason Figure~\ref{fig:hydra-desc}
+gives.
+
+\paragraph{Reproducing this.} Both boxes are verbatim output. In the repository,
+
+\begin{center}
+\fcolorbox{rulec}{boxbg}{\begin{minipage}{0.82\linewidth}
+\ttfamily\small
+\#realizer goodThreeExDeriv\\
+\#realizer goodsteinTheorem
+\end{minipage}}
+\end{center}
+
+\noindent
+prints the two trees above; the companion \code{\#realizerCH} annotates each node
+with its logic rule and proposition, which is the three-column correspondence of
+Figure~\ref{fig:curry-howard} generated mechanically. The command reads every
+derivation rule (it is total by construction, with no wildcard case), so it works
+unchanged on every theorem in the development.
 
 \bibliographystyle{plainnat}
 \bibliography{refs}
