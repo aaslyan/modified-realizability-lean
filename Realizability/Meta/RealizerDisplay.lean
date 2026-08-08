@@ -225,6 +225,112 @@ partial def render (depth : Nat) : Skel → String
 def realizerSkeleton {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) : String :=
   render 0 (toSkel D)
 
+/-! ## Pseudocode decompilation
+
+`#program` is a readability layer over the same extracted skeleton.  It does
+not inspect the reduced `PureType` value — reduction can hide witnesses in
+numeric pair encodings or force huge recursors.  Instead it reuses `toSkel`,
+whose cases mirror the extractor's rule-by-rule structure, and renders the
+extracted combinators as pseudocode.
+
+The output is therefore not the certified artifact.  The certified artifact is
+still `extract D`, with correctness from `soundness` and continuity from
+`extract_continuous`.  The pseudocode is the generated reader-facing view of
+that artifact.
+-/
+
+def isPrefix (p s : String) : Bool :=
+  p.length ≤ s.length && s.take p.length = p
+
+def bracketPayload (s : String) : String :=
+  match s.splitOn "[" with
+  | _ :: rest =>
+      match (String.intercalate "[" rest).splitOn "]" with
+      | u :: _ => u
+      | _ => "?"
+  | _ => "?"
+
+def witnessPayload (s : String) : String :=
+  match s.splitOn "witness = " with
+  | _ :: rest =>
+      match (String.intercalate "witness = " rest).splitOn "," with
+      | u :: _ => u
+      | _ => "?"
+  | _ => "?"
+
+def contentlessPayload (s : String) : String :=
+  match s.splitOn "  " with
+  | _ :: rest => String.intercalate "  " rest
+  | _ => s
+
+def eqDecPayload (s : String) : String :=
+  match s.splitOn "⟨decide " with
+  | _ :: rest =>
+      match (String.intercalate "⟨decide " rest).splitOn "⟩" with
+      | u :: _ => u
+      | _ => s
+  | _ => s
+
+def leafPseudo (s : String) : String :=
+  if isPrefix "· ⟨contentless⟩" s then
+    s!"erase({contentlessPayload s})"
+  else if isPrefix "eqDec" s then
+    s!"decide({eqDecPayload s})"
+  else if isPrefix "ax" s then
+    "recursive_or_hypothesis_value"
+  else
+    s
+
+def pseudoHeader (s : String) : String :=
+  if isPrefix "allI" s then
+    "fun k =>"
+  else if isPrefix "impI" s then
+    "fun proof_arg =>"
+  else if isPrefix "impE" s then
+    "apply"
+  else if isPrefix "allE[" s then
+    s!"instantiate {bracketPayload s}"
+  else if isPrefix "andI" s then
+    "pair"
+  else if isPrefix "andE₁" s then
+    "fst"
+  else if isPrefix "andE₂" s then
+    "snd"
+  else if isPrefix "orI₁" s then
+    "return tag 0 with"
+  else if isPrefix "orI₂" s then
+    "return tag 1 with"
+  else if isPrefix "orE" s then
+    "case split"
+  else if isPrefix "exI" s then
+    s!"return witness {witnessPayload s} with certificate"
+  else if isPrefix "exE" s then
+    "let ⟨witness, certificate⟩ ="
+  else if isPrefix "ind / indRecC" s then
+    "natRec"
+  else if isPrefix "tiEps0 / tiRecC" s then
+    "wellFoundedRecOnPrec"
+  else if isPrefix "wk" s then
+    "weaken"
+  else if isPrefix "botE" s then
+    "absurd"
+  else
+    s
+
+/-- Render an extracted skeleton as pseudocode. -/
+partial def renderPseudo (depth : Nat) : Skel → String
+  | .leaf s => pad (depth * 2) ++ leafPseudo s ++ "\n"
+  | .node s ch =>
+      let here := pad (depth * 2) ++ pseudoHeader s ++ "\n"
+      let body := (ch.map (renderPseudo (depth + 1))).foldl (· ++ ·) ""
+      here ++ body
+
+/-- Pseudocode view of the extracted realizer. -/
+def decompiledProgram {Γ : List Formula} {φ : Formula} (D : Deriv Γ φ) : String :=
+  "decompiled extracted realizer (pseudocode)\n" ++
+  "------------------------------------------\n" ++
+  renderPseudo 0 (toSkel D)
+
 /-! ## The Curry–Howard view
 
 `#realizerCH` renders the same walk as three columns per node — the **program
@@ -290,6 +396,11 @@ structurally, so it works on realizers that `#reduce` cannot evaluate. -/
 macro "#realizer " t:term : command =>
   `(command| #eval IO.println (Realizability.RealizerDisplay.realizerSkeleton $t))
 
+/-- `#program d` prints generated pseudocode for the extracted realizer of `d`.
+It is a decompiled display view, not the certified artifact itself. -/
+macro "#program " t:term : command =>
+  `(command| #eval IO.println (Realizability.RealizerDisplay.decompiledProgram $t))
+
 /-- `#realizerCH d` prints the derivation as the Curry–Howard correspondence:
 each line is `program-operation — logic-rule ⟦proposition⟧`, exhibiting the
 extraction map rule-by-rule. -/
@@ -304,3 +415,7 @@ macro "#realizerCH " t:term : command =>
 #guard ((Realizability.RealizerDisplay.realizerCorrespondence
     Realizability.goodThreeExDeriv).splitOn "\n").getD 1 "" ==
   "return ⟨5, ·⟩  — ∃-intro  ⟦∃x1.good(3,x1) = 0⟧"
+
+#guard ((Realizability.RealizerDisplay.decompiledProgram
+    Realizability.goodThreeExDeriv).splitOn "\n").getD 2 "" ==
+  "return witness 5 with certificate"

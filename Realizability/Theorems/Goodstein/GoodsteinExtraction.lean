@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ara Aslyan
 -/
 import Realizability.Theorems.Goodstein.GoodsteinTheorem
-import Realizability.Core.CollapseDemo
+import Realizability.Meta.ProgramExtraction
 
 /-!
 # Phase D3: the extracted function
@@ -55,8 +55,7 @@ first component at the canonical point, which is exactly where `exIC`
 puts it.  Ambient 12 is the derivation's own bound, so this is the
 realizer *at the level where it is certified*. -/
 def goodsteinStopTime (m : ℕ) : ℕ :=
-  fstPT (app₁ (extract goodsteinTheorem (fun _ ↦ 0) [] 12) (natPT 12 m))
-    (defaultPT 11)
+  witness₁ goodsteinTheorem 11 m
 
 /-- **The extracted function is correct**, at every start value: the
 Goodstein sequence from `m` is `0` after `goodsteinStopTime m` steps.

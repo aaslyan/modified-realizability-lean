@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ara Aslyan
 -/
 import Realizability.Theorems.Hanoi.HanoiTheorem
-import Realizability.Core.CollapseDemo
+import Realizability.Meta.ProgramExtraction
 
 /-!
 # Phase E4: the extracted Hanoi solver
@@ -49,8 +49,7 @@ the three pegs, then read the witness component of the existential.
 Ambient 26 is the derivation's own bound, so this is the realizer at the
 level where it is certified. -/
 def hanoiSolution (n f t v : ℕ) : ℕ :=
-  fstPT (app₁ (app₁ (app₁ (app₁ (extract hanoiTheorem (fun _ ↦ 0) [] 26)
-    (natPT 26 n)) (natPT 25 f)) (natPT 24 t)) (natPT 23 v)) (defaultPT 22)
+  witness₄ hanoiTheorem 22 n f t v
 
 /-! ## Reading the solution back
 

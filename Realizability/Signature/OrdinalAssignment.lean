@@ -525,8 +525,15 @@ theorem bumpN_lt_bumpN {k a b : ℕ} (hk : 2 ≤ k) (h : a < b) :
 
 /-- Bumping a nonzero number gives a nonzero number. -/
 theorem bumpN_ne_zero {k n : ℕ} (hk : 2 ≤ k) (hn : n ≠ 0) : bumpN k n ≠ 0 := by
-  have := bumpN_lt_bumpN (k := k) (a := 0) (b := n) hk (by omega)
-  rw [bumpN_zero] at this
+  have hn1 : 1 ≤ n := by omega
+  rw [bumpN_pos_eq hn1]
+  have hpow_pos : 0 < k ^ hlog k n := pow_hlog_pos k n
+  have hquot : 1 ≤ n / k ^ hlog k n :=
+    (Nat.one_le_div_iff hpow_pos).mpr (pow_hlog_le k n hn1)
+  have hbase_pos : 0 < (k + 1) ^ bumpN k (hlog k n) :=
+    Nat.pow_pos (by omega)
+  have hprod_pos : 0 < (k + 1) ^ bumpN k (hlog k n) * (n / k ^ hlog k n) :=
+    Nat.mul_pos hbase_pos (by omega)
   omega
 
 /-- The digit bound, in the form the base-change theorem uses. -/

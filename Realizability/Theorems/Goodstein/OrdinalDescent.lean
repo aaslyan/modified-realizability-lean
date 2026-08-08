@@ -62,6 +62,59 @@ def Deriv.congOrdE {Γ : List Formula} {s₁ t₁ s₂ t₂ : Term}
     Deriv Γ (.eq (.ord s₁ s₂) (.ord t₁ t₂)) :=
   .impE (.impE (.eqCongOrd s₁ t₁ s₂ t₂) D₁) D₂
 
+/-- If the fragment has proved that `t` is a successor, it can prove that
+`t` is nonzero. -/
+def Deriv.neZeroOfEqSucc {Γ : List Formula} {t : Term} (u : Term)
+    (D : Deriv Γ (.eq t (.succ u))) :
+    Deriv Γ (Formula.eq t .zero).neg := by
+  refine Deriv.impI ?_
+  have ht0 : Deriv (Formula.eq t .zero :: Γ) (Formula.eq t .zero) := .ax
+  have hts : Deriv (Formula.eq t .zero :: Γ) (Formula.eq t (.succ u)) := .wk D
+  have hs0 : Deriv (Formula.eq t .zero :: Γ) (Formula.eq (.succ u) .zero) :=
+    (Deriv.symmE hts).transE ht0
+  exact Deriv.impE (Deriv.succNeZero u) hs0
+
+/-- **Closed numeral instances of `bumpNeZero`, without using the
+`bumpNeZero` schema.**
+
+The open-term schema
+
+`n ≠ 0 → bump (b + 2) n ≠ 0`
+
+is still imported by the object theory.  But for every concrete numeral `n`,
+the fragment can derive the corresponding instance from the numeral graph
+`bumpNum`, equality reasoning, and `succNeZero`.  This is the first
+internalization step: the remaining gap is the uniform open-term argument. -/
+def Deriv.bumpNeZeroNumeral {Γ : List Formula} (b n : ℕ) :
+    Deriv Γ ((Formula.eq (numeral n) .zero).neg.imp
+      (Formula.eq (.bump (.succ (.succ (numeral b))) (numeral n)) .zero).neg) := by
+  refine Deriv.impI ?_
+  cases n with
+  | zero =>
+      have hne : Deriv ((Formula.eq (numeral 0) .zero).neg :: Γ)
+          (Formula.eq (numeral 0) .zero).neg := .ax
+      have hz : Deriv ((Formula.eq (numeral 0) .zero).neg :: Γ)
+          (Formula.eq (numeral 0) .zero) := .eqRefl .zero
+      exact Deriv.botE (Deriv.impE hne hz)
+  | succ n =>
+      have hnonzero : bumpN (b + 2) (n + 1) ≠ 0 :=
+        bumpN_ne_zero (k := b + 2) (n := n + 1) (by omega) (by omega)
+      cases hval : bumpN (b + 2) (n + 1) with
+      | zero =>
+          exact False.elim (hnonzero hval)
+      | succ p =>
+          have hgraph : Deriv ((Formula.eq (numeral (n + 1)) .zero).neg :: Γ)
+              (Formula.eq (.bump (.succ (.succ (numeral b))) (numeral (n + 1)))
+                (.succ (numeral p))) := by
+            have hnum : Deriv ((Formula.eq (numeral (n + 1)) .zero).neg :: Γ)
+                (Formula.eq (.bump (numeral (b + 2)) (numeral (n + 1)))
+                  (numeral (p + 1))) := by
+              simpa [hval] using
+                (Deriv.bumpNum (Γ := (Formula.eq (numeral (n + 1)) .zero).neg :: Γ)
+                  (b + 2) (n + 1))
+            simpa [numeral] using hnum
+          exact Deriv.neZeroOfEqSucc (numeral p) hgraph
+
 /-- **The Goodstein descent, derived inside the fragment.**
 
 From `n ≠ 0`: bumping gives a nonzero number (`bumpNeZero`), so taking
@@ -169,5 +222,8 @@ theorem ord_descent_via_fragment {k n : ℕ} (hk : 2 ≤ k) (hn : n ≠ 0) :
 #print axioms ord_descent_realized
 #print axioms ord_descent_extract_continuous
 #print axioms ord_descent_via_fragment
+#print axioms bumpN_ne_zero
+#print axioms Deriv.neZeroOfEqSucc
+#print axioms Deriv.bumpNeZeroNumeral
 
 end Realizability

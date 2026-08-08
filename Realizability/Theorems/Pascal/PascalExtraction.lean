@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ara Aslyan
 -/
 import Realizability.Theorems.Pascal.PascalTheorem
-import Realizability.Core.CollapseDemo
+import Realizability.Meta.ProgramExtraction
 import Mathlib.Data.Nat.Choose.Basic
 
 /-!
@@ -55,8 +55,7 @@ theorem pas_realized (ρ : ℕ → ℕ) {m : ℕ} (hm : 8 ≤ m) :
 /-- **The extracted decider's tag.**  `0` means the derivation proved the
 left disjunct, `pas(n,k) = 1`. -/
 def pasTag (n k : ℕ) : ℕ :=
-  fstPT (app₁ (app₁ (extract pasTotal (fun _ ↦ 0) [] 8)
-    (natPT 8 n)) (natPT 7 k)) (defaultPT 6)
+  tag₂ pasTotal 6 n k
 
 /-- The decider, as a bit. -/
 def pasDecide (n k : ℕ) : ℕ := if pasTag n k = 0 then 1 else 0
